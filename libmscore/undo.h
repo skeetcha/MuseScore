@@ -40,6 +40,8 @@
 #include "note.h"
 #include "drumset.h"
 
+Q_DECLARE_LOGGING_CATEGORY(undoRedo)
+
 namespace Ms {
 
 class ElementList;
@@ -83,8 +85,8 @@ enum class PlayEventType : char;
 
 // #define DEBUG_UNDO
 
-#ifdef DEBUG_UNDO
-#define UNDO_NAME(a)  virtual const char* name() const { return a; }
+#ifndef QT_NO_DEBUG
+#define UNDO_NAME(a)  virtual const char* name() const override { return a; }
 #else
 #define UNDO_NAME(a)
 #endif
@@ -110,8 +112,8 @@ class UndoCommand {
       int childCount() const             { return childList.size();     }
       void unwind();
       virtual void cleanup(bool undo);
-#ifdef DEBUG_UNDO
-      virtual const char* name() const  { return "UndoCommand"; }
+#ifndef QT_NO_DEBUG
+      virtual const char* name() const { return "UndoCommand"; }
 #endif
       };
 
@@ -559,8 +561,8 @@ class AddElement : public UndoCommand {
       virtual void undo();
       virtual void redo();
       virtual void cleanup(bool);
-#ifdef DEBUG_UNDO
-      virtual const char* name() const;
+#ifndef QT_NO_DEBUG
+      virtual const char* name() const override;
 #endif
       };
 
@@ -576,8 +578,8 @@ class RemoveElement : public UndoCommand {
       virtual void undo();
       virtual void redo();
       virtual void cleanup(bool);
-#ifdef DEBUG_UNDO
-      virtual const char* name() const;
+#ifndef QT_NO_DEBUG
+      virtual const char* name() const override;
 #endif
       };
 
