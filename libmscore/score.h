@@ -914,7 +914,7 @@ class Score : public QObject, public ScoreElement {
       void doLayoutRange(int, int);
 
       void layoutLinear();
-      void layoutPages(LayoutContext&);
+//      void layoutPages(LayoutContext&);
       void layoutSystemsUndoRedo();
       void layoutPagesUndoRedo();
       Page* getEmptyPage(LayoutContext&);
@@ -972,8 +972,8 @@ class Score : public QObject, public ScoreElement {
       LayoutMode layoutMode() const         { return _layoutMode; }
       void setLayoutMode(LayoutMode lm)     { _layoutMode = lm;   }
 
-      void doLayoutSystems();
-      void doLayoutPages();
+//      void doLayoutSystems();
+//      void doLayoutPages();
       Tuplet* searchTuplet(XmlReader& e, int id);
       void cmdSelectAll();
       void cmdSelectSection();
@@ -990,7 +990,7 @@ class Score : public QObject, public ScoreElement {
       int getLinkId() const { return _linkId; }
       QList<Score*> scoreList();
       bool switchLayer(const QString& s);
-      void layoutPage(Page* page, qreal restHeight);
+//      void layoutPage(Page* page, qreal restHeight);
       //@ appends to the score a named part as last part
       Q_INVOKABLE void appendPart(const QString&);
       //@ appends to the score a number of measures
