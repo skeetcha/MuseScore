@@ -515,7 +515,7 @@ class Score : public QObject, public ScoreElement {
       Score();
       Score(MasterScore*);
       Score(MasterScore*, const MStyle*);
-      ~Score();
+      virtual ~Score();
 
       virtual bool isMaster() const  { return false;        }
 
@@ -943,7 +943,6 @@ class Score : public QObject, public ScoreElement {
       //@ sets the metatag named 'tag' to 'val'
       Q_INVOKABLE void setMetaTag(const QString& tag, const QString& val);
 
-      virtual inline QMap<int, LinkedElements*>& links();
       void layoutFingering(Fingering*);
       void cmdSplitMeasure(ChordRest*);
       void cmdJoinMeasure(Measure*, Measure*);
@@ -971,8 +970,6 @@ class Score : public QObject, public ScoreElement {
       LayoutMode layoutMode() const         { return _layoutMode; }
       void setLayoutMode(LayoutMode lm)     { _layoutMode = lm;   }
 
-//      void doLayoutSystems();
-//      void doLayoutPages();
       Tuplet* searchTuplet(XmlReader& e, int id);
       void cmdSelectAll();
       void cmdSelectSection();
@@ -989,7 +986,6 @@ class Score : public QObject, public ScoreElement {
       int getLinkId() const { return _linkId; }
       QList<Score*> scoreList();
       bool switchLayer(const QString& s);
-//      void layoutPage(Page* page, qreal restHeight);
       //@ appends to the score a named part as last part
       Q_INVOKABLE void appendPart(const QString&);
       //@ appends to the score a number of measures
@@ -1080,7 +1076,6 @@ class Score : public QObject, public ScoreElement {
 
       QFileInfo* fileInfo()               { return &info; }
       const QFileInfo* fileInfo() const   { return &info; }
-//      QString name() const                { return info.completeBaseName(); }
       void setName(const QString& s);
 
       virtual QVariant getProperty(P_ID) const override;
@@ -1106,7 +1101,6 @@ class MasterScore : public Score {
       RepeatList* _repeatList;
       QList<Excerpt*> _excerpts;
       Revisions* _revisions;
-      QMap<int, LinkedElements*> _elinks;
 
       CmdState _cmdState;     // modified during cmd processing
 
@@ -1131,7 +1125,7 @@ class MasterScore : public Score {
    public:
       MasterScore();
       MasterScore(const MStyle*);
-      ~MasterScore();
+      virtual ~MasterScore();
       MasterScore* clone();
 
       void setUndoRedo(bool val)              { _undoRedo = val;    }
@@ -1144,7 +1138,6 @@ class MasterScore : public Score {
       virtual RepeatList* repeatList()  const override         { return _repeatList; }
       virtual QList<Excerpt*>& excerpts() override             { return _excerpts;   }
       virtual const QList<Excerpt*>& excerpts() const override { return _excerpts;   }
-      virtual QMap<int, LinkedElements*>& links() override     { return _elinks;     }
       virtual QQueue<MidiInputEvent> midiInputQueue() override { return _midiInputQueue; }
 
       virtual void setUpdateAll() override                  { _cmdState.setUpdateMode(UpdateMode::UpdateAll);  }
@@ -1157,8 +1150,6 @@ class MasterScore : public Score {
 
       bool excerptsChanged() const          { return _cmdState._excerptsChanged; }
       bool instrumentsChanged() const       { return _cmdState._instrumentsChanged; }
-
-//      UpdateMode updateMode() const         { return _cmdState.updateMode(); }
 
       Revisions* revisions()                { return _revisions; }
 
@@ -1200,7 +1191,6 @@ class MasterScore : public Score {
 inline bool Score::undoRedo() const                   { return _masterScore->undoRedo();       }
 inline UndoStack* Score::undoStack() const            { return _masterScore->undoStack();      }
 inline RepeatList* Score::repeatList()  const         { return _masterScore->repeatList();     }
-inline QMap<int, LinkedElements*>& Score::links()     { return _masterScore->links();          }
 inline TempoMap* Score::tempomap() const              { return _masterScore->tempomap();       }
 inline TimeSigMap* Score::sigmap() const              { return _masterScore->sigmap();         }
 inline QList<Excerpt*>& Score::excerpts()             { return _masterScore->excerpts();       }
