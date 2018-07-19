@@ -1,26 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,14 +23,6 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -90,7 +67,6 @@
           <lid>3</lid>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Dynamic>
           <subtype>mf</subtype>
@@ -104,11 +80,7 @@
             <lid>6</lid>
             <Text>
               <lid>7</lid>
-              <style></style>
-              <halign>center</halign>
-              <valign>center</valign>
-              <xoffset>0</xoffset>
-              <yoffset>-2</yoffset>
+              <align>center,center</align>
               <text>T</text>
               </Text>
             <pitch>60</pitch>
@@ -124,11 +96,7 @@
             <lid>9</lid>
             <Text>
               <lid>10</lid>
-              <style></style>
-              <halign>center</halign>
-              <valign>center</valign>
-              <xoffset>0</xoffset>
-              <yoffset>-2</yoffset>
+              <align>center,center</align>
               <text>S</text>
               </Text>
             <pitch>60</pitch>
@@ -144,11 +112,7 @@
             <lid>12</lid>
             <Text>
               <lid>13</lid>
-              <style></style>
-              <halign>center</halign>
-              <valign>center</valign>
-              <xoffset>0</xoffset>
-              <yoffset>-2</yoffset>
+              <align>center,center</align>
               <text>P</text>
               </Text>
             <pitch>60</pitch>
@@ -161,10 +125,6 @@
           <lid>14</lid>
           <durationType>quarter</durationType>
           </Rest>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Score>
@@ -172,43 +132,19 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>1</linkedTo>
           <StaffType group="pitched">
             </StaffType>
-          <bracket type="0" span="2"/>
+          <bracket type="0" span="2" col="0"/>
           </Staff>
         <Staff id="2">
           <linkedTo>1</linkedTo>
@@ -233,7 +169,6 @@
             <upsideDown>0</upsideDown>
             <useNumbers>1</useNumbers>
             </StaffType>
-          <bracket type="-1" span="0"/>
           </Staff>
         <trackName></trackName>
         <Instrument>
@@ -278,7 +213,6 @@
             <lid>3</lid>
             <sigN>4</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Dynamic>
             <subtype>mf</subtype>
@@ -292,11 +226,7 @@
               <lid>6</lid>
               <Text>
                 <lid>7</lid>
-                <style></style>
-                <halign>center</halign>
-                <valign>center</valign>
-                <xoffset>0</xoffset>
-                <yoffset>-2</yoffset>
+                <align>center,center</align>
                 <text>T</text>
                 </Text>
               <pitch>60</pitch>
@@ -312,11 +242,7 @@
               <lid>9</lid>
               <Text>
                 <lid>10</lid>
-                <style></style>
-                <halign>center</halign>
-                <valign>center</valign>
-                <xoffset>0</xoffset>
-                <yoffset>-2</yoffset>
+                <align>center,center</align>
                 <text>S</text>
                 </Text>
               <pitch>60</pitch>
@@ -332,11 +258,7 @@
               <lid>12</lid>
               <Text>
                 <lid>13</lid>
-                <style></style>
-                <halign>center</halign>
-                <valign>center</valign>
-                <xoffset>0</xoffset>
-                <yoffset>-2</yoffset>
+                <align>center,center</align>
                 <text>P</text>
                 </Text>
               <pitch>60</pitch>
@@ -349,10 +271,6 @@
             <lid>14</lid>
             <durationType>quarter</durationType>
             </Rest>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <Staff id="2">
@@ -368,11 +286,7 @@
               <lid>6</lid>
               <Text>
                 <lid>7</lid>
-                <style></style>
-                <halign>center</halign>
-                <valign>center</valign>
-                <xoffset>0</xoffset>
-                <yoffset>-2</yoffset>
+                <align>center,center</align>
                 <text>T</text>
                 </Text>
               <pitch>60</pitch>
@@ -388,11 +302,7 @@
               <lid>9</lid>
               <Text>
                 <lid>10</lid>
-                <style></style>
-                <halign>center</halign>
-                <valign>center</valign>
-                <xoffset>0</xoffset>
-                <yoffset>-2</yoffset>
+                <align>center,center</align>
                 <text>S</text>
                 </Text>
               <pitch>60</pitch>
@@ -408,11 +318,7 @@
               <lid>12</lid>
               <Text>
                 <lid>13</lid>
-                <style></style>
-                <halign>center</halign>
-                <valign>center</valign>
-                <xoffset>0</xoffset>
-                <yoffset>-2</yoffset>
+                <align>center,center</align>
                 <text>P</text>
                 </Text>
               <pitch>60</pitch>
@@ -425,10 +331,6 @@
             <lid>14</lid>
             <durationType>quarter</durationType>
             </Rest>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <name>Steel Guitar</name>

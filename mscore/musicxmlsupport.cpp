@@ -137,13 +137,14 @@ bool VoiceOverlapDetector::stavesOverlap(const QString& voice) const
 
 QString MusicXMLDrumInstrument::toString() const
       {
-      return QString("chan %1 prog %2 vol %3 pan %4 pitch %5 name %6 head %7 line %8 stemDir %9")
+      return QString("chan %1 prog %2 vol %3 pan %4 pitch %5 name '%6' sound '%7' head %8 line %9 stemDir %10")
              .arg(midiChannel)
              .arg(midiProgram)
              .arg(midiVolume)
              .arg(midiPan)
              .arg(pitch)
              .arg(name)
+             .arg(sound)
              .arg(int(notehead))
              .arg(line)
              .arg(int(stemDirection));
@@ -160,7 +161,7 @@ void ValidatorMessageHandler::handleMessage(QtMsgType type, const QString& descr
       if (!desc.setContent(description, false, &contentError, &contentLine,
                            &contentColumn)) {
             qDebug("ValidatorMessageHandler: could not parse validation error line %d column %d: %s",
-               contentLine, contentColumn, qPrintable(contentError));
+                   contentLine, contentColumn, qPrintable(contentError));
             return;
             }
       QDomElement e = desc.documentElement();
@@ -386,7 +387,7 @@ QString accSymId2MxmlString(const SymId id)
             case SymId::accidentalBuyukMucennebSharp:    s = "slash-sharp";          break;
             case SymId::accidentalBakiyeFlat:            s = "slash-flat";           break;
             case SymId::accidentalBuyukMucennebFlat:     s = "double-slash-flat";    break;
-                  /* TODO
+            /* TODO
             case AccidentalType::FLAT_ARROW_UP:      s = "flat-up";              break;
             case AccidentalType::NATURAL_ARROW_DOWN: s = "natural-down";         break;
             case AccidentalType::SHARP_ARROW_DOWN:   s = "sharp-down";           break;
@@ -398,7 +399,7 @@ QString accSymId2MxmlString(const SymId id)
             case AccidentalType::SHARP_ARROW_UP:     s = "sharp-up";             break;
             case AccidentalType::SORI:               s = "sori";                 break;
             case AccidentalType::KORON:              s = "koron";                break;
-                   */
+             */
             default:
                   qDebug("accSymId2MxmlString: unknown accidental %d", static_cast<int>(id));
             }
@@ -474,7 +475,7 @@ QString accidentalType2MxmlString(const AccidentalType type)
             case AccidentalType::SHARP_ARROW_DOWN:   s = "sharp-down";           break;
             case AccidentalType::NATURAL_ARROW_UP:   s = "natural-up";           break;
             case AccidentalType::MIRRORED_FLAT2:     s = "three-quarters-flat";  break;
-            case AccidentalType::FLAT_FLAT_SLASH:    s = "three-quarters-flat";  break;
+            //case AccidentalType::FLAT_FLAT_SLASH:    s = "three-quarters-flat";  break;
             case AccidentalType::FLAT_ARROW_DOWN:    s = "flat-down";            break;
             case AccidentalType::SHARP_SLASH4:       s = "three-quarters-sharp"; break;
             case AccidentalType::SHARP_ARROW_UP:     s = "sharp-up";             break;
@@ -536,6 +537,57 @@ AccidentalType mxmlString2accidentalType(const QString mxmlName)
       else
             qDebug("mxmlString2accidentalType: unknown accidental '%s'", qPrintable(mxmlName));
       // default: return AccidentalType::NONE
+      return AccidentalType::NONE;
+      }
+
+//---------------------------------------------------------
+//   isAppr
+//---------------------------------------------------------
+
+/**
+ Check if v approximately equals ref.
+ Used to prevent floating point comparison for equality from failing
+ */
+
+static bool isAppr(const double v, const double ref, const double epsilon)
+      {
+      return v > ref - epsilon && v < ref + epsilon;
+      }
+
+//---------------------------------------------------------
+//   microtonalGuess
+//---------------------------------------------------------
+
+/**
+ Convert a MusicXML alter tag into a microtonal accidental in MuseScore enum AccidentalType.
+ Works only for quarter tone, half tone, three-quarters tone and whole tone accidentals.
+ */
+
+AccidentalType microtonalGuess(double val)
+      {
+      const double eps = 0.001;
+      if (isAppr(val, -2, eps))
+            return AccidentalType::FLAT2;
+      else if (isAppr(val, -1.5, eps))
+            return AccidentalType::MIRRORED_FLAT2;
+      else if (isAppr(val, -1, eps))
+            return AccidentalType::FLAT;
+      else if (isAppr(val, -0.5, eps))
+            return AccidentalType::MIRRORED_FLAT;
+      else if (isAppr(val, 0, eps))
+            return AccidentalType::NATURAL;
+      else if (isAppr(val, 0.5, eps))
+            return AccidentalType::SHARP_SLASH;
+      else if (isAppr(val, 1, eps))
+            return AccidentalType::SHARP;
+      else if (isAppr(val, 1.5, eps))
+            return AccidentalType::SHARP_SLASH4;
+      else if (isAppr(val, 2, eps))
+            return AccidentalType::SHARP2;
+      else
+            qDebug("Guess for microtonal accidental corresponding to value %f failed.", val);        // TODO
+
+      // default
       return AccidentalType::NONE;
       }
 

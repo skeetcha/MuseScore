@@ -25,13 +25,15 @@ enum class ImageType : char { NONE, RASTER, SVG };
 //   @@ Image
 //---------------------------------------------------------
 
-class Image : public BSymbol {
+class Image final : public BSymbol {
       union {
             QImage*       rasterDoc;
             QSvgRenderer* svgDoc;
             };
       ImageType imageType;
-      Q_OBJECT
+
+      QSizeF pixel2size(const QSizeF& s) const;
+      QSizeF size2pixel(const QSizeF& s) const;
 
    protected:
       ImageStoreItem* _storeItem;
@@ -46,18 +48,20 @@ class Image : public BSymbol {
       mutable bool _dirty;
 
       virtual bool isEditable() const override { return true; }
-      virtual void editDrag(const EditData&) override;
-      virtual void updateGrips(Grip*, QVector<QRectF>&) const override;
-      virtual int grips() const override { return 2; }
+      virtual void startEdit(EditData&) override;
+      virtual void startDrag(EditData&) override;
+      virtual void editDrag(EditData& ed) override;
+      virtual void endEditDrag(EditData&) override;
+      virtual void updateGrips(EditData&) const override;
       virtual QPointF gripAnchor(Grip) const override { return QPointF(); }
 
    public:
       Image(Score* = 0);
       Image(const Image&);
       ~Image();
-      virtual Image* clone() const override       { return new Image(*this); }
-      virtual Element::Type type() const override { return Element::Type::IMAGE; }
-      virtual void write(Xml& xml) const override;
+      virtual Image* clone() const override     { return new Image(*this); }
+      virtual ElementType type() const override { return ElementType::IMAGE; }
+      virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
       bool load(const QString& s);
       bool loadFromData(const QString&, const QByteArray&);
@@ -74,17 +78,11 @@ class Image : public BSymbol {
       bool sizeIsSpatium() const         { return _sizeIsSpatium; }
       void setSizeIsSpatium(bool val)    { _sizeIsSpatium = val;  }
 
-      QSizeF scale() const;
-      void setScale(const QSizeF&);
-      QSizeF scaleForSize(const QSizeF&) const;
-      QSizeF sizeForScale(const QSizeF&) const;
-
-      QVariant getProperty(P_ID ) const;
-      bool setProperty(P_ID propertyId, const QVariant&);
-      QVariant propertyDefault(P_ID id) const;
+      QVariant getProperty(Pid ) const;
+      bool setProperty(Pid propertyId, const QVariant&);
+      QVariant propertyDefault(Pid id) const;
 
       QSizeF imageSize() const;
-      qreal scaleFactor() const;
 
       void setImageType(ImageType);
       bool isValid() const           { return rasterDoc || svgDoc; }

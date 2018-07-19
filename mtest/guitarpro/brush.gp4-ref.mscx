@@ -1,26 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,14 +23,6 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -90,87 +67,77 @@
           <lid>3</lid>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
-        <Tempo>
-          <tempo>2</tempo>
-          <lid>4</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
-          </Tempo>
         <Dynamic>
           <subtype>f</subtype>
           <velocity>96</velocity>
-          <lid>5</lid>
+          <lid>4</lid>
           </Dynamic>
         <Tempo>
           <tempo>2</tempo>
-          <lid>6</lid>
+          <lid>5</lid>
           <text><sym>metNoteQuarterUp</sym> = 120</text>
           </Tempo>
         <Chord>
-          <lid>7</lid>
+          <lid>6</lid>
           <durationType>whole</durationType>
           <Note>
-            <lid>9</lid>
+            <lid>8</lid>
             <pitch>50</pitch>
             <tpc>16</tpc>
             <fret>0</fret>
             <string>3</string>
             </Note>
           <Note>
-            <lid>8</lid>
+            <lid>7</lid>
             <pitch>53</pitch>
             <tpc>13</tpc>
             <fret>8</fret>
             <string>4</string>
             </Note>
           <Note>
-            <lid>10</lid>
+            <lid>9</lid>
             <pitch>57</pitch>
             <tpc>17</tpc>
             <fret>2</fret>
             <string>2</string>
             </Note>
           <Arpeggio>
-            <lid>11</lid>
+            <lid>10</lid>
             <subtype>5</subtype>
             </Arpeggio>
           </Chord>
         </Measure>
       <Measure number="2">
         <Chord>
-          <lid>13</lid>
+          <lid>12</lid>
           <durationType>whole</durationType>
           <Note>
-            <lid>14</lid>
+            <lid>13</lid>
             <pitch>48</pitch>
             <tpc>14</tpc>
             <fret>3</fret>
             <string>4</string>
             </Note>
           <Note>
-            <lid>15</lid>
+            <lid>14</lid>
             <pitch>53</pitch>
             <tpc>13</tpc>
             <fret>3</fret>
             <string>3</string>
             </Note>
           <Note>
-            <lid>16</lid>
+            <lid>15</lid>
             <pitch>57</pitch>
             <tpc>17</tpc>
             <fret>2</fret>
             <string>2</string>
             </Note>
           <Arpeggio>
-            <lid>17</lid>
+            <lid>16</lid>
             <subtype>4</subtype>
             </Arpeggio>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Score>
@@ -178,43 +145,19 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>1</linkedTo>
           <StaffType group="pitched">
             </StaffType>
-          <bracket type="0" span="2"/>
+          <bracket type="0" span="2" col="0"/>
           </Staff>
         <Staff id="2">
           <linkedTo>1</linkedTo>
@@ -239,7 +182,6 @@
             <upsideDown>0</upsideDown>
             <useNumbers>1</useNumbers>
             </StaffType>
-          <bracket type="-1" span="0"/>
           </Staff>
         <trackName></trackName>
         <Instrument>
@@ -284,87 +226,77 @@
             <lid>3</lid>
             <sigN>4</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
-          <Tempo>
-            <tempo>2</tempo>
-            <lid>4</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
-            </Tempo>
           <Dynamic>
             <subtype>f</subtype>
             <velocity>96</velocity>
-            <lid>5</lid>
+            <lid>4</lid>
             </Dynamic>
           <Tempo>
             <tempo>2</tempo>
-            <lid>6</lid>
+            <lid>5</lid>
             <text><sym>metNoteQuarterUp</sym> = 120</text>
             </Tempo>
           <Chord>
-            <lid>7</lid>
+            <lid>6</lid>
             <durationType>whole</durationType>
             <Note>
-              <lid>9</lid>
+              <lid>8</lid>
               <pitch>50</pitch>
               <tpc>16</tpc>
               <fret>0</fret>
               <string>3</string>
               </Note>
             <Note>
-              <lid>8</lid>
+              <lid>7</lid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>8</fret>
               <string>4</string>
               </Note>
             <Note>
-              <lid>10</lid>
+              <lid>9</lid>
               <pitch>57</pitch>
               <tpc>17</tpc>
               <fret>2</fret>
               <string>2</string>
               </Note>
             <Arpeggio>
-              <lid>11</lid>
+              <lid>10</lid>
               <subtype>5</subtype>
               </Arpeggio>
             </Chord>
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>13</lid>
+            <lid>12</lid>
             <durationType>whole</durationType>
             <Note>
-              <lid>14</lid>
+              <lid>13</lid>
               <pitch>48</pitch>
               <tpc>14</tpc>
               <fret>3</fret>
               <string>4</string>
               </Note>
             <Note>
-              <lid>15</lid>
+              <lid>14</lid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>3</fret>
               <string>3</string>
               </Note>
             <Note>
-              <lid>16</lid>
+              <lid>15</lid>
               <pitch>57</pitch>
               <tpc>17</tpc>
               <fret>2</fret>
               <string>2</string>
               </Note>
             <Arpeggio>
-              <lid>17</lid>
+              <lid>16</lid>
               <subtype>4</subtype>
               </Arpeggio>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <Staff id="2">
@@ -374,69 +306,65 @@
             <accidental>0</accidental>
             </KeySig>
           <Chord>
-            <lid>7</lid>
+            <lid>6</lid>
             <durationType>whole</durationType>
             <Note>
-              <lid>9</lid>
+              <lid>8</lid>
               <pitch>50</pitch>
               <tpc>16</tpc>
               <fret>0</fret>
               <string>3</string>
               </Note>
             <Note>
-              <lid>8</lid>
+              <lid>7</lid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>8</fret>
               <string>4</string>
               </Note>
             <Note>
-              <lid>10</lid>
+              <lid>9</lid>
               <pitch>57</pitch>
               <tpc>17</tpc>
               <fret>2</fret>
               <string>2</string>
               </Note>
             <Arpeggio>
-              <lid>11</lid>
+              <lid>10</lid>
               <subtype>5</subtype>
               </Arpeggio>
             </Chord>
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>13</lid>
+            <lid>12</lid>
             <durationType>whole</durationType>
             <Note>
-              <lid>14</lid>
+              <lid>13</lid>
               <pitch>48</pitch>
               <tpc>14</tpc>
               <fret>3</fret>
               <string>4</string>
               </Note>
             <Note>
-              <lid>15</lid>
+              <lid>14</lid>
               <pitch>53</pitch>
               <tpc>13</tpc>
               <fret>3</fret>
               <string>3</string>
               </Note>
             <Note>
-              <lid>16</lid>
+              <lid>15</lid>
               <pitch>57</pitch>
               <tpc>17</tpc>
               <fret>2</fret>
               <string>2</string>
               </Note>
             <Arpeggio>
-              <lid>17</lid>
+              <lid>16</lid>
               <subtype>4</subtype>
               </Arpeggio>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <name>Track 1</name>

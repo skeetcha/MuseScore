@@ -3,7 +3,7 @@
 //  Linux Music Score Editor
 //  $Id: debugger.h 5383 2012-02-27 07:38:15Z wschweer $
 //
-//  Copyright (C) 2002-2011 Werner Schweer and others
+//  Copyright (C) 2002-2016 Werner Schweer and others
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2.
@@ -44,6 +44,7 @@
 #include "ui_tremolo.h"
 #include "ui_spanner.h"
 #include "ui_slursegment.h"
+#include "ui_tiesegment.h"
 #include "ui_accidental.h"
 #include "ui_clef.h"
 #include "ui_articulationbase.h"
@@ -55,10 +56,12 @@
 #include "ui_spanner.h"
 #include "ui_system.h"
 #include "ui_timesig.h"
+#include "ui_bracket.h"
 
 #include "globals.h"
 #include "libmscore/element.h"
 #include "libmscore/mscore.h"
+#include "abstractdialog.h"
 
 namespace Ms {
 
@@ -76,22 +79,24 @@ class ShowNoteWidget;
 //   Debugger
 //---------------------------------------------------------
 
-class Debugger : public QDialog, public Ui::DebuggerBase {
+class Debugger : public AbstractDialog, public Ui::DebuggerBase {
       Q_OBJECT;
 
       QStack<Element*>backStack;
       QStack<Element*>forwardStack;
 
-      ShowElementBase* elementViews[int(Element::Type::MAXTYPE)];
+      ShowElementBase* elementViews[int(ElementType::MAXTYPE)];
 
       bool searchElement(QTreeWidgetItem* pi, Element* el);
       void updateElement(Element*);
       virtual void showEvent(QShowEvent*);
       void addMeasure(ElementItem* mi, Measure* measure);
+      void readSettings();
 
    protected:
       Score* cs;
       Element* curElement;
+      virtual void retranslate() { retranslateUi(this); }
 
    private slots:
       void itemClicked(QTreeWidgetItem*, int);
@@ -647,6 +652,23 @@ class SlurSegmentView : public ShowElementBase {
       };
 
 //---------------------------------------------------------
+//   TieSegmentView
+//---------------------------------------------------------
+
+class TieSegmentView : public ShowElementBase {
+      Q_OBJECT;
+
+      Ui::TieSegment ss;
+
+   private slots:
+      void slurTieClicked();
+
+   public:
+      TieSegmentView();
+      virtual void setElement(Element*);
+      };
+
+//---------------------------------------------------------
 //   AccidentalView
 //---------------------------------------------------------
 
@@ -761,6 +783,21 @@ class TimeSigView : public ShowElementBase {
       TimeSigView();
       virtual void setElement(Element*);
       };
+
+//---------------------------------------------------------
+//   BracketView
+//---------------------------------------------------------
+
+class BracketView : public ShowElementBase {
+      Q_OBJECT;
+
+      Ui::Bracket br;
+
+   public:
+      BracketView();
+      virtual void setElement(Element*);
+      };
+
 
 } // namespace Ms
 #endif

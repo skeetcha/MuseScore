@@ -195,11 +195,9 @@ static Score::FileError doValidate(const QString& name, QIODevice* dev)
       // validate the data
       QXmlSchemaValidator validator(schema);
       bool valid = validator.validate(dev, QUrl::fromLocalFile(name));
-      qDebug("Validation time elapsed: %d ms", t.elapsed());
+      //qDebug("Validation time elapsed: %d ms", t.elapsed());
 
-      if (valid)
-            qDebug("importMusicXml() file '%s' is a valid MusicXML file", qPrintable(name));
-      else {
+      if (!valid) {
             qDebug("importMusicXml() file '%s' is not a valid MusicXML file", qPrintable(name));
             MScore::lastError = QObject::tr("File '%1' is not a valid MusicXML file").arg(name);
             if (MScore::noGui)
@@ -233,7 +231,7 @@ static Score::FileError doValidateAndImport(Score* score, const QString& name, Q
 
       // actually do the import
       importMusicXMLfromBuffer(score, name, dev);
-      qDebug("importMusicXml() return %d", int(res));
+      //qDebug("importMusicXml() return %d", int(res));
       return res;
       }
 
@@ -247,9 +245,9 @@ static Score::FileError doValidateAndImport(Score* score, const QString& name, Q
  Import MusicXML file \a name into the Score.
  */
 
-Score::FileError importMusicXml(Score* score, const QString& name)
+Score::FileError importMusicXml(MasterScore* score, const QString& name)
       {
-      qDebug("importMusicXml(%p, %s)", score, qPrintable(name));
+      //qDebug("importMusicXml(%p, %s)", score, qPrintable(name));
 
       // open the MusicXML file
       QFile xmlFile(name);
@@ -275,9 +273,9 @@ Score::FileError importMusicXml(Score* score, const QString& name)
  Import compressed MusicXML file \a name into the Score.
  */
 
-Score::FileError importCompressedMusicXml(Score* score, const QString& name)
+Score::FileError importCompressedMusicXml(MasterScore* score, const QString& name)
       {
-      qDebug("importCompressedMusicXml(%p, %s)", score, qPrintable(name));
+      //qDebug("importCompressedMusicXml(%p, %s)", score, qPrintable(name));
 
       // open the compressed MusicXML file
       QFile mxlFile(name);

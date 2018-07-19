@@ -21,9 +21,6 @@ class StringData;
 class Chord;
 class Harmony;
 
-static const int DEFAULT_STRINGS = 6;
-static const int DEFAULT_FRETS = 5;
-
 //---------------------------------------------------------
 //   @@ FretDiagram
 ///    Fretboard diagram
@@ -35,30 +32,10 @@ static const int DEFAULT_FRETS = 5;
 //   @P fretOffset int
 //---------------------------------------------------------
 
-class FretDiagram : public Element {
-
-#ifdef SCRIPT_INTERFACE
-      Q_OBJECT
-
-      Q_PROPERTY(qreal userMag  READ userMag    WRITE undoSetUserMag)
-      Q_PROPERTY(int strings    READ strings    WRITE undoSetStrings)
-      Q_PROPERTY(int frets      READ frets      WRITE undoSetFrets)
-      Q_PROPERTY(int barre      READ barre      WRITE undoSetBarre)
-      Q_PROPERTY(int fretOffset READ fretOffset WRITE undoSetFretOffset)
-
-   public:
-      void undoSetUserMag(qreal val);
-      void undoSetStrings(int val);
-      void undoSetFrets(int val);
-      void undoSetBarre(int val);
-      void undoSetFretOffset(int val);
-
-   private:
-#endif
-
-      int _strings       { DEFAULT_STRINGS };
+class FretDiagram final : public Element {
+      int _strings;
       int maxStrings     { 0 };
-      int _frets         { DEFAULT_FRETS };
+      int _frets;
       int _fretOffset    { 0  };
       int _maxFrets      { 24 };
       int _barre         { 0 };
@@ -75,6 +52,7 @@ class FretDiagram : public Element {
       qreal fretDist;
       QFont font;
       qreal _userMag     { 1.0   };             // allowed 0.1 - 10.0
+      int _numPos;
 
    public:
       FretDiagram(Score* s);
@@ -83,18 +61,20 @@ class FretDiagram : public Element {
       virtual void draw(QPainter*) const override;
       virtual FretDiagram* clone() const override { return new FretDiagram(*this); }
 
+      Segment* segment() { return toSegment(parent()); }
+
       static FretDiagram* fromString(Score* score, const QString &s);
 
-      virtual Element::Type type() const override { return Element::Type::FRET_DIAGRAM; }
+      virtual ElementType type() const override { return ElementType::FRET_DIAGRAM; }
       virtual void layout() override;
-      virtual void write(Xml& xml) const override;
+      virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
       virtual QLineF dragAnchor() const override;
       virtual QPointF pagePos() const override;
 
       // read / write MusicXML
       void readMusicXML(XmlReader& de);
-      void writeMusicXML(Xml& xml) const;
+      void writeMusicXML(XmlWriter& xml) const;
 
       int strings() const    { return _strings; }
       int frets()   const    { return _frets; }
@@ -122,14 +102,14 @@ class FretDiagram : public Element {
       virtual void add(Element*) override;
       virtual void remove(Element*) override;
 
-      virtual bool acceptDrop(const DropData&) const override;
-      virtual Element* drop(const DropData&) override;
+      virtual bool acceptDrop(EditData&) const override;
+      virtual Element* drop(EditData&) override;
 
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
       qreal userMag() const         { return _userMag;   }
       void setUserMag(qreal m)      { _userMag = m;      }

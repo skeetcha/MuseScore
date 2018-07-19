@@ -36,11 +36,18 @@ class EditDrumset : public QDialog, private Ui::EditDrumsetBase {
       Drumset  nDrumset;
 
       void apply();
-      void updateList();
-      void updateList2();
+      void updatePitchesList();
+      void refreshPitchesList();
       void updateExample();
+      
+      virtual void hideEvent(QHideEvent*);
 
-   private slots:
+      void fillCustomNoteheadsDataFromComboboxes(int pitch);
+      void setCustomNoteheadsGUIEnabled(bool enabled);
+      
+      void setEnabledPitchControls(bool enable);
+      void fillNoteheadsComboboxes(bool customGroup, int pitch);
+private slots:
       void bboxClicked(QAbstractButton* button);
       void itemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
       void nameChanged(const QString&);
@@ -48,12 +55,21 @@ class EditDrumset : public QDialog, private Ui::EditDrumsetBase {
       void valueChanged();
       void load();
       void save();
-
+      void customGboxToggled(bool);
+      void customQuarterChanged(int);
+      
    public:
       EditDrumset(const Drumset* ds, QWidget* parent = 0);
       const Drumset* drumset() const { return &nDrumset; }
       };
 
+
+class EditDrumsetTreeWidgetItem : public QTreeWidgetItem {
+   public:
+      EditDrumsetTreeWidgetItem(QTreeWidget * parent)
+         : QTreeWidgetItem(parent)  {};
+      virtual bool operator<(const QTreeWidgetItem & other) const;
+};
 
 
 } // namespace Ms

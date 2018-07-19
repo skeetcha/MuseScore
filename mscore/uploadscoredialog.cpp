@@ -25,9 +25,9 @@ void MuseScore::showUploadScoreDialog()
       {
       if (!currentScore())
             return;
-      if (!currentScore()->sanityCheck()) {
+      if (!currentScore()->sanityCheck(QString())) {
             QMessageBox msgBox;
-            msgBox.setWindowTitle(QObject::tr("MuseScore: Upload Error"));
+            msgBox.setWindowTitle(QObject::tr("Upload Error"));
             msgBox.setText(tr("This score cannot be saved online. Please fix the corrupted measures and try again."));
             msgBox.setDetailedText(MScore::lastError);
             msgBox.setTextFormat(Qt::RichText);
@@ -51,38 +51,61 @@ void MuseScore::showUploadScoreDialog()
 UploadScoreDialog::UploadScoreDialog(LoginManager* loginManager)
  : QDialog(0)
       {
+      setObjectName("UploadScoreDialog");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
       license->addItem(tr("All Rights reserved"), "all-rights-reserved");
       license->addItem(tr("Creative Commons Attribution"), "cc-by");
-	license->addItem(tr("Creative Commons Attribution Share Alike"), "cc-by-sa");
       license->addItem(tr("Creative Commons Attribution No Derivative Works"), "cc-by-nd");
+      license->addItem(tr("Creative Commons Attribution Share Alike"), "cc-by-sa");
       license->addItem(tr("Creative Commons Attribution Noncommercial"), "cc-by-nc");
+      license->addItem(tr("Creative Commons Attribution Noncommercial Non Derivate Works"), "cc-by-nc-nd");
       license->addItem(tr("Creative Commons Attribution Noncommercial Share Alike"), "cc-by-nc-sa");
-	license->addItem(tr("Creative Commons Attribution Noncommercial Non Derivate Works"), "cc-by-nc-nd");
-      license->addItem(tr("Public Domain"), "publicdomain");
-      license->addItem(tr("Creative Commons Zero"), "cc-zero");
+      license->addItem(tr("Creative Commons Copyright Waiver"), "cc-zero");
 
-      licenseHelp->setText(tr("<a href=\"%1\">What does this mean?</a>").arg("http://musescore.com/help/license"));
+      licenseHelp->setText(tr("%1What does this mean?%2")
+                           .arg("<a href=\"http://redirect.musescore.com/help/license\">")
+                           .arg("</a>"));
       QFont font = licenseHelp->font();
       font.setPointSize(8);
+      font.setItalic(true);
       licenseHelp->setFont(font);
 
-      privateHelp->setText(tr("Respect the <a href=\"%1\">community guidelines</a>. Only make your scores accessible to anyone with permission from the right holders.").arg("http://musescore.com/community-guidelines"));
+      privateHelp->setText(tr("Respect the %1community guidelines%2. Only make your scores accessible to anyone with permission from the right holders.")
+                           .arg("<a href=\"https://musescore.com/community-guidelines\">")
+                           .arg("</a>"));
       privateHelp->setFont(font);
 
       tagsHelp->setText(tr("Use a comma to separate the tags"));
       tagsHelp->setFont(font);
 
+      uploadAudioHelp->setFont(font);
+      QString urlHelp = QString("https://musescore.org/redirect/handbook?chapter=upload-score-audio&locale=%1&utm_source=desktop&utm_medium=save-online&utm_content=%2&utm_term=upload-score-audio&utm_campaign=MuseScore%3")
+         .arg(mscore->getLocaleISOCode())
+         .arg(mscore->revision().trimmed())
+         .arg(QString(VERSION));
+      uploadAudioHelp->setText(tr("Render the score with the current synth settings. %1More info%2.")
+                          .arg("<a href=\"" + urlHelp + "\">")
+                          .arg("</a>"));
+      lblChanges->setVisible(false);
+      changes->setVisible(false);
+
+      connect(updateExistingCb, SIGNAL(toggled(bool)), lblChanges, SLOT(setVisible(bool)));
+      connect(updateExistingCb, SIGNAL(toggled(bool)), changes, SLOT(setVisible(bool)));
+
       connect(buttonBox,   SIGNAL(clicked(QAbstractButton*)), SLOT(buttonBoxClicked(QAbstractButton*)));
-      chkSignoutOnExit->setVisible(false);
+      chkSignoutOnExit->setVisible(false);  // currently unused, so hide it
       _loginManager = loginManager;
-      connect(_loginManager, SIGNAL(uploadSuccess(QString)), this, SLOT(uploadSuccess(QString)));
+      connect(_loginManager, SIGNAL(uploadSuccess(QString, QString, QString)), this, SLOT(uploadSuccess(QString, QString, QString)));
       connect(_loginManager, SIGNAL(uploadError(QString)), this, SLOT(uploadError(QString)));
       connect(_loginManager, SIGNAL(getScoreSuccess(QString, QString, bool, QString, QString, QString)), this, SLOT(onGetScoreSuccess(QString, QString, bool, QString, QString, QString)));
       connect(_loginManager, SIGNAL(getScoreError(QString)), this, SLOT(onGetScoreError(QString)));
       connect(_loginManager, SIGNAL(tryLoginSuccess()), this, SLOT(display()));
+      connect(_loginManager, SIGNAL(displaySuccess()), this, SLOT(displaySuccess()));
       connect(btnSignout, SIGNAL(pressed()), this, SLOT(logout()));
+
+      MuseScore::restoreGeometry(this);
       }
 
 //---------------------------------------------------------
@@ -108,12 +131,12 @@ void UploadScoreDialog::upload(int nid)
            QMessageBox::critical(this, tr("Missing title"), tr("Please provide a title"));
            return;
            }
-     Score* score = mscore->currentScore()->rootScore();
-     QString path = QDir::tempPath() + "/temp.mscz";
+     Score* score = mscore->currentScore()->masterScore();
+     QString path = QDir::tempPath() + QString("/temp_%1.mscz").arg(qrand() % 100000);
      if(mscore->saveAs(score, true, path, "mscz")) {
            QString licenseString = license->currentData().toString();
            QString privateString = cbPrivate->isChecked() ? "1" : "0";
-            _loginManager->upload(path, nid, title->text(), description->toPlainText(), privateString, licenseString, tags->text());
+            _loginManager->upload(path, nid, title->text(), description->toPlainText(), privateString, licenseString, tags->text(), changes->toPlainText());
            }
      }
 
@@ -121,20 +144,36 @@ void UploadScoreDialog::upload(int nid)
 //   uploadSuccess
 //---------------------------------------------------------
 
-void UploadScoreDialog::uploadSuccess(const QString& url)
+void UploadScoreDialog::uploadSuccess(const QString& url, const QString& nid, const QString& vid)
       {
       setVisible(false);
-      Score* score = mscore->currentScore()->rootScore();
+      _url = url;
+      Score* score = mscore->currentScore()->masterScore();
       QMap<QString, QString>  metatags = score->metaTags();
-      metatags.insert("source", url);
-      score->startCmd();
-      score->undo(new ChangeMetaTags(score, metatags));
-      score->endCmd();
+      if (metatags.value("source") != url) {
+            metatags.insert("source", url);
+            score->startCmd();
+            score->undo(new ChangeMetaTags(score, metatags));
+            score->endCmd();
+      }
+      if (uploadAudio->isChecked())
+            _loginManager->getMediaUrl(nid, vid, "mp3");
+      else
+            displaySuccess();
+      }
+
+//---------------------------------------------------------
+//   uploadSuccess
+//---------------------------------------------------------
+
+void UploadScoreDialog::displaySuccess()
+      {
       QMessageBox::information(this,
                tr("Success"),
-               tr("Finished! <a href=\"%1\">Go to my score</a>.").arg(url),
+               tr("Finished! %1Go to my score%2.")
+                               .arg("<a href=\"" + _url + "\">")
+                               .arg("</a>"),
                QMessageBox::Ok, QMessageBox::NoButton);
-
       }
 
 //---------------------------------------------------------
@@ -150,26 +189,39 @@ void UploadScoreDialog::uploadError(const QString& error)
       }
 
 //---------------------------------------------------------
+//   showOrHideUploadAudio
+//---------------------------------------------------------
+
+void UploadScoreDialog::showOrHideUploadAudio()
+      {
+      uploadAudio->setEnabled(mscore->canSaveMp3());
+      bool v = !mscore->synthesizerState().isDefaultSynthSoundfont();
+      uploadAudio->setVisible(v);
+      uploadAudioHelp->setVisible(v);
+      }
+
+//---------------------------------------------------------
 //   display
 //---------------------------------------------------------
 
 void UploadScoreDialog::display()
       {
       lblUsername->setText(_loginManager->userName());
-      QString source = mscore->currentScore()->rootScore()->metaTag("source");
+      QString source = mscore->currentScore()->masterScore()->metaTag("source");
       if (!source.isEmpty()) {
             QStringList sl = source.split("/");
             if (sl.length() > 0) {
                   QString nidString = sl.last();
                   bool ok;
-			int nid = nidString.toInt(&ok);
+                  int nid = nidString.toInt(&ok);
                   if (ok) {
-                         _nid = nid;
-                         _loginManager->getScore(nid);
-                         return;
-                         }
+                        _nid = nid;
+                        _loginManager->getScore(nid);
+                        return;
+                        }
                   }
             }
+      showOrHideUploadAudio();
       clear();
       setVisible(true);
       }
@@ -184,13 +236,21 @@ void UploadScoreDialog::onGetScoreSuccess(const QString &t, const QString &desc,
       title->setText(t);
       description->setPlainText(desc);
       cbPrivate->setChecked(priv);
-      int lIndex = license->findData(lic);
+      // publicdomain used to be an option. Not anymore. Remap to CC0
+      QString lice = lic;
+      if (lice == "publicdomain")
+            lice = "cc-zero";
+      int lIndex = license->findData(lice);
       if (lIndex < 0) lIndex = 0;
       license->setCurrentIndex(lIndex);
       tags->setText(tag);
+      changes->clear();
       updateExistingCb->setChecked(true);
       updateExistingCb->setVisible(true);
-      linkToScore->setText(tr("[<a href=\"%1\">link</a>]").arg(url));
+      linkToScore->setText(tr("[%1Link%2]")
+                           .arg("<a href=\"" + url + "\">")
+                           .arg("</a>"));
+      showOrHideUploadAudio();
       setVisible(true);
       }
 
@@ -205,7 +265,7 @@ void UploadScoreDialog::onGetScoreError(const QString& /*error*/)
       }
 
 //---------------------------------------------------------
-//   onGetScoreError
+//   clear
 //---------------------------------------------------------
 
 void UploadScoreDialog::clear()
@@ -214,10 +274,13 @@ void UploadScoreDialog::clear()
       cbPrivate->setChecked(false);
       license->setCurrentIndex(0);
       tags->clear();
+      changes->clear();
       updateExistingCb->setChecked(false);
       updateExistingCb->setVisible(false);
       linkToScore->setText("");
+      uploadAudio->setChecked(false);
       _nid = -1;
+      _url = "";
       }
 
 //---------------------------------------------------------
@@ -228,6 +291,16 @@ void UploadScoreDialog::logout()
       {
       _loginManager->logout();
       setVisible(false);
+      }
+
+//---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void UploadScoreDialog::hideEvent(QHideEvent* event)
+      {
+      MuseScore::saveGeometry(this);
+      QWidget::hideEvent(event);
       }
 }
 

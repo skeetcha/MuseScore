@@ -6,7 +6,7 @@
 #include "libmscore/part.h"
 #include "libmscore/staff.h"
 #include "libmscore/score.h"
-#include "mscore/preferences.h"
+#include "importmidi_operations.h"
 #include "midi/midiinstrument.h"
 
 #include <set>
@@ -14,7 +14,6 @@
 
 namespace Ms {
 
-extern Preferences preferences;
 extern QList<InstrumentGroup*> instrumentGroups;
 
 namespace MidiInstr {
@@ -310,7 +309,7 @@ void sortInstrumentTemplates(
             std::vector<const InstrumentTemplate *> &templates,
             const std::pair<int, int> &minMaxPitch)
       {
-      std::sort(templates.begin(), templates.end(),
+      std::stable_sort(templates.begin(), templates.end(),
                 [minMaxPitch](const InstrumentTemplate *templ1, const InstrumentTemplate *templ2) {
             const int diff1 = findMaxPitchDiff(minMaxPitch, templ1);
             const int diff2 = findMaxPitchDiff(minMaxPitch, templ2);
@@ -353,7 +352,7 @@ std::vector<const InstrumentTemplate *> findSuitableInstruments(const MTrack &tr
 
 void findInstrumentsForAllTracks(const QList<MTrack> &tracks)
       {
-      auto& opers = preferences.midiImportOperations;
+      auto& opers = midiImportOperations;
       auto &instrListOption = opers.data()->trackOpers.msInstrList;
 
       if (opers.data()->processingsOfOpenedFile == 0) {
@@ -371,7 +370,7 @@ void findInstrumentsForAllTracks(const QList<MTrack> &tracks)
 
 void createInstruments(Score *score, QList<MTrack> &tracks)
       {
-      const auto& opers = preferences.midiImportOperations;
+      const auto& opers = midiImportOperations;
       const auto &instrListOption = opers.data()->trackOpers.msInstrList;
 
       const int ntracks = tracks.size();
@@ -398,7 +397,7 @@ void createInstruments(Score *score, QList<MTrack> &tracks)
 
             if (part->nstaves() == 1) {
                   if (track.mtrack->drumTrack()) {
-                        part->staff(0)->setStaffType(StaffType::preset(StaffTypes::PERC_DEFAULT));
+                        part->staff(0)->setStaffType(0, StaffType::preset(StaffTypes::PERC_DEFAULT));
                         if (!instr) {
                               part->instrument()->setDrumset(smDrumset);
                               }
@@ -406,12 +405,12 @@ void createInstruments(Score *score, QList<MTrack> &tracks)
                   }
             else {
                   if (!instr) {
-                        part->staff(0)->setBarLineSpan(2);
-                        part->staff(0)->setBracket(0, BracketType::BRACE);
+                        part->staff(0)->setBarLineSpan(true);
+                        part->staff(0)->setBracketType(0, BracketType::BRACE);
                         }
                   else {
                         part->staff(0)->setBarLineSpan(instr->barlineSpan[0]);
-                        part->staff(0)->setBracket(0, instr->bracket[0]);
+                        part->staff(0)->setBracketType(0, instr->bracket[0]);
                         }
                   part->staff(0)->setBracketSpan(0, 2);
                   }
@@ -419,9 +418,9 @@ void createInstruments(Score *score, QList<MTrack> &tracks)
             if (instr) {
                   for (int i = 0; i != part->nstaves(); ++i) {
                         if (instr->staffTypePreset)
-                              part->staff(i)->setStaffType(instr->staffTypePreset);
-                        part->staff(i)->setLines(instr->staffLines[i]);
-                        part->staff(i)->setSmall(instr->smallStaff[i]);
+                              part->staff(i)->setStaffType(0, instr->staffTypePreset);
+                        part->staff(i)->setLines(0, instr->staffLines[i]);
+                        part->staff(i)->setSmall(0, instr->smallStaff[i]);
                         part->staff(i)->setDefaultClefType(instr->clefTypes[i]);
                         }
                   }
@@ -432,13 +431,23 @@ void createInstruments(Score *score, QList<MTrack> &tracks)
                   tracks[idx].staff = part->staff(i);
                   }
 
+            // only importing a single volume per track here, skip when multiple volumes
+            // are defined, or the single volume is not defined on tick 0.
+            if (track.volumes.size() == 1) {
+                  for (auto &i: track.volumes) {
+                        if (i.first == ReducedFraction(0, 1)) {
+                              part->instrument()->channel(0)->volume = i.second;
+                              }
+                        }
+                  }
+
             score->appendPart(part);
             }
       }
 
 QString msInstrName(int trackIndex)
       {
-      const auto& opers = preferences.midiImportOperations.data()->trackOpers;
+      const auto& opers = midiImportOperations.data()->trackOpers;
 
       const int instrIndex = opers.msInstrIndex.value(trackIndex);
       const auto &trackInstrList = opers.msInstrList.value(trackIndex);

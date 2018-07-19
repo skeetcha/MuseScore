@@ -76,12 +76,9 @@ static void addHeader(QString& out)
 
 static void addFooter(QString& out)
       {
-/*      out += "<div class=\"footer\"><a href=\"http://musescore.org/\">MuseScore</a> - Free music notation software<br />\n"
-             "&copy; 2002-2014 Werner Schweer &amp; others</div>\n"
+      out += /* "<div class=\"footer\"><a href=\"https://musescore.org/\">MuseScore</a> - Free music notation software<br/>\n"
+             "&copy; 2002-2016 Werner Schweer &amp; others</div>\n" */
              "</body>\n"
-             "</html>\n";
-      */
-      out += "</body>\n"
              "</html>\n";
       }
 
@@ -105,8 +102,8 @@ static void parseClass(const QString& name, const QString& in)
       QRegExp re3("Q_INVOKABLE +([^ ]+) +(\\w+\\([^\\)]*\\))\\s+const\\s*([^\\{]*)\\{");
 
       QRegExp reD("//@ (.*)");
-      QRegExp re4 ("class +(\\w+) *: *public +(\\w+) *\\{");
-      QRegExp re4b("class +(\\w+) *: *public +(\\w+), *public");
+      QRegExp re4 ("class +(\\w+) *(?:final)* *: *public +(\\w+) *\\{");
+      QRegExp re4b("class +(\\w+) *(?:final)* *: *public +(\\w+), *public");
 
       Q_ASSERT(re1.isValid() && re2.isValid() && re3.isValid());
 
@@ -216,6 +213,35 @@ static void scanFile(const QString& in)
       }
 
 //---------------------------------------------------------
+//   linkClass
+//
+//   Given something like "array[Note]", will return "array[<a href="note.html">Note</a>]"
+//---------------------------------------------------------
+static QRegExp reClasses("");
+
+static QString linkClass(const QString& in)
+      {
+      if (reClasses.pattern().isEmpty()) {
+            QStringList classNames;
+            foreach(const Class& cl, classes)
+                  classNames.append(cl.name);
+
+            reClasses.setPattern("\\b(" + classNames.join('|') + ")\\b");
+            Q_ASSERT(reClasses.isValid());
+            }
+
+      int pos = reClasses.indexIn(in);
+      if (pos != -1) {
+            QString out(in);
+            out.insert(pos + reClasses.matchedLength(), "</a>");
+            out.insert(pos, "<a href=\"" + in.mid(pos, reClasses.matchedLength()).toLower() + ".html\">");
+
+            return out;
+            }
+      return in;
+      }
+
+//---------------------------------------------------------
 //   writeOutput
 //---------------------------------------------------------
 
@@ -245,34 +271,18 @@ static void writeOutput()
                   out += "</div>\n";
                   }
             else
-                  out += "<br />";
+                  out += "<br/>";
 
             if (!cl.procs.isEmpty()) {
                   out += "<h4>Methods</h4>\n";
                   out += "<div class=\"methods\">\n";
                   foreach(const Proc& p, cl.procs) {
                         out += "<div class=\"method\">\n";
-
-                        QString type(p.type);
-                        bool found = false;
-                        if (type.endsWith("*")) {
-                              type = type.left(type.size()-1);
-                              foreach(const Class& cl, classes) {
-                                    if (cl.name == type) {
-                                          found = true;
-                                          break;
-                                          }
-                                    }
-                              }
-                        if (found)
-                              out += QString("<a href=\"%1.html\">%2</a> ")
-                                 .arg(type.toLower()).arg(type);
-                        else
-                              out += QString("%1 ").arg(type);
+                        out += linkClass(p.type) + " ";
 
                         QRegExp re("([^(]+)\\(([^)]*)\\)");
                         if (re.indexIn(p.name, 0) != -1) {
-                              out += QString("<b>%2</b>(%3)\n") .arg(re.cap(1)).arg(re.cap(2));
+                              out += QString("<b>%2</b>(%3)\n") .arg(re.cap(1)).arg(linkClass(re.cap(2)));
                               }
                         else {
                               out += QString("<b>%2</b>\n").arg(p.name);
@@ -299,7 +309,7 @@ static void writeOutput()
                         out += QString("<td class=\"prop-name\">%1</td>"
                                "<td class=\"prop-type\">%2</td>"
                                "<td class=\"prop-desc\">%3</td>")
-                               .arg(m.name).arg(m.type).arg(m.description);
+                               .arg(m.name).arg(linkClass(m.type)).arg(m.description);
                         out += "</tr>\n";
                         count++;
                         }
@@ -310,7 +320,7 @@ static void writeOutput()
             QString ofile = dstPath + "/plugins/" + cl.name.toLower() + ".html";
             QFile of(ofile);
             if (!of.open(QIODevice::WriteOnly)) {
-                  printf("open <%s> failed: %s\n", qPrintable(ofile), qPrintable(of.errorString()));
+                  fprintf(stderr, "open <%s> failed: %s\n", qPrintable(ofile), qPrintable(of.errorString()));
                   exit(-4);
                   }
             of.write(out.toUtf8());
@@ -322,8 +332,14 @@ static void writeOutput()
       //
       QString out;
       addHeader(out);
-      out += "<h2>Score Elements</h2>\n"
-             "<ul>\n";
+      out += "<h2>Score Elements</h2>\n";
+      out += "<h3>Quick Guide</h3>\n";
+      out += "<p>Below are all the various classes you can use."
+             "<br>The main class is <a href='musescore.html'>MuseScore</a>."
+             "<br>Use 'New' to create a skeleton plugin."
+             "<br>Plugins are coded in <a href='http://doc.qt.io/qt-5/qmlapplications.html#what-is-qml'>QML</a>"
+             "</p>\n";
+      out += "<ul>\n";
       qSort(classes);
       foreach(const Class& s, classes) {
             out += QString("<li><a href=\"%1\">%2</a></li>\n")
@@ -335,7 +351,7 @@ static void writeOutput()
       QString ofile = dstPath + "/plugins/plugins.html";
       QFile of(ofile);
       if (!of.open(QIODevice::WriteOnly)) {
-            printf("open <%s> failed\n", qPrintable(ofile));
+            fprintf(stderr, "open <%s> failed\n", qPrintable(ofile));
             exit(-4);
             }
       of.write(out.toUtf8());

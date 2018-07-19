@@ -129,6 +129,9 @@ private:
 struct MusicXMLDrumInstrument {
       int pitch;                       // pitch read from MusicXML
       QString name;                    // name read from MusicXML
+      QString sound;                   // sound read from MusicXML
+      QString virtLib;                 // virtual library read from MusicXML
+      QString virtName;                // virtualname read from MusicXML
       int midiChannel;                 // channel read from MusicXML
       int midiPort;                    // port read from MusicXML
       int midiProgram;                 // program read from MusicXML
@@ -136,19 +139,19 @@ struct MusicXMLDrumInstrument {
       int midiPan;                     // pan value read from MusicXML
       NoteHead::Group notehead;        ///< notehead symbol set
       int line;                        ///< place notehead onto this line
-      MScore::Direction stemDirection;
+      Direction stemDirection;
 
       QString toString() const;
 
       MusicXMLDrumInstrument()
             : pitch(-1), name(), midiChannel(-1), midiPort(-1), midiProgram(-1), midiVolume(100), midiPan(63),
-              notehead(NoteHead::Group::HEAD_INVALID), line(0), stemDirection(MScore::Direction::AUTO) {}
+            notehead(NoteHead::Group::HEAD_INVALID), line(0), stemDirection(Direction::AUTO) {}
       MusicXMLDrumInstrument(QString s)
             : pitch(-1), name(s), midiChannel(-1), midiPort(-1), midiProgram(-1), midiVolume(100), midiPan(63),
-              notehead(NoteHead::Group::HEAD_INVALID), line(0), stemDirection(MScore::Direction::AUTO) {}
-      MusicXMLDrumInstrument(int p, QString s, NoteHead::Group nh, int l, MScore::Direction d)
+            notehead(NoteHead::Group::HEAD_INVALID), line(0), stemDirection(Direction::AUTO) {}
+      MusicXMLDrumInstrument(int p, QString s, NoteHead::Group nh, int l, Direction d)
             : pitch(p), name(s), midiChannel(-1), midiPort(-1), midiProgram(-1), midiVolume(100), midiPan(63),
-              notehead(nh), line(l), stemDirection(d) {}
+            notehead(nh), line(l), stemDirection(d) {}
       };
 
 /**
@@ -169,7 +172,7 @@ public:
       static Fraction durationAsFraction(const int divisions, const QDomElement e);
       static Fraction noteTypeToFraction(QString type);
       static Fraction calculateFraction(QString type, int dots, int normalNotes, int actualNotes);
-};
+      };
 
 //---------------------------------------------------------
 //   ValidatorMessageHandler
@@ -199,6 +202,7 @@ extern QString accSymId2MxmlString(const SymId id);
 extern QString accidentalType2MxmlString(const AccidentalType type);
 extern AccidentalType mxmlString2accidentalType(const QString mxmlName);
 extern SymId mxmlString2accSymId(const QString mxmlName);
+extern AccidentalType microtonalGuess(double val);
 
 } // namespace Ms
 #endif

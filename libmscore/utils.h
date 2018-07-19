@@ -19,6 +19,7 @@
 namespace Ms {
 
 enum class Key;
+enum class SymId;
 
 //---------------------------------------------------------
 //   cycles
@@ -37,6 +38,9 @@ class Segment;
 class System;
 class Element;
 class Note;
+class Tuplet;
+class BarLine;
+
 enum class ClefType : signed char;
 
 extern QRectF handleRect(const QPointF& pos);
@@ -46,10 +50,6 @@ extern int pitchKeyAdjust(int note, Key);
 extern int line2pitch(int line, ClefType clef, Key);
 extern int y2pitch(qreal y, ClefType clef, qreal spatium);
 extern int quantizeLen(int, int);
-extern void selectNoteMessage();
-extern void selectNoteRestMessage();
-extern void selectNoteSlurMessage();
-extern void selectStavesMessage();
 extern QString pitch2string(int v);
 extern void transposeInterval(int pitch, int tpc, int* rpitch, int* rtpc,
    Interval, bool useDoubleSharpsFlats);
@@ -65,6 +65,7 @@ extern int version();
 extern int majorVersion();
 extern int minorVersion();
 extern int updateVersion();
+extern bool compareVersion(QString v1, QString v2);
 
 extern Note* nextChordNote(Note* note);
 extern Note* prevChordNote(Note* note);
@@ -83,6 +84,8 @@ extern int relStep(int pitch, int tpc, ClefType clef);
 extern int pitch2step(int pitch);
 extern int step2pitch(int step);
 
+extern Segment* skipTuplet(Tuplet* tuplet);
+extern std::vector<SymId> toTimeSigString(const QString&);
 
 
 }     // namespace Ms

@@ -26,6 +26,7 @@
 #include "textpalette.h"
 #include "libmscore/mscore.h"
 #include "preferences.h"
+#include "scoreview.h"
 
 namespace Ms {
 
@@ -52,13 +53,16 @@ TextTools* MuseScore::textTools()
 TextTools::TextTools(QWidget* parent)
    : QDockWidget(parent)
       {
-      _textElement = 0;
       setObjectName("text-tools");
       setWindowTitle(tr("Text Tools"));
       setAllowedAreas(Qt::DockWidgetAreas(Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea));
+      setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+
+      text = nullptr;
+      cursor = nullptr;
 
       QToolBar* tb = new QToolBar(tr("Text Edit"));
-      tb->setIconSize(QSize(preferences.iconWidth * guiScaling, preferences.iconHeight * guiScaling));
+      tb->setIconSize(QSize(preferences.getInt(PREF_UI_THEME_ICONWIDTH) * guiScaling, preferences.getInt(PREF_UI_THEME_ICONHEIGHT) * guiScaling));
 
       showKeyboard = getAction("show-keys");
       showKeyboard->setCheckable(true);
@@ -89,10 +93,12 @@ TextTools::TextTools(QWidget* parent)
       tb->addSeparator();
 
       typefaceFamily = new QFontComboBox(this);
+      typefaceFamily->setEditable(false);
       tb->addWidget(typefaceFamily);
 
       typefaceSize = new QDoubleSpinBox(this);
       typefaceSize->setFocusPolicy(Qt::ClickFocus);
+      typefaceSize->setMinimum(1);
       tb->addWidget(typefaceSize);
 
       setWidget(tb);
@@ -108,15 +114,6 @@ TextTools::TextTools(QWidget* parent)
       connect(typefaceSubscript,   SIGNAL(triggered(bool)), SLOT(subscriptClicked(bool)));
       connect(typefaceSuperscript, SIGNAL(triggered(bool)), SLOT(superscriptClicked(bool)));
       connect(showKeyboard,        SIGNAL(toggled(bool)),   SLOT(showKeyboardClicked(bool)));
-      }
-
-//---------------------------------------------------------
-//   setText
-//---------------------------------------------------------
-
-void TextTools::setText(Text* te)
-      {
-      _textElement = te;
       }
 
 //---------------------------------------------------------
@@ -140,17 +137,16 @@ void TextTools::blockAllSignals(bool val)
 //   updateTools
 //---------------------------------------------------------
 
-void TextTools::updateTools()
+void TextTools::updateTools(EditData& ed)
       {
-      if (!_textElement->editMode())
-            qFatal("TextTools::updateTools(): not in edit mode");
+      text   = toTextBase(ed.element);
+      cursor = text->cursor(ed);
       blockAllSignals(true);
-      TextCursor* cursor = _textElement->cursor();
       CharFormat* format = cursor->format();
 
       QFont f(format->fontFamily());
       typefaceFamily->setCurrentFont(f);
-      typefaceFamily->setEnabled(cursor->format()->type() == CharFormatType::TEXT);
+      typefaceFamily->setEnabled(true);
       typefaceSize->setValue(format->fontSize());
 
       typefaceItalic->setChecked(format->italic());
@@ -168,14 +164,9 @@ void TextTools::updateTools()
 
 void TextTools::updateText()
       {
-      if (!_textElement)
+      if (!text)
             return;
-      if (_textElement->type() == Element::Type::LYRICS) {
-            _textElement->score()->setLayoutAll(true);
-            _textElement->score()->end();
-            }
-      else
-            layoutText();
+      layoutText();
       }
 
 //---------------------------------------------------------
@@ -184,8 +175,8 @@ void TextTools::updateText()
 
 void TextTools::layoutText()
       {
-      _textElement->score()->setLayoutAll(true);
-      _textElement->score()->end();
+      text->triggerLayout();
+      text->score()->update();
       }
 
 //---------------------------------------------------------
@@ -194,8 +185,8 @@ void TextTools::layoutText()
 
 void TextTools::sizeChanged(double value)
       {
-      _textElement->setFormat(FormatId::FontSize, value);
-      _textElement->cursor()->format()->setFontSize(value);
+      cursor->setFormat(FormatId::FontSize, value);
+      cursor->format()->setFontSize(value);
       updateText();
       }
 
@@ -205,8 +196,8 @@ void TextTools::sizeChanged(double value)
 
 void TextTools::fontChanged(const QFont& f)
       {
-      if (_textElement)
-            _textElement->setFormat(FormatId::FontFamily, f.family());
+      if (text)
+            cursor->setFormat(FormatId::FontFamily, f.family());
       if (textPalette)
             textPalette->setFont(f.family());
       updateText();
@@ -218,7 +209,7 @@ void TextTools::fontChanged(const QFont& f)
 
 void TextTools::boldClicked(bool val)
       {
-      _textElement->setFormat(FormatId::Bold, val);
+      cursor->setFormat(FormatId::Bold, val);
       updateText();
       }
 
@@ -258,7 +249,7 @@ void TextTools::toggleUnderline()
 
 void TextTools::underlineClicked(bool val)
       {
-      _textElement->setFormat(FormatId::Underline, val);
+      cursor->setFormat(FormatId::Underline, val);
       updateText();
       }
 
@@ -268,7 +259,7 @@ void TextTools::underlineClicked(bool val)
 
 void TextTools::italicClicked(bool val)
       {
-      _textElement->setFormat(FormatId::Italic, val);
+      cursor->setFormat(FormatId::Italic, val);
       updateText();
       }
 
@@ -278,7 +269,7 @@ void TextTools::italicClicked(bool val)
 
 void TextTools::subscriptClicked(bool val)
       {
-      _textElement->setFormat(FormatId::Valign, int(val ? VerticalAlignment::AlignSubScript : VerticalAlignment::AlignNormal));
+      cursor->setFormat(FormatId::Valign, int(val ? VerticalAlignment::AlignSubScript : VerticalAlignment::AlignNormal));
       typefaceSuperscript->blockSignals(true);
       typefaceSuperscript->setChecked(false);
       typefaceSuperscript->blockSignals(false);
@@ -291,7 +282,7 @@ void TextTools::subscriptClicked(bool val)
 
 void TextTools::superscriptClicked(bool val)
       {
-      _textElement->setFormat(FormatId::Valign, int(val ? VerticalAlignment::AlignSuperScript : VerticalAlignment::AlignNormal));
+      cursor->setFormat(FormatId::Valign, int(val ? VerticalAlignment::AlignSuperScript : VerticalAlignment::AlignNormal));
       typefaceSubscript->blockSignals(true);
       typefaceSubscript->setChecked(false);
       typefaceSubscript->blockSignals(false);
@@ -307,8 +298,8 @@ void TextTools::showKeyboardClicked(bool val)
       if (val) {
             if (textPalette == 0)
                   textPalette = new TextPalette(mscore);
-            textPalette->setText(_textElement);
-            textPalette->setFont(_textElement->cursor()->format()->fontFamily());
+            textPalette->setText(text);
+            textPalette->setFont(cursor->format()->fontFamily());
             textPalette->show();
             }
       else {

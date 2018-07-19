@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
@@ -9,22 +9,6 @@
       <maxSystemDistance>12</maxSystemDistance>
       <measureSpacing>1</measureSpacing>
       <smallStaffMag>0.666667</smallStaffMag>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.8</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -37,51 +21,17 @@
     <metaTag name="lyricist"></metaTag>
     <metaTag name="movementNumber"></metaTag>
     <metaTag name="movementTitle"></metaTag>
+    <metaTag name="originalFormat">cap</metaTag>
     <metaTag name="poet"></metaTag>
     <metaTag name="source"></metaTag>
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
           </StaffType>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <trackName>Unnamed1</trackName>
       <Instrument>
@@ -106,7 +56,6 @@
         <TimeSig>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Beam id="1">
           <l1>8</l1>
@@ -117,7 +66,6 @@
           <actualNotes>3</actualNotes>
           <baseNote>eighth</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>3</text>
             </Number>
           </Tuplet>
@@ -194,7 +142,6 @@
           <actualNotes>5</actualNotes>
           <baseNote>eighth</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>5</text>
             </Number>
           </Tuplet>
@@ -275,7 +222,6 @@
           <actualNotes>7</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>7</text>
             </Number>
           </Tuplet>
@@ -288,7 +234,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4388</tick>
+        <move>137/480</move>
         <Chord>
           <Tuplet>3</Tuplet>
           <durationType>16th</durationType>
@@ -298,7 +244,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4456</tick>
+        <move>77/240</move>
         <Chord>
           <Tuplet>3</Tuplet>
           <durationType>16th</durationType>
@@ -308,7 +254,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4524</tick>
+        <move>57/160</move>
         <Chord>
           <Tuplet>3</Tuplet>
           <durationType>16th</durationType>
@@ -318,7 +264,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4592</tick>
+        <move>47/120</move>
         <Chord>
           <Tuplet>3</Tuplet>
           <durationType>16th</durationType>
@@ -328,7 +274,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4660</tick>
+        <move>41/96</move>
         <Chord>
           <Tuplet>3</Tuplet>
           <durationType>16th</durationType>
@@ -338,7 +284,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4728</tick>
+        <move>37/80</move>
         <Chord>
           <Tuplet>3</Tuplet>
           <durationType>16th</durationType>
@@ -348,7 +294,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>4800</tick>
+        <move>1/2</move>
         <Chord>
           <durationType>quarter</durationType>
           <Note>
@@ -388,7 +334,6 @@
           <actualNotes>9</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>9</text>
             </Number>
           </Tuplet>
@@ -401,7 +346,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6346</tick>
+        <move>293/960</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -411,7 +356,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6452</tick>
+        <move>173/480</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -421,7 +366,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6558</tick>
+        <move>133/320</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -431,7 +376,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6664</tick>
+        <move>113/240</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -441,7 +386,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6770</tick>
+        <move>101/192</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -451,7 +396,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6876</tick>
+        <move>93/160</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -461,7 +406,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>6982</tick>
+        <move>611/960</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -471,7 +416,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>7088</tick>
+        <move>83/120</move>
         <Chord>
           <Tuplet>4</Tuplet>
           <durationType>16th</durationType>
@@ -481,7 +426,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>7200</tick>
+        <move>3/4</move>
         <Chord>
           <durationType>quarter</durationType>
           <Note>
@@ -514,7 +459,6 @@
           <actualNotes>6</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>6</text>
             </Number>
           </Tuplet>
@@ -598,7 +542,6 @@
         <TimeSig>
           <sigN>12</sigN>
           <sigD>8</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Beam id="6">
           <l1>8</l1>
@@ -609,7 +552,6 @@
           <actualNotes>2</actualNotes>
           <baseNote>eighth</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>2</text>
             </Number>
           </Tuplet>
@@ -679,7 +621,6 @@
           <actualNotes>4</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>4</text>
             </Number>
           </Tuplet>
@@ -776,7 +717,6 @@
           <actualNotes>8</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>8</text>
             </Number>
           </Tuplet>
@@ -894,7 +834,6 @@
           <actualNotes>10</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>10</text>
             </Number>
           </Tuplet>
@@ -1030,7 +969,6 @@
           <actualNotes>14</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>14</text>
             </Number>
           </Tuplet>
@@ -1043,7 +981,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21222</tick>
+        <move>17/320</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1053,7 +991,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21324</tick>
+        <move>17/160</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1063,7 +1001,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21426</tick>
+        <move>51/320</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1073,7 +1011,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21528</tick>
+        <move>17/80</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1083,7 +1021,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21630</tick>
+        <move>17/64</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1093,7 +1031,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21732</tick>
+        <move>51/160</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1103,7 +1041,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21834</tick>
+        <move>119/320</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1113,7 +1051,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>21936</tick>
+        <move>17/40</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1123,7 +1061,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>22038</tick>
+        <move>153/320</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1133,7 +1071,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>22140</tick>
+        <move>17/32</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1143,7 +1081,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>22242</tick>
+        <move>187/320</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1153,7 +1091,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>22344</tick>
+        <move>51/80</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1163,7 +1101,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>22446</tick>
+        <move>221/320</move>
         <Chord>
           <Tuplet>10</Tuplet>
           <durationType>16th</durationType>
@@ -1173,7 +1111,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>22560</tick>
+        <move>3/4</move>
         <Beam id="11">
           <l1>8</l1>
           <l2>8</l2>
@@ -1242,7 +1180,6 @@
         <TimeSig>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Beam id="13">
           <l1>8</l1>
@@ -1253,7 +1190,6 @@
           <actualNotes>11</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>11</text>
             </Number>
           </Tuplet>
@@ -1356,7 +1292,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>24720</tick>
+        <move>3/8</move>
         <Chord>
           <durationType>quarter</durationType>
           <Note>
@@ -1396,7 +1332,6 @@
           <actualNotes>12</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>12</text>
             </Number>
           </Tuplet>
@@ -1544,7 +1479,6 @@
           <actualNotes>13</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>13</text>
             </Number>
           </Tuplet>
@@ -1557,7 +1491,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>27913</tick>
+        <move>73/1920</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1567,7 +1501,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>27986</tick>
+        <move>73/960</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1577,7 +1511,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28059</tick>
+        <move>73/640</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1587,7 +1521,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28132</tick>
+        <move>73/480</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1597,7 +1531,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28205</tick>
+        <move>73/384</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1607,7 +1541,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28278</tick>
+        <move>73/320</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1617,7 +1551,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28351</tick>
+        <move>511/1920</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1627,7 +1561,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28424</tick>
+        <move>73/240</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1637,7 +1571,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28497</tick>
+        <move>219/640</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1647,7 +1581,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28570</tick>
+        <move>73/192</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1657,7 +1591,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28643</tick>
+        <move>803/1920</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1667,7 +1601,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28716</tick>
+        <move>73/160</move>
         <Chord>
           <Tuplet>13</Tuplet>
           <durationType>16th</durationType>
@@ -1677,7 +1611,7 @@
             <tpc>14</tpc>
             </Note>
           </Chord>
-        <tick>28800</tick>
+        <move>1/2</move>
         <Beam id="17">
           <l1>8</l1>
           <l2>8</l2>
@@ -1732,7 +1666,6 @@
           <actualNotes>15</actualNotes>
           <baseNote>16th</baseNote>
           <Number>
-            <style>Tuplet</style>
             <text>15</text>
             </Number>
           </Tuplet>

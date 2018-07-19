@@ -17,6 +17,7 @@
 #include "libmscore/tuplet.h"
 #include "libmscore/chord.h"
 #include "libmscore/measure.h"
+#include "libmscore/timesig.h"
 
 #define DIR QString("libmscore/tuplet/")
 
@@ -32,10 +33,15 @@ class TestTuplet : public QObject, public MTest
 
       bool createTuplet(int n, ChordRest* cr);
       void tuplet(const char* p1, const char* p2);
+      void split(const char* p1, const char* p2);
 
    private slots:
       void initTestCase();
-      void join1() { tuplet("tuplet1.mscx",  "tuplet1-ref.mscx"); }
+      void join1()  { tuplet("tuplet1.mscx", "tuplet1-ref.mscx"); }
+      void split1() { split("split1.mscx",   "split1-ref.mscx");  }
+      void split2() { split("split2.mscx",   "split2-ref.mscx");  }
+      void split3() { split("split3.mscx",   "split3-ref.mscx");  }
+      void split4() { split("split4.mscx",   "split4-ref.mscx");  }
       };
 
 //---------------------------------------------------------
@@ -101,8 +107,7 @@ bool TestTuplet::createTuplet(int n, ChordRest* cr)
 
 void TestTuplet::tuplet(const char* p1, const char* p2)
       {
-      Score* score = readScore(DIR + p1);
-      score->doLayout();
+      MasterScore* score = readScore(DIR + p1);
       Measure* m1 = score->firstMeasure();
       Measure* m2 = m1->nextMeasure();
 
@@ -110,7 +115,7 @@ void TestTuplet::tuplet(const char* p1, const char* p2)
       QVERIFY(m2 != 0);
       QVERIFY(m1 != m2);
 
-      Segment* s = m2->first(Segment::Type::ChordRest);
+      Segment* s = m2->first(SegmentType::ChordRest);
       QVERIFY(s != 0);
       Ms::Chord* c = static_cast<Ms::Chord*>(s->element(0));
       QVERIFY(c != 0);
@@ -120,6 +125,30 @@ void TestTuplet::tuplet(const char* p1, const char* p2)
       QVERIFY(saveCompareScore(score, p1, DIR + p2));
       delete score;
       }
+
+//---------------------------------------------------------
+//   split
+//---------------------------------------------------------
+
+void TestTuplet::split(const char* p1, const char* p2)
+      {
+      MasterScore* score = readScore(DIR + p1);
+      Measure* m = score->firstMeasure();
+      TimeSig* ts = new TimeSig(score);
+      ts->setSig(Fraction(3, 4), TimeSigType::NORMAL);
+
+      EditData dd(0);
+      dd.element = ts;
+      dd.modifiers = 0;
+      dd.dragOffset = QPointF();
+      dd.pos = m->pagePos();
+      m->drop(dd);
+      score->doLayout();
+
+      QVERIFY(saveCompareScore(score, p1, DIR + p2));
+      delete score;
+      }
+
 
 QTEST_MAIN(TestTuplet)
 #include "tst_tuplet.moc"

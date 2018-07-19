@@ -38,8 +38,8 @@ static const std::vector<ParDescr> pd = {
       { R_EQ1FR, "eq1fr", true,   logf(40.0),  logf(2.5e3), 160.0 },
       { R_EQ1GN, "eq1gn", false, -15.0,        15.0,        0.0   },
 
-      { R_EQ2FR, "eg2fr", true,   logf(160.0), logf(10e3),  2.5e3 },
-      { R_EQ2GN, "eg2gn", false, -15.0,        15.0,        0.0   },
+      { R_EQ2FR, "eq2fr", true,   logf(160.0), logf(10e3),  2.5e3 },
+      { R_EQ2GN, "eq2gn", false, -15.0,        15.0,        0.0   },
 
       { R_OPMIX, "opmix", false,  0.0,         1.0,         0.5   }
       };
@@ -340,10 +340,10 @@ void ZitaReverb::init(float fsamp)
 
       _ipdel = 0.04f;
       _xover = 200.0f;
-      _rtlow = 3.0f;
+      _rtlow = 1.4f;
       _rtmid = 2.0f;
       _fdamp = 3e3f;
-      _opmix = 0.5f;
+      _opmix = 0.33f;
 
       _g0 = _d0 = 0;
       _g1 = _d1 = 0;

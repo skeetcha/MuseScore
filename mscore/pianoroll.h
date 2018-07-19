@@ -13,15 +13,15 @@
 #ifndef __PIANOROLL_H__
 #define __PIANOROLL_H__
 
-#include "libmscore/mscoreview.h"
-#include "libmscore/pos.h"
-#include "libmscore/score.h"
-#include "libmscore/select.h"
-
 namespace Awl {
       class PitchEdit;
       class PosLabel;
       };
+
+#include "libmscore/mscoreview.h"
+#include "libmscore/pos.h"
+#include "libmscore/score.h"
+#include "libmscore/select.h"
 
 namespace Ms {
 
@@ -32,8 +32,6 @@ class Note;
 class Ruler;
 class Seq;
 class WaveView;
-
-enum class Grip : signed char;
 
 //---------------------------------------------------------
 //   PianorollEditor
@@ -57,9 +55,11 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       QAction* showWave;
       WaveView* waveView;
       QSplitter* split;
+      QList<QAction*> actions;
 
       void updateVelocity(Note* note);
       void updateSelection();
+      void readSettings();
 
    private slots:
       void selectionChanged();
@@ -95,7 +95,6 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       virtual QCursor cursor() const;
       virtual void setCursor(const QCursor&);
       virtual int gripCount() const;
-      virtual const QRectF& getGrip(Grip) const;
       virtual const QTransform& matrix() const;
       virtual void setDropRectangle(const QRectF&);
       virtual void cmdAddSlur(Note*, Note*);
@@ -108,6 +107,7 @@ class PianorollEditor : public QMainWindow, public MuseScoreView {
       void setLocator(POS pos, int tick) { locator[int(pos)].setTick(tick); }
 
       void writeSettings();
+      virtual const QRect geometry() const override { return QMainWindow::geometry(); }
       };
 
 

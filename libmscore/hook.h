@@ -23,16 +23,14 @@ class Chord;
 //   @@ Hook
 //---------------------------------------------------------
 
-class Hook : public Symbol {
-      Q_OBJECT
-
+class Hook final : public Symbol {
       int _hookType;
 
    public:
       Hook(Score* = 0);
       virtual Hook* clone() const override        { return new Hook(*this); }
       virtual qreal mag() const override          { return parent()->mag(); }
-      virtual Element::Type type() const override { return Element::Type::HOOK; }
+      virtual ElementType type() const override   { return ElementType::HOOK; }
       void setHookType(int v);
       int hookType() const                        { return _hookType; }
       virtual void layout() override;

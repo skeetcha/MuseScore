@@ -25,6 +25,9 @@
 #include "note.h"
 #include "chord.h"
 #include "key.h"
+#include "sig.h"
+#include "tuplet.h"
+#include "sym.h"
 
 namespace Ms {
 
@@ -45,8 +48,9 @@ Measure* Score::tick2measure(int tick) const
       {
       if (tick == -1)
             return lastMeasure();
-      Measure* lm = 0;
 
+//      Q_ASSERT(firstMeasure());
+      Measure* lm = 0;
       for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
             if (tick < m->tick())
                   return lm;
@@ -101,12 +105,21 @@ MeasureBase* Score::tick2measureBase(int tick) const
 //   tick2segment
 //---------------------------------------------------------
 
-Segment* Score::tick2segmentMM(int tick, bool first, Segment::Type st) const
+Segment* Score::tick2segmentMM(int tick, bool first, SegmentType st) const
       {
       return tick2segment(tick,first,st,true);
       }
 
-Segment* Score::tick2segment(int tick, bool first, Segment::Type st, bool useMMrest ) const
+Segment* Score::tick2segmentMM(int tick) const
+      {
+      return tick2segment(tick, false, SegmentType::All, true);
+      }
+Segment* Score::tick2segmentMM(int tick, bool first) const
+      {
+      return tick2segment(tick, first, SegmentType::All, true);
+      }
+
+Segment* Score::tick2segment(int tick, bool first, SegmentType st, bool useMMrest ) const
       {
       Measure* m;
       if (useMMrest) {
@@ -133,6 +146,16 @@ Segment* Score::tick2segment(int tick, bool first, Segment::Type st, bool useMMr
       return 0;
       }
 
+Segment* Score::tick2segment(int tick) const
+      {
+      return tick2segment(tick, false, SegmentType::All, false);
+      }
+
+Segment* Score::tick2segment(int tick, bool first) const
+      {
+      return tick2segment(tick, first, SegmentType::All, false);
+      }
+
 //---------------------------------------------------------
 //   tick2segmentEnd
 //---------------------------------------------------------
@@ -150,12 +173,12 @@ Segment* Score::tick2segmentEnd(int track, int tick) const
             return 0;
             }
       // loop over all segments
-      for (Segment* segment = m->first(Segment::Type::ChordRest); segment; segment = segment->next(Segment::Type::ChordRest)) {
-            ChordRest* cr = static_cast<ChordRest*>(segment->element(track));
+      for (Segment* segment = m->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
+            ChordRest* cr = toChordRest(segment->element(track));
             if (!cr)
                   continue;
             // TODO LVI: check if following is correct, see exceptions in
-            // ExportMusicXml::chord() and ExportMusicXml::rest()
+            // ExportMusicXmlchord() and ExportMusicXmlrest()
             int endTick = cr->tick() + cr->actualTicks();
             if (endTick < tick)
                   continue; // not found yet
@@ -185,7 +208,7 @@ Segment* Score::tick2leftSegment(int tick) const
             }
       // loop over all segments
       Segment* ps = 0;
-      for (Segment* s = m->first(Segment::Type::ChordRest); s; s = s->next(Segment::Type::ChordRest)) {
+      for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
             if (tick < s->tick())
                   return ps;
             else if (tick == s->tick())
@@ -209,11 +232,29 @@ Segment* Score::tick2rightSegment(int tick) const
             return 0;
             }
       // loop over all segments
-      for (Segment* s = m->first(Segment::Type::ChordRest); s; s = s->next(Segment::Type::ChordRest)) {
+      for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
             if (tick <= s->tick())
                   return s;
             }
       return 0;
+      }
+
+//---------------------------------------------------------
+//   tick2beatType
+//---------------------------------------------------------
+
+BeatType Score::tick2beatType(int tick)
+      {
+      Measure* m = tick2measure(tick);
+      const int msrTick = m->tick();
+      TimeSigFrac timeSig = sigmap()->timesig(msrTick).nominal();
+
+      int rtick = tick - msrTick;
+
+      if (m->isAnacrusis()) // measure is incomplete (anacrusis)
+            rtick += timeSig.ticksPerMeasure() - m->ticks();
+
+      return timeSig.rtick2beatType(rtick);
       }
 
 //---------------------------------------------------------
@@ -240,7 +281,7 @@ int Score::nextSeg(int tick, int track)
       {
       Segment* seg = tick2segment(tick);
       while (seg) {
-            seg = seg->next1(Segment::Type::ChordRest);
+            seg = seg->next1(SegmentType::ChordRest);
             if (seg == 0)
                   break;
             if (seg->element(track))
@@ -258,7 +299,7 @@ Segment* nextSeg1(Segment* seg, int& track)
       int staffIdx   = track / VOICES;
       int startTrack = staffIdx * VOICES;
       int endTrack   = startTrack + VOICES;
-      while ((seg = seg->next1(Segment::Type::ChordRest))) {
+      while ((seg = seg->next1(SegmentType::ChordRest))) {
             for (int t = startTrack; t < endTrack; ++t) {
                   if (seg->element(t)) {
                         track = t;
@@ -278,7 +319,7 @@ Segment* prevSeg1(Segment* seg, int& track)
       int staffIdx   = track / VOICES;
       int startTrack = staffIdx * VOICES;
       int endTrack   = startTrack + VOICES;
-      while ((seg = seg->prev1(Segment::Type::ChordRest))) {
+      while ((seg = seg->prev1(SegmentType::ChordRest))) {
             for (int t = startTrack; t < endTrack; ++t) {
                   if (seg->element(t)) {
                         track = t;
@@ -307,13 +348,13 @@ Note* nextChordNote(Note* note)
       while (seg) {
             Element*    targetElement = seg->elementAt(track);
             // if a chord exists in the same track, return its top note
-            if (targetElement != nullptr && targetElement->type() == Element::Type::CHORD)
-                  return static_cast<Chord*>(targetElement)->upNote();
+            if (targetElement && targetElement->isChord())
+                  return toChord(targetElement)->upNote();
             // if not, return topmost chord in track range
             for (int i = fromTrack ; i < toTrack; i++) {
                   targetElement = seg->elementAt(i);
-                  if (targetElement != nullptr && targetElement->type() == Element::Type::CHORD)
-                        return static_cast<Chord*>(targetElement)->upNote();
+                  if (targetElement && targetElement->isChord())
+                        return toChord(targetElement)->upNote();
                   }
             seg = seg->nextCR(track, true);
             }
@@ -328,16 +369,16 @@ Note* prevChordNote(Note* note)
       // TODO : limit to same instrument, not simply to same staff!
       Segment*    seg   = note->chord()->segment()->prev1();
       while (seg) {
-            if (seg->segmentType() == Segment::Type::ChordRest) {
+            if (seg->segmentType() == SegmentType::ChordRest) {
                   Element*    targetElement = seg->elementAt(track);
                   // if a chord exists in the same track, return its top note
-                  if (targetElement != nullptr && targetElement->type() == Element::Type::CHORD)
-                        return static_cast<Chord*>(targetElement)->upNote();
+                  if (targetElement && targetElement->isChord())
+                        return toChord(targetElement)->upNote();
                   // if not, return topmost chord in track range
                   for (int i = fromTrack ; i < toTrack; i++) {
                         targetElement = seg->elementAt(i);
-                        if (targetElement != nullptr && targetElement->type() == Element::Type::CHORD)
-                              return static_cast<Chord*>(targetElement)->upNote();
+                        if (targetElement && targetElement->isChord())
+                              return toChord(targetElement)->upNote();
                         }
                   }
             seg = seg->prev1();
@@ -347,7 +388,7 @@ Note* prevChordNote(Note* note)
 
 //---------------------------------------------------------
 //   pitchKeyAdjust
-//    change entered note to sounding pitch dependend
+//    change entered note to sounding pitch dependent
 //    on key.
 //    Example: if F is entered in G-major, a Fis is played
 //    key -7 ... +7
@@ -422,48 +463,6 @@ int quantizeLen(int len, int raster)
       return int( ((float)len/raster) + 0.5 ) * raster; //round to the closest multiple of raster
       }
 
-//---------------------------------------------------------
-//   selectNoteMessage
-//---------------------------------------------------------
-
-void selectNoteMessage()
-      {
-      if (!MScore::noGui)
-            QMessageBox::information(0,
-               QMessageBox::tr("MuseScore"),
-               QMessageBox::tr("No note selected:\n"
-                               "Please select a single note and retry operation\n"),
-               QMessageBox::Ok, QMessageBox::NoButton);
-      }
-
-void selectNoteRestMessage()
-      {
-      if (!MScore::noGui)
-            QMessageBox::information(0,
-               QMessageBox::tr("MuseScore"),
-               QMessageBox::tr("No note or rest selected:\n"
-                               "Please select a single note or rest and retry operation\n"),
-               QMessageBox::Ok, QMessageBox::NoButton);
-      }
-
-void selectNoteSlurMessage()
-      {
-      if (!MScore::noGui)
-            QMessageBox::information(0,
-               QMessageBox::tr("MuseScore"),
-               QMessageBox::tr("Please select a single note or slur and retry operation\n"),
-               QMessageBox::Ok, QMessageBox::NoButton);
-      }
-
-void selectStavesMessage()
-      {
-      if (!MScore::noGui)
-            QMessageBox::information(0,
-               QMessageBox::tr("MuseScore"),
-               QMessageBox::tr("Please select one or more staves and retry operation\n"),
-               QMessageBox::Ok, QMessageBox::NoButton);
-      }
-
 static const char* vall[] = {
       QT_TRANSLATE_NOOP("utils", "c"),
       QT_TRANSLATE_NOOP("utils", "c#"),
@@ -509,7 +508,7 @@ QString pitch2string(int v)
       {
       if (v < 0 || v > 127)
             return QString("----");
-      int octave = (v / 12) - 2;
+      int octave = (v / 12) - 1;
       QString o;
       o.sprintf("%d", octave);
       int i = v % 12;
@@ -671,6 +670,34 @@ int updateVersion()
       }
 
 //---------------------------------------------------------
+//   updateVersion
+///  Up to 4 digits X.X.X.X
+///  Each digit can be double XX.XX.XX.XX
+///  return true if v1 < v2
+//---------------------------------------------------------
+
+bool compareVersion(QString v1, QString v2)
+      {
+      auto v1l = v1.split(".");
+      auto v2l = v2.split(".");
+      int ma = qPow(100,qMax(v1l.size(), v2l.size()));
+      int m = ma;
+      int vv1 = 0;
+      for (int i = 0; i < v1l.size(); i++) {
+            vv1 += (m * v1l[i].toInt());
+            m /= 100;
+            }
+      m = ma;
+      int vv2 = 0;
+      for (int i = 0; i < v2l.size(); i++) {
+            vv2 += (m * v2l[i].toInt());
+            m /= 100;
+            }
+
+      return vv1 < vv2;
+      }
+
+//---------------------------------------------------------
 //   diatonicUpDown
 //    used to find the second note of a trill, mordent etc.
 //    key  -7 ... +7
@@ -772,9 +799,22 @@ Note* searchTieNote(Note* note)
       int etrack   = strack + part->staves()->size() * VOICES;
 
       if (chord->isGraceBefore()) {
-            // grace before
+            chord = toChord(chord->parent());
+
+            // try to tie to next grace note
+
+            int index = chord->graceIndex();
+            for (Chord* c : chord->graceNotes()) {
+                  if (c->graceIndex() == index + 1) {
+                        note2 = c->findNote(note->pitch());
+                        if (note2) {
+                              printf("found grace-grace tie\n");
+                              return note2;
+                              }
+                        }
+                  }
+
             // try to tie to note in parent chord
-            chord = static_cast<Chord*>(chord->parent());
             note2 = chord->findNote(note->pitch());
             if (note2)
                   return note2;
@@ -783,13 +823,13 @@ Note* searchTieNote(Note* note)
             // grace after
             // we will try to tie to note in next normal chord, below
             // meanwhile, set chord to parent chord so the endTick calculation will make sense
-            chord = static_cast<Chord*>(chord->parent());
+            chord = toChord(chord->parent());
             }
       else {
             // normal chord
             // try to tie to grace note after if present
-            QList<Chord*> gna = chord->graceNotesAfter();
-            if (!gna.isEmpty()) {
+            QVector<Chord*> gna = chord->graceNotesAfter();
+            if (!gna.empty()) {
                   Chord* gc = gna[0];
                   note2 = gc->findNote(note->pitch());
                   if (note2)
@@ -803,18 +843,19 @@ Note* searchTieNote(Note* note)
       // but err on the safe side in case there is roundoff in tick count
       int endTick = chord->tick() + chord->actualTicks() - 1;
 
-      while ((seg = seg->next1(Segment::Type::ChordRest))) {
+      while ((seg = seg->next1(SegmentType::ChordRest))) {
             // skip ahead to end of current note duration as calculated above
             // but just in case, stop if we find element in current track
             if (seg->tick() < endTick  && !seg->element(chord->track()))
                   continue;
             for (int track = strack; track < etrack; ++track) {
-                  Chord* c = static_cast<Chord*>(seg->element(track));
-                  if (c == 0 || c->type() != Element::Type::CHORD)
+                  Element* e = seg->element(track);
+                  if (e == 0 || !e->isChord())
                         continue;
+                  Chord* c = toChord(e);
                   // if there are grace notes before, try to tie to first one
-                  QList<Chord*> gnb = c->graceNotesBefore();
-                  if (!gnb.isEmpty()) {
+                  QVector<Chord*> gnb = c->graceNotesBefore();
+                  if (!gnb.empty()) {
                         Chord* gc = gnb[0];
                         Note* gn2 = gc->findNote(note->pitch());
                         if (gn2)
@@ -851,11 +892,12 @@ Note* searchTieNote114(Note* note)
       int strack   = part->staves()->front()->idx() * VOICES;
       int etrack   = strack + part->staves()->size() * VOICES;
 
-      while ((seg = seg->next1(Segment::Type::ChordRest))) {
+      while ((seg = seg->next1(SegmentType::ChordRest))) {
             for (int track = strack; track < etrack; ++track) {
-                  Chord* c = static_cast<Chord*>(seg->element(track));
-                  if (c == 0 || (c->type() != Element::Type::CHORD) || (c->track() != chord->track()))
+                  Element* e = seg->element(track);
+                  if (e == 0 || (!e->isChord()) || (e->track() != chord->track()))
                         continue;
+                  Chord* c = toChord(e);
                   int staffIdx = c->staffIdx() + c->staffMove();
                   if (staffIdx != chord->staffIdx() + chord->staffMove())  // cannot happen?
                         continue;
@@ -940,6 +982,74 @@ int step2pitch(int step)
       {
       static const char tab[7] = { 0, 2, 4, 5, 7, 9, 11 };
       return tab[step % 7];
+      }
+
+//---------------------------------------------------------
+//   skipTuplet
+//    return segment of rightmost chord/rest in a
+//    (possible nested) tuplet
+//---------------------------------------------------------
+
+Segment* skipTuplet(Tuplet* tuplet)
+      {
+      DurationElement* nde = tuplet->elements().back();
+      while (nde->isTuplet()) {
+            tuplet = toTuplet(nde);
+            nde = tuplet->elements().back();
+            }
+      return toChordRest(nde)->segment();
+      }
+
+//---------------------------------------------------------
+//   toTimeSigString
+//    replace ascii with bravura symbols
+//---------------------------------------------------------
+
+std::vector<SymId> toTimeSigString(const QString& s)
+      {
+      struct Dict {
+            QChar code;
+            SymId id;
+            };
+      static const std::vector<Dict> dict = {
+            { 43,    SymId::timeSigPlusSmall        },  // '+'
+            { 48,    SymId::timeSig0                },  // '0'
+            { 49,    SymId::timeSig1                },  // '1'
+            { 50,    SymId::timeSig2                },  // '2'
+            { 51,    SymId::timeSig3                },  // '3'
+            { 52,    SymId::timeSig4                },  // '4'
+            { 53,    SymId::timeSig5                },  // '5'
+            { 54,    SymId::timeSig6                },  // '6'
+            { 55,    SymId::timeSig7                },  // '7'
+            { 56,    SymId::timeSig8                },  // '8'
+            { 57,    SymId::timeSig9                },  // '9'
+            { 67,    SymId::timeSigCommon           },  // 'C'
+            { 40,    SymId::timeSigParensLeftSmall  },  // '('
+            { 41,    SymId::timeSigParensRightSmall },  // ')'
+            { 162,   SymId::timeSigCutCommon        },  // '¢'
+            { 59664, SymId::mensuralProlation1      },
+            { 79,    SymId::mensuralProlation2      },  // 'O'
+            { 59665, SymId::mensuralProlation2      },
+            { 216,   SymId::mensuralProlation3      },  // 'Ø'
+            { 59666, SymId::mensuralProlation3      },
+            { 59667, SymId::mensuralProlation4      },
+            { 59668, SymId::mensuralProlation5      },
+            { 59670, SymId::mensuralProlation7      },
+            { 59671, SymId::mensuralProlation8      },
+            { 59673, SymId::mensuralProlation10     },
+            { 59674, SymId::mensuralProlation11     },
+            };
+
+      std::vector<SymId> d;
+      for (auto c : s) {
+            for (const Dict& e : dict) {
+                  if (c == e.code) {
+                        d.push_back(e.id);
+                        break;
+                        }
+                  }
+            }
+      return d;
       }
 
 }

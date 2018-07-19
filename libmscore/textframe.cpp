@@ -34,10 +34,15 @@ TBox::TBox(Score* score)
    : VBox(score)
       {
       setBoxHeight(Spatium(1));
-      _text  = new Text(score);
+      _text  = new Text(SubStyleId::FRAME, score);
       _text->setLayoutToParentWidth(true);
       _text->setParent(this);
-      _text->setTextStyleType(TextStyleType::FRAME);
+      }
+
+TBox::TBox(const TBox& tbox)
+   : VBox(tbox)
+      {
+      _text = new Text(*(tbox._text));
       }
 
 TBox::~TBox()
@@ -54,11 +59,29 @@ TBox::~TBox()
 void TBox::layout()
       {
       setPos(QPointF());      // !?
-      bbox().setRect(0.0, 0.0, system()->width(), point(boxHeight()));
+      bbox().setRect(0.0, 0.0, system()->width(), 0);
       _text->layout();
-      _text->setPos(leftMargin() * DPMM, topMargin() * DPMM);
-      qreal h = _text->isEmpty() ? _text->lineSpacing() : _text->height();
+
+      qreal h = _text->height();
+      if (_text->empty()) {
+            QFontMetricsF fm = QFontMetricsF(_text->font(), MScore::paintDevice());
+            h = fm.ascent();
+            }
+      else
+            h = _text->height();
+      qreal y = topMargin() * DPMM;
+#if 0
+      if (_text->align() & Align::BOTTOM)
+            y += h;
+      else if (_text->align() & Align::VCENTER)
+            y +=  h * .5;
+      else
+            ; // y = 0;
+#endif
+      _text->setPos(leftMargin() * DPMM, y);
+      h += topMargin() * DPMM + bottomMargin() * DPMM;
       bbox().setRect(0.0, 0.0, system()->width(), h);
+
       MeasureBase::layout();  // layout LayoutBreak's
       }
 
@@ -66,7 +89,7 @@ void TBox::layout()
 //   write
 //---------------------------------------------------------
 
-void TBox::write(Xml& xml) const
+void TBox::write(XmlWriter& xml) const
       {
       xml.stag(name());
       Box::writeProperties(xml);
@@ -105,15 +128,15 @@ void TBox::scanElements(void* data, void (*func)(void*, Element*), bool all)
 //   drop
 //---------------------------------------------------------
 
-Element* TBox::drop(const DropData& data)
+Element* TBox::drop(EditData& data)
       {
       Element* e = data.element;
       switch (e->type()) {
-            case Element::Type::TEXT:
+            case ElementType::TEXT:
                   {
-                  Text* t = static_cast<Text*>(e);
+                  Text* t = toText(e);
                   _text->undoSetText(t->xmlText());
-                  _text->undoChangeProperty(P_ID::TEXT_STYLE, QVariant::fromValue(t->textStyle()));
+//TODO-ws                  _text->undoChangeProperty(Pid::SUB_STYLE, int(t->subStyle()));
                   delete e;
                   return _text;
                   }
@@ -129,11 +152,11 @@ Element* TBox::drop(const DropData& data)
 
 void TBox::add(Element* e)
       {
-      if (e->type() == Element::Type::TEXT) {
+      if (e->isText()) {
             // does not normally happen, since drop() handles this directly
-            Text* t = static_cast<Text*>(e);
+            Text* t = toText(e);
             _text->undoSetText(t->xmlText());
-            _text->undoChangeProperty(P_ID::TEXT_STYLE, QVariant::fromValue(t->textStyle()));
+//TODO-ws            _text->undoChangeProperty(Pid::SUB_STYLE, int(t->subStyle()));
             }
       else {
             VBox::add(e);
@@ -152,10 +175,9 @@ void TBox::remove(Element* el)
             // replace with new empty text element
             // this keeps undo/redo happier than just clearing the text
             qDebug("TBox::remove() - replacing _text");
-            _text = new Text(score());
+            _text = new Text(SubStyleId::FRAME, score());
             _text->setLayoutToParentWidth(true);
             _text->setParent(this);
-            _text->setTextStyleType(TextStyleType::FRAME);
            }
       else {
             VBox::remove(el);

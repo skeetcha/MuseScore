@@ -24,8 +24,8 @@ namespace Ms {
 //   DurationElement
 //---------------------------------------------------------
 
-DurationElement::DurationElement(Score* s)
-   : Element(s)
+DurationElement::DurationElement(Score* s, ElementFlags f)
+   : Element(s, f)
       {
       _tuplet = 0;
       }
@@ -47,6 +47,20 @@ DurationElement::DurationElement(const DurationElement& e)
 
 DurationElement::~DurationElement()
       {
+      }
+
+//---------------------------------------------------------
+//   topTuplet
+//---------------------------------------------------------
+
+Tuplet* DurationElement::topTuplet() const
+      {
+      Tuplet* t = tuplet();
+      if (t) {
+            while (t->tuplet())
+                  t = t->tuplet();
+            }
+      return t;
       }
 
 //---------------------------------------------------------
@@ -80,6 +94,27 @@ Fraction DurationElement::actualFraction() const
       }
 
 //---------------------------------------------------------
+//   ftick
+//    fractional tick
+//---------------------------------------------------------
+
+Fraction DurationElement::ftick() const
+      {
+      Tuplet* t = tuplet();
+      if (t) {
+            Fraction f = t->ftick();
+            for (DurationElement* de : t->elements()) {
+                  if (de == this)
+                        break;
+                  f += de->actualFraction();
+                  }
+            return f.reduced();
+            }
+      else
+            return Fraction::fromTicks(tick());
+      }
+
+//---------------------------------------------------------
 //   readProperties
 //---------------------------------------------------------
 
@@ -98,12 +133,12 @@ bool DurationElement::readProperties(XmlReader& e)
                   }
             if (t) {
                   setTuplet(t);
-                  if (!score()->undo()->active())     // HACK, also added in Undo::AddElement()
+                  if (!score()->undoStack()->active())     // HACK, also added in Undo::AddElement()
                         t->add(this);
                   }
             return true;
             }
-      if (Element::readProperties(e))
+      else if (Element::readProperties(e))
             return true;
       return false;
       }
@@ -112,7 +147,7 @@ bool DurationElement::readProperties(XmlReader& e)
 //   writeProperties
 //---------------------------------------------------------
 
-void DurationElement::writeProperties(Xml& xml) const
+void DurationElement::writeProperties(XmlWriter& xml) const
       {
       Element::writeProperties(xml);
       if (tuplet())
@@ -123,11 +158,11 @@ void DurationElement::writeProperties(Xml& xml) const
 //   writeTuplet
 //---------------------------------------------------------
 
-void DurationElement::writeTuplet(Xml& xml)
+void DurationElement::writeTuplet(XmlWriter& xml)
       {
       if (tuplet() && tuplet()->elements().front() == this) {
             tuplet()->writeTuplet(xml);           // recursion
-            tuplet()->setId(xml.tupletId++);
+            tuplet()->setId(xml.nextTupletId());
             tuplet()->write(xml);
             }
       }
@@ -136,10 +171,10 @@ void DurationElement::writeTuplet(Xml& xml)
 //   getProperty
 //---------------------------------------------------------
 
-QVariant DurationElement::getProperty(P_ID propertyId) const
+QVariant DurationElement::getProperty(Pid propertyId) const
       {
       switch (propertyId) {
-            case P_ID::DURATION:
+            case Pid::DURATION:
                   return QVariant::fromValue(_duration);
             default:
                   return Element::getProperty(propertyId);
@@ -150,13 +185,13 @@ QVariant DurationElement::getProperty(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool DurationElement::setProperty(P_ID propertyId, const QVariant& v)
+bool DurationElement::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
-            case P_ID::DURATION: {
+            case Pid::DURATION: {
                   Fraction f(v.value<Fraction>());
                   setDuration(f);
-                  score()->setLayoutAll(true);
+                  score()->setLayoutAll();
                   }
                   break;
             default:

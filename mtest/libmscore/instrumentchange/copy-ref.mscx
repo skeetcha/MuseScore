@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,20 +22,11 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle">Instrument Change</metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <bracket type="-1" span="0"/>
         </Staff>
       <trackName>Flute</trackName>
       <Instrument>
@@ -88,7 +63,6 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <bracket type="-1" span="0"/>
         </Staff>
       <trackName>Oboe</trackName>
       <Instrument>
@@ -136,7 +110,6 @@
         <TimeSig>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Chord>
           <durationType>half</durationType>
@@ -208,7 +181,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -216,7 +188,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         </Measure>
@@ -226,7 +197,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -234,7 +204,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         </Measure>
@@ -244,7 +213,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -252,7 +220,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         </Measure>
@@ -262,7 +229,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -270,7 +236,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         </Measure>
@@ -280,7 +245,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -288,7 +252,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         </Measure>
@@ -298,7 +261,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -306,7 +268,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         </Measure>
@@ -316,7 +277,6 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
         <Chord>
@@ -324,13 +284,8 @@
           <Note>
             <pitch>72</pitch>
             <tpc>14</tpc>
-            <tpc2>16</tpc2>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Staff id="2">
@@ -342,7 +297,6 @@
         <TimeSig>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Chord>
           <durationType>half</durationType>
@@ -531,10 +485,6 @@
             <tpc2>16</tpc2>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     </Score>

@@ -2,7 +2,7 @@
 //  MuseScore
 //  Music Composition & Notation
 //
-//  Copyright (C) 2002-2013 Werner Schweer
+//  Copyright (C) 2002-2016 Werner Schweer
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2
@@ -37,6 +37,7 @@ extern bool useFactorySettings;
 SynthControl::SynthControl(QWidget* parent)
    : QWidget(parent, Qt::Dialog)
       {
+      setObjectName("SynthControl");
       setupUi(this);
       _score = 0;
 
@@ -74,18 +75,7 @@ SynthControl::SynthControl(QWidget* parent)
                   connect(gui, SIGNAL(valueChanged()), SLOT(setDirty()));
                   }
             }
-      if (!useFactorySettings) {
-            QSettings settings;
-            settings.beginGroup("SynthControl");
-            resize(settings.value("size", QSize(746, 268)).toSize());
-            move(settings.value("pos", QPoint(10, 10)).toPoint());
-            tabWidget->setCurrentIndex(settings.value("tab", 0).toInt());
-            settings.endGroup();
-            }
-      else
-            tabWidget->setCurrentIndex(0);
-      metronome->setDefaultAction(getAction("metronome"));
-      mgain->setValue(seq->metronomeGain());
+      readSettings();
 
       updateGui();
 
@@ -97,7 +87,6 @@ SynthControl::SynthControl(QWidget* parent)
       connect(effectA,      SIGNAL(currentIndexChanged(int)), SLOT(effectAChanged(int)));
       connect(effectB,      SIGNAL(currentIndexChanged(int)), SLOT(effectBChanged(int)));
       connect(gain,         SIGNAL(valueChanged(double,int)), SLOT(gainChanged(double,int)));
-      connect(mgain,        SIGNAL(valueChanged(double,int)), SLOT(metronomeGainChanged(double,int)));
       connect(masterTuning, SIGNAL(valueChanged(double)),     SLOT(masterTuningChanged(double)));
       connect(changeTuningButton, SIGNAL(clicked()),          SLOT(changeMasterTuning()));
       connect(loadButton,   SIGNAL(clicked()),                SLOT(loadButtonClicked()));
@@ -173,7 +162,6 @@ void MuseScore::showSynthControl(bool val)
             connect(synthControl, SIGNAL(closed(bool)), a,     SLOT(setChecked(bool)));
             if (mixer)
                   connect(synthControl, SIGNAL(soundFontChanged()), mixer, SLOT(patchListChanged()));
-            connect(synthControl, SIGNAL(metronomeGainChanged(float)), seq, SLOT(setMetronomeGain(float)));
             }
       synthControl->setVisible(val);
       }
@@ -185,15 +173,6 @@ void MuseScore::showSynthControl(bool val)
 void SynthControl::gainChanged(double val, int)
       {
       emit gainChanged(val);
-      }
-
-//---------------------------------------------------------
-//   metronomeGainChanged
-//---------------------------------------------------------
-
-void SynthControl::metronomeGainChanged(double val, int)
-      {
-      emit metronomeGainChanged(val);
       }
 
 //---------------------------------------------------------
@@ -224,6 +203,16 @@ void SynthControl::setMeter(float l, float r, float left_peak, float right_peak)
       {
       gain->setMeterVal(0, l, left_peak);
       gain->setMeterVal(1, r, right_peak);
+      }
+
+//---------------------------------------------------------
+//   setScore
+//---------------------------------------------------------
+void SynthControl::setScore(Score* s) {
+      _score = s;
+
+      loadButton->setEnabled(true);
+      saveButton->setEnabled(true);
       }
 
 //---------------------------------------------------------
@@ -284,7 +273,7 @@ void SynthControl::saveButtonClicked()
       if (!_score)
             return;
       _score->startCmd();
-      _score->undo()->push(new ChangeSynthesizerState(_score, synti->state()));
+      _score->undo(new ChangeSynthesizerState(_score, synti->state()));
       _score->endCmd();
 
       loadButton->setEnabled(false);
@@ -341,16 +330,7 @@ void SynthControl::storeButtonClicked()
             qDebug("no score");
             return;
             }
-      QString s(dataPath + "/synthesizer.xml");
-      QFile f(s);
-      if (!f.open(QIODevice::WriteOnly)) {
-            qDebug("cannot write synthesizer settings <%s>", qPrintable(s));
-            return;
-            }
-      Xml xml(&f);
-      xml.header();
-      synti->state().write(xml);
-
+      synti->storeState();
       storeButton->setEnabled(false);
       recallButton->setEnabled(false);
       }
@@ -401,11 +381,42 @@ void SynthControl::setDirty()
 void SynthControl::writeSettings()
       {
       QSettings settings;
-      settings.beginGroup("SynthControl");
-      settings.setValue("size", size());
-      settings.setValue("pos", pos());
+      settings.beginGroup(objectName());
       settings.setValue("tab", tabWidget->currentIndex());
       settings.endGroup();
+
+      MuseScore::saveGeometry(this);
       }
+
+//---------------------------------------------------------
+//   readSettings
+//---------------------------------------------------------
+
+void SynthControl::readSettings()
+      {
+      if (!useFactorySettings) {
+            QSettings settings;
+            settings.beginGroup(objectName());
+            tabWidget->setCurrentIndex(settings.value("tab", 0).toInt());
+            settings.endGroup();
+            }
+      else {
+            tabWidget->setCurrentIndex(0);
+            }
+
+      MuseScore::restoreGeometry(this);
+      }
+
+//---------------------------------------------------------
+//   changeEvent
+//---------------------------------------------------------
+
+void SynthControl::changeEvent(QEvent *event)
+      {
+      QWidget::changeEvent(event);
+      if (event->type() == QEvent::LanguageChange)
+            retranslate();
+      }
+
 }
 

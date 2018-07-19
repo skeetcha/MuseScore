@@ -40,7 +40,7 @@
 ****************************************************************************/
 
 #include "svggenerator.h"
-#include "paintengine_p.h"
+#include "libmscore/mscore.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // FOR GRADIENT FUNCTIONALITY THAT IS NOT IMPLEMENTED (YET):
@@ -137,7 +137,7 @@ static void translate_dashPattern(QVector<qreal> pattern, const qreal& width, QS
 // Gets the contents of the SVG class attribute, based on element type/name
 static QString getClass(const Ms::Element *e)
 {
-    Ms::Element::Type eType;
+    Ms::ElementType eType;
               QString eName;
 
     // Add element type as "class"
@@ -152,7 +152,7 @@ static QString getClass(const Ms::Element *e)
     return eName;
 }
 
-class SvgPaintEnginePrivate : public QPaintEnginePrivate
+class SvgPaintEnginePrivate
 {
 public:
     SvgPaintEnginePrivate()
@@ -231,8 +231,9 @@ class SvgPaintEngine : public QPaintEngine
 private:
     QString     stateString;
     QTextStream stateStream;
+    SvgPaintEnginePrivate *d_ptr;
 
-// To eliminate transform attribute on polylines
+// Qt translates everything. These help avoid SVG transform="translate()".
     qreal _dx;
     qreal _dy;
 
@@ -274,7 +275,8 @@ protected:
 
 #define SVG_CLASS    " class=\""
 
-#define SVG_ELEMENT_END "/>"
+#define SVG_ELEMENT_END  "/>"
+#define SVG_RPAREN_QUOTE ")\""
 
 #define SVG_TITLE_BEGIN "<title>"
 #define SVG_TITLE_END   "</title>"
@@ -306,12 +308,14 @@ protected:
 #define SVG_FILL_RULE       " fill-rule=\"evenodd\""
 #define SVG_VECTOR_EFFECT   " vector-effect=\"non-scaling-stroke\""
 
+#define SVG_MATRIX    " transform=\"matrix("
+
 public:
     SvgPaintEngine()
-        : QPaintEngine(*new SvgPaintEnginePrivate,
-                       svgEngineFeatures()),
+        : QPaintEngine(svgEngineFeatures()),
           stateStream(&stateString)
     {
+        d_ptr = new SvgPaintEnginePrivate;
     }
 
     bool begin(QPaintDevice *device);
@@ -976,6 +980,7 @@ int SvgGenerator::metric(QPaintDevice::PaintDeviceMetric metric) const
     case QPaintDevice::PdmPhysicalDpiY:
         return d->engine->resolution();
     case QPaintDevice::PdmDevicePixelRatio:
+    case QPaintDevice::PdmDevicePixelRatioScaled:
         return 1;
     default:
         qWarning("SvgGenerator::metric(), unhandled metric %d\n", metric);
@@ -1035,10 +1040,10 @@ bool SvgPaintEngine::begin(QPaintDevice *)
                 " xmlns:xlink=\"http://www.w3.org/1999/xlink\""
                 " version=\"1.2\" baseProfile=\"tiny\">" << endl;
     if (!d->attributes.title.isEmpty()) {
-        stream() << SVG_TITLE_BEGIN << d->attributes.title << SVG_TITLE_END << endl;
+        stream() << SVG_TITLE_BEGIN << d->attributes.title.toHtmlEscaped() << SVG_TITLE_END << endl;
     }
     if (!d->attributes.description.isEmpty()) {
-        stream() << SVG_DESC_BEGIN  << d->attributes.description << SVG_DESC_END << endl;
+        stream() << SVG_DESC_BEGIN  << d->attributes.description.toHtmlEscaped() << SVG_DESC_END << endl;
     }
 
 // <defs> is currently empty. It's necessary for gradients.
@@ -1112,7 +1117,7 @@ void SvgPaintEngine::updateState(const QPaintEngineState &state)
 
     // stateString = Attribute Settings
 
-    // SVG class attribute, based on Ms::Element::Type
+    // SVG class attribute, based on Ms::ElementType
     stateStream << SVG_CLASS << getClass(_element) << SVG_QUOTE;
 
     // Brush and Pen attributes
@@ -1126,10 +1131,36 @@ void SvgPaintEngine::updateState(const QPaintEngineState &state)
     if (!qFuzzyIsNull(state.opacity() - 1))
         stateStream << SVG_OPACITY << state.opacity() << SVG_QUOTE;
 
-    // Set these class variables for later use in the drawXXX() functions
-    QMatrix mx = state.matrix();
-    _dx = mx.dx();
-    _dy = mx.dy();
+    // Translations, SVG transform="translate()", are handled separately from
+    // other transformations such as rotation. Qt translates everything, but
+    // other transformations do occur, and must be handled here.
+    QTransform t = state.transform();
+
+    // Tablature Note Text:
+    // m11 and m22 have floating point flotsam, for example: 1.000000629
+    // Both values should be == integer 1, because no scaling is intended.
+    // So round them to three decimal places, as MuseScore does elsewhere.
+    const qreal m11 = qRound(t.m11() * 1000) / 1000.0;
+    const qreal m22 = qRound(t.m22() * 1000) / 1000.0;
+
+    if (m11 == 1 && m22 == 1   // No scaling
+      && t.m12() == t.m21()) { // No rotation, etc.
+          // No transformation except translation
+          _dx = t.m31();
+          _dy = t.m32();
+    }
+    else {
+          // Other transformations are more straightforward with a full matrix
+          _dx = 0;
+          _dy = 0;
+          stateStream << SVG_MATRIX << t.m11() << SVG_COMMA
+                                    << t.m12() << SVG_COMMA
+                                    << t.m21() << SVG_COMMA
+                                    << t.m22() << SVG_COMMA
+                                    << t.m31() << SVG_COMMA
+                                    << t.m32() << SVG_RPAREN_QUOTE;
+    }
+
 }
 
 void SvgPaintEngine::drawPath(const QPainterPath &p)

@@ -7,7 +7,7 @@
 #include "libmscore/measure.h"
 #include "libmscore/harmony.h"
 #include "midi/midifile.h"
-#include "mscore/preferences.h"
+#include "importmidi_operations.h"
 
 
 // From XF Format Specifications V 2.01 (January 13, 1999, YAMAHA CORPORATION)
@@ -50,41 +50,41 @@ QString readChordRoot(uchar byte)
 QString readChordType(uchar chordTypeIndex)
       {
       static const std::vector<QString> chordTypes = {
-            "Maj"
-          , "Maj6"
+            ""        // Maj
+          , "6"       // Maj6
           , "Maj7"
-          , "Maj7(#11)"
-          , "Maj(9)"
-          , "Maj7(9)"
-          , "Maj6(9)"
+          , "Maj7#11" // Maj7(#11)
+          , "Maj9"    // Maj(9)
+          , "Maj9"    // Maj7(9)
+          , "6(9)"    // Maj6(9)
           , "aug"
-          , "min"
-          , "min6"
-          , "min7"
-          , "min7b5"
-          , "min(9)"
-          , "min7(9)"
-          , "min7(11)"
-          , "minMaj7"
-          , "minMaj7(9)"
+          , "m"       // min
+          , "m6"      // min6
+          , "m7"      // min7
+          , "m7b5"    // min7b5
+          , "m9"      // min(9)
+          , "m9"      // min7(9)
+          , "m7(11)"  // min7(11)
+          , "mMaj7"   // minMaj7
+          , "mMaj9"   // minMaj7(9)
           , "dim"
           , "dim7"
-          , "7th"
+          , "7"       // 7th
           , "7sus4"
           , "7b5"
-          , "7(9)"
-          , "7(#11)"
+          , "9"       // 7(9)
+          , "7#11"    // 7(#11)
           , "7(13)"
-          , "7(b9)"
-          , "7(b13)"
-          , "7(#9)"
-          , "Maj7aug"
-          , "7aug"
-          , "1+8"
-          , "1+5"
+          , "7b9"     // 7(b9)
+          , "7b13"    // 7(b13)
+          , "7#9"     // 7(#9)
+          , "Maj7#5"  // Maj7aug
+          , "7#5"     // 7aug
+          , ""        // 1+8
+          , "5"       // 1+5
           , "sus4"
-          , "1+2+5"
-          , "cc"
+          , "sus2"    // 1+2+5
+          , "N.C."    // cc
             };
 
       if (chordTypeIndex < chordTypes.size())
@@ -149,7 +149,7 @@ QString findChordName(
 
 void findChordNames(const std::multimap<int, MTrack> &tracks)
       {
-      auto &data = *preferences.midiImportOperations.data();
+      auto &data = *midiImportOperations.data();
 
       for (const auto &track: tracks) {
             for (const auto &event: track.second.mtrack->events()) {
@@ -167,7 +167,7 @@ void findChordNames(const std::multimap<int, MTrack> &tracks)
 
 void setChordNames(QList<MTrack> &tracks)
       {
-      const auto &data = *preferences.midiImportOperations.data();
+      const auto &data = *midiImportOperations.data();
       if (data.chordNames.empty() || !data.trackOpers.showChordNames.value())
             return;
 
@@ -193,7 +193,7 @@ void setChordNames(QList<MTrack> &tracks)
                   usedTimes.insert(onTime);
 
                   Measure* measure = score->tick2measure(onTime.ticks());
-                  Segment* seg = measure->getSegment(Segment::Type::ChordRest,
+                  Segment* seg = measure->getSegment(SegmentType::ChordRest,
                                                      onTime.ticks());
                   const int t = staff->idx() * VOICES;
 

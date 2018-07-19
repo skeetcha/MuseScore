@@ -17,23 +17,26 @@
 
 namespace Ms {
 
+class Text;
+
 //---------------------------------------------------------
 //   @@ TBox
 ///    Text frame.
 //---------------------------------------------------------
 
 class TBox : public VBox {
-      Q_OBJECT
       Text* _text;
 
    public:
       TBox(Score* score);
+      TBox(const TBox&);
       ~TBox();
       virtual TBox* clone() const        { return new TBox(*this); }
-      virtual Element::Type type() const { return Element::Type::TBOX;       }
-      virtual void write(Xml&) const override;
+      virtual ElementType type() const   { return ElementType::TBOX;       }
+      virtual void write(XmlWriter&) const override;
+      using VBox::write;
       virtual void read(XmlReader&) override;
-      virtual Element* drop(const DropData&) override;
+      virtual Element* drop(EditData&) override;
       virtual void add(Element* e) override;
       virtual void remove(Element* el) override;
 

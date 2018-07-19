@@ -5,7 +5,7 @@
     <seq>Ctrl+Shift+P</seq>
     </SC>
   <SC>
-    <key>local-help</key>
+    <key>help</key>
     <seq>F1</seq>
     </SC>
   <SC>
@@ -53,12 +53,20 @@
     <seq>Ctrl+V</seq>
     </SC>
   <SC>
+    <key>swap</key>
+    <seq>Ctrl+Shift+X</seq>
+    </SC>
+  <SC>
     <key>instruments</key>
     <seq>I</seq>
     </SC>
   <SC>
     <key>note-input</key>
     <seq>N</seq>
+    </SC>
+  <SC>
+    <key>note-input-repitch</key>
+    <seq>Ctrl+Shift+I</seq>
     </SC>
   <SC>
     <key>interval1</key>
@@ -185,6 +193,10 @@
     <seq>0</seq>
     </SC>
   <SC>
+    <key>realtime-advance</key>
+    <seq>Enter</seq>
+    </SC>
+  <SC>
     <key>add-staccato</key>
     <seq>Shift+S</seq>
     </SC>
@@ -241,12 +253,20 @@
     <seq>Ctrl+End</seq>
     </SC>
   <SC>
-    <key>next-element</key>
+    <key>next-segment-element</key>
     <seq>Ctrl+Alt+Shift+Right</seq>
     </SC>
   <SC>
-    <key>prev-element</key>
+    <key>prev-segment-element</key>
     <seq>Ctrl+Alt+Shift+Left</seq>
+    </SC>
+  <SC>
+    <key>next-element</key>
+    <seq>Alt+Right</seq>
+    </SC>
+  <SC>
+    <key>prev-element</key>
+    <seq>Alt+Left</seq>
     </SC>
   <SC>
     <key>move-up</key>
@@ -385,7 +405,7 @@
     <seq>Del</seq>
     </SC>
   <SC>
-    <key>delete-measures</key>
+    <key>time-delete</key>
     <seq>Ctrl+Del</seq>
     <seq>Ctrl+Backspace</seq>
     </SC>
@@ -515,7 +535,7 @@
     <seq>F11</seq>
     </SC>
   <SC>
-    <key>toggle-navigator</key>
+    <key>toggle-timeline</key>
     <seq>F12</seq>
     </SC>
   <SC>
@@ -532,7 +552,7 @@
     </SC>
   <SC>
     <key>tempo</key>
-    <seq>Alt+T</seq>
+    <seq>Alt+Shift+T</seq>
     </SC>
   <SC>
     <key>system-text</key>
@@ -541,6 +561,10 @@
   <SC>
     <key>staff-text</key>
     <seq>Ctrl+T</seq>
+    </SC>
+  <SC>
+    <key>expression-text</key>
+    <seq>Ctrl+E</seq>
     </SC>
   <SC>
     <key>chord-text</key>
@@ -600,7 +624,7 @@
     </SC>
   <SC>
     <key>edit-element</key>
-    <seq>Ctrl+E</seq>
+    <seq>Alt+Shift+E</seq>
     </SC>
   <SC>
     <key>reset</key>
@@ -659,15 +683,23 @@
     <seq>Q</seq>
     </SC>
   <SC>
+    <key>inc-duration-dotted</key>
+    <seq>Shift+W</seq>
+    </SC>
+  <SC>
+    <key>dec-duration-dotted</key>
+    <seq>Shift+Q</seq>
+    </SC>
+  <SC>
     <key>repeat-sel</key>
     <seq>R</seq>
     </SC>
   <SC>
-    <key>enh-up</key>
+    <key>enh-both</key>
     <seq>J</seq>
     </SC>
   <SC>
-    <key>enh-down</key>
+    <key>enh-current</key>
     <seq>Ctrl+J</seq>
     </SC>
   <SC>
@@ -677,10 +709,7 @@
   <SC>
     <key>fullscreen</key>
     <seq>Ctrl+U</seq>
-    </SC>
-  <SC>
-    <key>repitch</key>
-    <seq>Ctrl+Shift+I</seq>
+    <seq>Meta+Ctrl+F</seq>
     </SC>
   <SC>
     <key>toggle-piano</key>
@@ -711,14 +740,6 @@
   <SC>
     <key>figured-bass</key>
     <seq>Ctrl+G</seq>
-    </SC>
-  <SC>
-    <key>transpose-up</key>
-    <seq>F2</seq>
-    </SC>
-  <SC>
-    <key>transpose-down</key>
-    <seq>Shift+F2</seq>
     </SC>
   <SC>
     <key>masterpalette</key>
@@ -954,6 +975,10 @@
     <seq>Ctrl+Left</seq>
     </SC>
   <SC>
+    <key>relayout</key>
+    <seq>Shift+L</seq>
+    </SC>
+  <SC>
     <key>text-word-right</key>
     <seq>Ctrl+Right</seq>
     </SC>
@@ -969,5 +994,14 @@
     <key>startcenter</key>
     <seq>F4</seq>
     </SC>
+  <SC>
+    <key>viewmode</key>
+    <seq>Ctrl+Shift+V</seq>
+    </SC>
+  <SC>
+    <key>toggle-insert-mode</key>
+    <seq>Ctrl+I</seq>
+    </SC>
+
   </Shortcuts>
 

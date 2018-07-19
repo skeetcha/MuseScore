@@ -23,17 +23,12 @@ class Note;
 //   @@ NoteDot
 //---------------------------------------------------------
 
-class NoteDot : public Element {
-      Q_OBJECT
-
-      int _idx;
+class NoteDot final : public Element {
 
    public:
       NoteDot(Score* = 0);
       virtual NoteDot* clone() const override     { return new NoteDot(*this); }
-      virtual Element::Type type() const override { return Element::Type::NOTEDOT; }
-      int idx() const                    { return _idx; }
-      void setIdx(int val)               { _idx = val; }
+      virtual ElementType type() const override   { return ElementType::NOTEDOT; }
       virtual qreal mag() const;
 
       virtual void draw(QPainter*) const override;

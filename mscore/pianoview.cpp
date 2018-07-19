@@ -532,13 +532,12 @@ void PianoView::updateNotes()
       int startTrack = staffIdx * VOICES;
       int endTrack   = startTrack + VOICES;
 
-      Segment::Type st = Segment::Type::ChordRest;
+      SegmentType st = SegmentType::ChordRest;
       for (Segment* s = staff->score()->firstSegment(st); s; s = s->next1(st)) {
             for (int track = startTrack; track < endTrack; ++track) {
-                  Chord* chord = static_cast<Chord*>(s->element(track));
-                  if (chord == 0 || chord->type() != Element::Type::CHORD)
-                        continue;
-                  addChord(chord);
+                  Element* e = s->element(track);
+                  if (e && e->isChord())
+                        addChord(toChord(e));
                   }
             }
       for (int i = 0; i < 3; ++i)

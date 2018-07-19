@@ -51,18 +51,20 @@ void SegmentList::check()
             }
       for (Segment* s = _first; s; s = s->next()) {
             switch (s->segmentType()) {
-                  case Segment::Type::Invalid:
-                  case Segment::Type::Clef:
-                  case Segment::Type::KeySig:
-                  case Segment::Type::Ambitus:
-                  case Segment::Type::TimeSig:
-                  case Segment::Type::StartRepeatBarLine:
-                  case Segment::Type::BarLine:
-                  case Segment::Type::ChordRest:
-                  case Segment::Type::Breath:
-                  case Segment::Type::EndBarLine:
-                  case Segment::Type::TimeSigAnnounce:
-                  case Segment::Type::KeySigAnnounce:
+                  case SegmentType::Invalid:
+                  case SegmentType::BeginBarLine:
+                  case SegmentType::HeaderClef:
+                  case SegmentType::Clef:
+                  case SegmentType::KeySig:
+                  case SegmentType::Ambitus:
+                  case SegmentType::TimeSig:
+                  case SegmentType::StartRepeatBarLine:
+                  case SegmentType::BarLine:
+                  case SegmentType::ChordRest:
+                  case SegmentType::Breath:
+                  case SegmentType::EndBarLine:
+                  case SegmentType::TimeSigAnnounce:
+                  case SegmentType::KeySigAnnounce:
                         break;
                   default:
                         qFatal("SegmentList::check: invalid segment type 0x%x", int(s->segmentType()));
@@ -82,6 +84,10 @@ void SegmentList::check()
       if (l != _last) {
             qFatal("SegmentList::check: bad last");
             }
+      if (f->prev())
+            qFatal("SegmentList::check: first has prev");
+      if (l->next())
+            qFatal("SegmentList::check: last has next");
       if (n != _size) {
             qFatal("SegmentList::check: counted %d but _size is %d", n, _size);
             _size = n;
@@ -106,34 +112,46 @@ void SegmentList::insert(Segment* e, Segment* el)
             e->setPrev(el->prev());
             el->prev()->setNext(e);
             el->setPrev(e);
-            check();
             }
+      check();
       }
 
 //---------------------------------------------------------
 //   remove
 //---------------------------------------------------------
 
-void SegmentList::remove(Segment* el)
+void SegmentList::remove(Segment* e)
       {
+#ifndef NDEBUG
+      check();
+      bool found = false;
+      for (Segment* s = _first; s; s = s->next()) {
+            if (e == s) {
+                  found = true;
+                  break;
+                  }
+            }
+      if (!found) {
+            qFatal("segment %p %s not in list", e, e->subTypeName());
+            }
+#endif
       --_size;
-      if (el == _first) {
+      if (e == _first) {
             _first = _first->next();
             if (_first)
                   _first->setPrev(0);
-            if (el == _last)
+            if (e == _last)
                   _last = 0;
             }
-      else if (el == _last) {
+      else if (e == _last) {
             _last = _last->prev();
             if (_last)
                   _last->setNext(0);
             }
       else {
-            el->prev()->setNext(el->next());
-            el->next()->setPrev(el->prev());
+            e->prev()->setNext(e->next());
+            e->next()->setPrev(e->prev());
             }
-      check();
       }
 
 //---------------------------------------------------------
@@ -171,67 +189,19 @@ void SegmentList::push_front(Segment* e)
       }
 
 //---------------------------------------------------------
-//   insert
-//---------------------------------------------------------
-
-void SegmentList::insert(Segment* seg)
-      {
-#ifndef NDEBUG
-//      qDebug("insertSeg <%s> %p %p %p", seg->subTypeName(), seg->prev(), seg, seg->next());
-      check();
-      for (Segment* s = _first; s; s = s->next()) {
-            if (s == seg) {
-                  qFatal("SegmentList::insert: already in list");
-                  }
-            }
-      if (seg->prev()) {
-            Segment* s;
-            for (s = _first; s; s = s->next()) {
-                  if (s == seg->prev())
-                        break;
-                  }
-            if (s != seg->prev()) {
-                  qFatal("SegmentList::insert: seg->prev() not in list");
-                  }
-            }
-
-      if (seg->next()) {
-            Segment* s;
-            for (s = _first; s; s = s->next()) {
-                  if (s == seg->next())
-                        break;
-                  }
-            if (s != seg->next()) {
-                  qFatal("SegmentList::insert: seg->next() not in list");
-                  }
-            }
-#endif
-      if (seg->prev())
-            seg->prev()->setNext(seg);
-      else
-            _first = seg;
-      if (seg->next())
-            seg->next()->setPrev(seg);
-      else
-            _last = seg;
-      ++_size;
-      check();
-      }
-
-//---------------------------------------------------------
 //   firstCRSegment
 //---------------------------------------------------------
 
 Segment* SegmentList::firstCRSegment() const
       {
-      return first(Segment::Type::ChordRest);
+      return first(SegmentType::ChordRest);
       }
 
 //---------------------------------------------------------
 //   first
 //---------------------------------------------------------
 
-Segment* SegmentList::first(Segment::Type types) const
+Segment* SegmentList::first(SegmentType types) const
       {
       for (Segment* s = _first; s; s = s->next()) {
             if (s->segmentType() & types)

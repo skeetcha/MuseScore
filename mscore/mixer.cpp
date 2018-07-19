@@ -3,7 +3,7 @@
 //  Linux Music Score Editor
 //  $Id: mixer.cpp 5651 2012-05-19 15:57:26Z lasconic $
 //
-//  Copyright (C) 2002-2010 Werner Schweer and others
+//  Copyright (C) 2002-2016 Werner Schweer and others
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2.
@@ -28,10 +28,9 @@
 #include "synthesizer/msynthesizer.h"
 #include "preferences.h"
 #include <qmessagebox.h>
+#include <accessibletoolbutton.h>
 
 namespace Ms {
-
-extern bool useFactorySettings;
 
 #define _setValue(__x, __y) \
       __x->blockSignals(true); \
@@ -51,26 +50,28 @@ PartEdit::PartEdit(QWidget* parent)
    : QWidget(parent, Qt::Dialog)
       {
       setupUi(this);
-      connect(patch,    SIGNAL(activated(int)),           SLOT(patchChanged(int)));
-      connect(volume,   SIGNAL(valueChanged(double,int)), SLOT(volChanged(double)));
-      connect(pan,      SIGNAL(valueChanged(double,int)), SLOT(panChanged(double)));
-      connect(chorus,   SIGNAL(valueChanged(double,int)), SLOT(chorusChanged(double)));
-      connect(reverb,   SIGNAL(valueChanged(double,int)), SLOT(reverbChanged(double)));
-      connect(mute,     SIGNAL(toggled(bool)),            SLOT(muteChanged(bool)));
-      connect(solo,     SIGNAL(toggled(bool)),            SLOT(soloToggled(bool)));
-      connect(drumset,  SIGNAL(toggled(bool)),            SLOT(drumsetToggled(bool)));
-      connect(portSpinBox,    SIGNAL(valueChanged(int)),  SLOT(midiChannelChanged(int)));
-      connect(channelSpinBox, SIGNAL(valueChanged(int)),  SLOT(midiChannelChanged(int)));
+      connect(patch,          SIGNAL(activated(int)),           SLOT(patchChanged(int)));
+      connect(volume,         SIGNAL(valueChanged(double,int)), SLOT(volChanged(double)));
+      connect(pan,            SIGNAL(valueChanged(double,int)), SLOT(panChanged(double)));
+      connect(chorus,         SIGNAL(valueChanged(double,int)), SLOT(chorusChanged(double)));
+      connect(reverb,         SIGNAL(valueChanged(double,int)), SLOT(reverbChanged(double)));
+      connect(mute,           SIGNAL(toggled(bool)),            SLOT(muteChanged(bool)));
+      connect(solo,           SIGNAL(toggled(bool)),            SLOT(soloToggled(bool)));
+      connect(drumset,        SIGNAL(toggled(bool)),            SLOT(drumsetToggled(bool)));
+      connect(portSpinBox,    SIGNAL(valueChanged(int)),        SLOT(midiChannelChanged(int)));
+      connect(channelSpinBox, SIGNAL(valueChanged(int)),        SLOT(midiChannelChanged(int)));
+      connect(expand,         SIGNAL(toggled(bool)),            SLOT(expandToggled(bool)));
 
-      channelLabel  ->setVisible(preferences.showMidiControls);
-      portLabel     ->setVisible(preferences.showMidiControls);
-      channelSpinBox->setVisible(preferences.showMidiControls);
-      portSpinBox   ->setVisible(preferences.showMidiControls);
+      expandToggled(false);
+      }
 
-      if (!preferences.showMidiControls)
-            hboxLayout->setSpacing(20);
-      else
-            hboxLayout->setSpacing(5);
+//---------------------------------------------------------
+//   expandToggled
+//---------------------------------------------------------
+
+void PartEdit::expandToggled(bool val)
+      {
+      details->setVisible(val);
       }
 
 //---------------------------------------------------------
@@ -112,8 +113,74 @@ void PartEdit::setPart(Part* p, Channel* a)
                   }
             }
       _setChecked(drumset, p->instrument()->useDrumset());
-      _setValue(portSpinBox,    part->score()->midiMapping(a->channel)->port + 1);
-      _setValue(channelSpinBox, part->score()->midiMapping(a->channel)->channel + 1);
+      _setValue(portSpinBox,    part->masterScore()->midiMapping(a->channel)->port + 1);
+      _setValue(channelSpinBox, part->masterScore()->midiMapping(a->channel)->channel + 1);
+
+      QHBoxLayout* hb = voiceButtonBox;
+      int idx = 0;
+      for (Staff* staff : *part->staves()) {
+            for (int voice = 0; voice < VOICES; ++voice) {
+                  if (!voiceButtons.value(idx)) {
+                        QToolButton* tb = new QToolButton;
+                        tb->setText(QString("%1").arg(voice+1));
+                        tb->setCheckable(true);
+                        tb->setChecked(staff->playbackVoice(voice));
+                        tb->setFocusPolicy(Qt::ClickFocus);
+                        tb->setToolButtonStyle(Qt::ToolButtonTextOnly);
+                        QPalette p(tb->palette());
+                        p.setColor(QPalette::Base, MScore::selectColor[voice]);
+                        tb->setPalette(p);
+                        hb->addWidget(tb);
+                        voiceButtons.append(tb);
+                        connect(tb, SIGNAL(clicked()), SLOT(playbackVoiceChanged()));
+                        }
+                  ++idx;
+                  }
+            hb->addStretch(5);
+            }
+      while (voiceButtons.value(idx)) {
+            QToolButton* tb = voiceButtons.value(idx);
+            if (!tb)
+                  break;
+            voiceButtons.takeAt(idx);
+            delete tb;
+            }
+      }
+
+//---------------------------------------------------------
+//   playbackVoiceChanged
+//---------------------------------------------------------
+
+void PartEdit::playbackVoiceChanged()
+      {
+      int idx = 0;
+      Score* score = part->score();
+      score->startCmd();
+      for (Staff* staff : *part->staves()) {
+            for (int voice = 0; voice < VOICES; ++voice) {
+                  QToolButton* tb = voiceButtons[idx];
+                  bool val = tb->isChecked();
+                  if (val != staff->playbackVoice(voice)) {
+                        switch (voice) {
+                              case 0:
+                              printf("undo\n");
+                                    staff->undoChangeProperty(Pid::PLAYBACK_VOICE1, val);
+                                    break;
+                              case 1:
+                                    staff->undoChangeProperty(Pid::PLAYBACK_VOICE2, val);
+                                    break;
+                              case 2:
+                                    staff->undoChangeProperty(Pid::PLAYBACK_VOICE3, val);
+                                    break;
+                              case 3:
+                                    staff->undoChangeProperty(Pid::PLAYBACK_VOICE4, val);
+                                    break;
+                              }
+                        }
+                  ++idx;
+                  }
+            }
+      score->endCmd();
       }
 
 //---------------------------------------------------------
@@ -123,7 +190,7 @@ void PartEdit::setPart(Part* p, Channel* a)
 Mixer::Mixer(QWidget* parent)
    : QScrollArea(parent)
       {
-      setWindowTitle(tr("MuseScore: Mixer"));
+      setObjectName("Mixer");
       setWidgetResizable(true);
       setWindowFlags(Qt::Tool);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
@@ -136,12 +203,22 @@ Mixer::Mixer(QWidget* parent)
       setWidget(area);
 
       enablePlay = new EnablePlayForWidget(this);
-      if (!useFactorySettings) {
-            QSettings settings;
-            settings.beginGroup("Mixer");
-            resize(settings.value("size", QSize(484, 184)).toSize());
-            move(settings.value("pos", QPoint(10, 10)).toPoint());
-            settings.endGroup();
+      readSettings();
+      retranslate(true);
+      }
+
+//---------------------------------------------------------
+//   retranslate
+//---------------------------------------------------------
+
+void Mixer::retranslate(bool firstTime)
+      {
+      setWindowTitle(tr("Mixer"));
+      if (!firstTime) {
+            for (int i = 0; i < vb->count(); i++) {
+                  PartEdit* p = partEdit(i);
+                  if (p) p->retranslateUi(p);
+                  }
             }
       }
 
@@ -186,21 +263,37 @@ void Mixer::keyPressEvent(QKeyEvent* ev) {
       QWidget::keyPressEvent(ev);
       }
 
+//---------------------------------------------------------
+//   changeEvent
+//---------------------------------------------------------
+
+void Mixer::changeEvent(QEvent *event)
+      {
+      QScrollArea::changeEvent(event);
+      if (event->type() == QEvent::LanguageChange)
+            retranslate();
+      }
 
 //---------------------------------------------------------
 //   updateAll
 //---------------------------------------------------------
 
-void Mixer::updateAll(Score* score)
+void Mixer::updateAll(MasterScore* score)
       {
       cs = score;
       int n = -vb->count();
+      if (n < 0) {
+            QLayoutItem* wi = vb->itemAt(vb->count()-1);
+            vb->removeItem(wi);
+            delete wi;
+            n += 1;
+            }
       if (cs) {
             QList<MidiMapping>* mm = cs->midiMapping();
-            n = mm->size() - vb->count();
+            n += mm->size();
             }
       while (n < 0) {
-            QWidgetItem* wi = (QWidgetItem*)(vb->itemAt(0));
+            QLayoutItem* wi = vb->itemAt(0);
             vb->removeItem(wi);
             delete wi->widget();
             delete wi;
@@ -212,6 +305,7 @@ void Mixer::updateAll(Score* score)
             vb->addWidget(pe);
             --n;
             }
+      vb->addStretch(5);
       patchListChanged();
       }
 
@@ -240,13 +334,15 @@ void Mixer::patchListChanged()
       int idx = 0;
       QList<MidiMapping>* mm = cs->midiMapping();
       const QList<MidiPatch*> pl = synti->getPatchInfo();
-      foreach (const MidiMapping& m, *mm) {
-            QWidgetItem* wi  = (QWidgetItem*)(vb->itemAt(idx));
+      for (const MidiMapping& m : *mm) {
+            QLayoutItem* wi  = (QWidgetItem*)(vb->itemAt(idx));
+            if (!wi->widget())
+                  continue;
             PartEdit* pe     = (PartEdit*)(wi->widget());
             bool drum        = m.part->instrument()->useDrumset();
             pe->patch->clear();
-            foreach(const MidiPatch* p, pl) {
-                  if (p->drum == drum)
+            for (const MidiPatch* p : pl) {
+                  if (p->drum == drum || p->synti != "Fluid")
                         pe->patch->addItem(p->name, QVariant::fromValue<void*>((void*)p));
                   }
             pe->setPart(m.part, m.articulation);
@@ -254,8 +350,10 @@ void Mixer::patchListChanged()
             }
       // Update solo & mute only after creating all controls (we need to sync all controls)
       idx = 0;
-      foreach (const MidiMapping& m, *mm) {
-            QWidgetItem* wi = (QWidgetItem*)(vb->itemAt(idx));
+      for (const MidiMapping& m : *mm) {
+            QLayoutItem* wi = (QWidgetItem*)(vb->itemAt(idx));
+            if (!wi->widget())
+                  continue;
             PartEdit* pe    = (PartEdit*)(wi->widget());
             pe->mute->setChecked(m.articulation->mute);
             pe->solo->setChecked(m.articulation->solo);
@@ -292,6 +390,9 @@ void Mixer::midiPrefsChanged(bool showMidiControls)
 
 void MuseScore::showMixer(bool val)
       {
+      if (!cs)
+            return;
+
       QAction* a = getAction("toggle-mixer");
       if (mixer == 0) {
             mixer = new Mixer(this);
@@ -301,7 +402,7 @@ void MuseScore::showMixer(bool val)
             connect(synti, SIGNAL(soundFontChanged()), mixer, SLOT(patchListChanged()));
             connect(mixer, SIGNAL(closed(bool)), a, SLOT(setChecked(bool)));
             }
-      mixer->updateAll(cs);
+      mixer->updateAll(cs->masterScore());
       mixer->setVisible(val);
       }
 
@@ -323,7 +424,7 @@ void PartEdit::patchChanged(int n, bool syncControls)
       if (score) {
             score->startCmd();
             score->undo(new ChangePatch(score, channel, p));
-            score->setLayoutAll(true);
+            score->setLayoutAll();
             score->endCmd();
             }
       channel->updateInitList();
@@ -400,7 +501,7 @@ void PartEdit::muteChanged(bool val, bool syncControls)
 
 void PartEdit::soloToggled(bool val, bool syncControls)
       {
-      channel->solo = val;
+      channel->solo     = val;
       channel->soloMute = !val;
       if (val) {
             mute->setChecked(false);
@@ -461,7 +562,7 @@ void PartEdit::drumsetToggled(bool val, bool syncControls)
       Score* score = part->score();
       score->startCmd();
 
-      part->undoChangeProperty(P_ID::USE_DRUMSET, val);
+      part->undoChangeProperty(Pid::USE_DRUMSET, val);
       patch->clear();
       const QList<MidiPatch*> pl = synti->getPatchInfo();
       for (const MidiPatch* p : pl) {
@@ -476,7 +577,7 @@ void PartEdit::drumsetToggled(bool val, bool syncControls)
             return;
             }
       score->undo(new ChangePatch(score, channel, p));
-      score->setLayoutAll(true);
+      score->setLayoutAll();
       score->endCmd();
       sync(syncControls);
       }
@@ -490,7 +591,8 @@ void Mixer::updateSolo(bool val)
       for (int i = 0; i < vb->count(); i++ ){
             QWidgetItem* wi = (QWidgetItem*)(vb->itemAt(i));
             PartEdit* pe    = (PartEdit*)(wi->widget());
-            pe->mute->setEnabled(!val);
+            if (pe)
+                  pe->mute->setEnabled(!val);
             }
       }
 
@@ -500,11 +602,17 @@ void Mixer::updateSolo(bool val)
 
 void Mixer::writeSettings()
       {
-      QSettings settings;
-      settings.beginGroup("Mixer");
-      settings.setValue("size", size());
-      settings.setValue("pos", pos());
-      settings.endGroup();
+      MuseScore::saveGeometry(this);
+      }
+
+//---------------------------------------------------------
+//   readSettings
+//---------------------------------------------------------
+
+void Mixer::readSettings()
+      {
+      resize(QSize(480, 600)); //ensure default size if no geometry in settings
+      MuseScore::restoreGeometry(this);
       }
 
 //---------------------------------------------------------
@@ -561,6 +669,7 @@ void PartEdit::sync(bool syncControls)
                   }
             }
       }
+
 //---------------------------------------------------------
 //   midiChannelChanged
 //   handles MIDI port & channel change
@@ -575,7 +684,7 @@ void PartEdit::midiChannelChanged(int)
       int c = channelSpinBox->value() - 1;
 
       // 1 is for going up, -1 for going down
-      int direction = copysign(1, c - part->score()->midiMapping(channel->channel)->channel);
+      int direction = copysign(1, c - part->masterScore()->midiMapping(channel->channel)->channel);
 
       // Channel 9 is special for drums
       if (part->instrument()->useDrumset() && c != 9) {
@@ -595,7 +704,7 @@ void PartEdit::midiChannelChanged(int)
 
       // If there is an instrument with the same MIDI port and channel, sync this instrument to a found one
       bool needSync = true;
-      int elementsInMixer = this->parentWidget()->layout()->count();
+      int elementsInMixer = parentWidget()->layout()->count();
       for (int i = 0; i < elementsInMixer; i++) {
             QWidgetItem* wi = (QWidgetItem*)(this->parentWidget()->layout()->itemAt(i));
             PartEdit* pe    = (PartEdit*)(wi->widget());
@@ -631,21 +740,21 @@ void PartEdit::midiChannelChanged(int)
                   QPushButton *assignFreeChannel = msgBox.addButton(tr("Assign next free MIDI channel"), QMessageBox::HelpRole);
                   msgBox.setDefaultButton(QMessageBox::Ok);
                   if (msgBox.exec() == QMessageBox::Cancel) {
-                        _setValue(channelSpinBox, part->score()->midiMapping(channel->channel)->channel + 1);
-                        _setValue(portSpinBox,    part->score()->midiMapping(channel->channel)->port + 1);
+                        _setValue(channelSpinBox, part->masterScore()->midiMapping(channel->channel)->channel + 1);
+                        _setValue(portSpinBox,    part->masterScore()->midiMapping(channel->channel)->port + 1);
                         needSync = false;
                         break;
                         }
 
                   if (msgBox.clickedButton() == assignFreeChannel) {
-                        newChannel = part->score()->getNextFreeMidiMapping();
+                        newChannel = part->masterScore()->getNextFreeMidiMapping();
                         break;
                         }
                   // Sync
                   _setValue(channelSpinBox, newChannel % 16 + 1);
                   _setValue(portSpinBox,    newChannel / 16 + 1);
-                  part->score()->midiMapping(channel->channel)->channel = newChannel % 16;
-                  part->score()->midiMapping(channel->channel)->port    = newChannel / 16;
+                  part->masterScore()->midiMapping(channel->channel)->channel = newChannel % 16;
+                  part->masterScore()->midiMapping(channel->channel)->port    = newChannel / 16;
                   channel->volume = lrint(pe->volume->value());
                   channel->pan    = lrint(pe->pan->value());
                   channel->reverb = lrint(pe->reverb->value());
@@ -661,9 +770,9 @@ void PartEdit::midiChannelChanged(int)
                   channel->bank    = newPatch->bank;
                   channel->synti   = newPatch->synti;
 
-                  part->score()->setSoloMute();
+                  part->masterScore()->setSoloMute();
                   part->score()->setInstrumentsChanged(true);
-                  part->score()->setLayoutAll(true);
+                  part->score()->setLayoutAll();
                   break;
                   }
             }
@@ -671,10 +780,10 @@ void PartEdit::midiChannelChanged(int)
       if (needSync) {
             _setValue(channelSpinBox, newChannel % 16 + 1);
             _setValue(portSpinBox,    newChannel / 16 + 1);
-            part->score()->midiMapping(channel->channel)->channel = newChannel % 16;
-            part->score()->midiMapping(channel->channel)->port    = newChannel / 16;
+            part->masterScore()->midiMapping(channel->channel)->channel = newChannel % 16;
+            part->masterScore()->midiMapping(channel->channel)->port    = newChannel / 16;
             part->score()->setInstrumentsChanged(true);
-            part->score()->setLayoutAll(true);
+            part->score()->setLayoutAll();
             seq->initInstruments();
             }
       else {
@@ -688,9 +797,9 @@ void PartEdit::midiChannelChanged(int)
             }
 
       // Update MIDI Out ports
-      int maxPort = max(p, part->score()->midiPortCount());
-      part->score()->setMidiPortCount(maxPort);
-      if (seq->driver() && (preferences.useJackMidi || preferences.useAlsaAudio))
+      int maxPort = max(p, part->score()->masterScore()->midiPortCount());
+      part->score()->masterScore()->setMidiPortCount(maxPort);
+      if (seq->driver() && (preferences.getBool(PREF_IO_JACK_USEJACKMIDI) || preferences.getBool(PREF_IO_ALSA_USEALSAAUDIO)))
             seq->driver()->updateOutPortCount(maxPort + 1);
       }
 }

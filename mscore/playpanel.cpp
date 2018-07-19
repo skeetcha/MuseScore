@@ -3,7 +3,7 @@
 //  Linux Music Score Editor
 //  $Id: playpanel.cpp 4775 2011-09-12 14:25:31Z wschweer $
 //
-//  Copyright (C) 2002-2011 Werner Schweer and others
+//  Copyright (C) 2002-2016 Werner Schweer and others
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2.
@@ -28,15 +28,12 @@
 
 namespace Ms {
 
-static const int DEFAULT_POS_X  = 300;
-static const int DEFAULT_POS_Y  = 100;
-
 //---------------------------------------------------------
 //   PlayPanel
 //---------------------------------------------------------
 
 PlayPanel::PlayPanel(QWidget* parent)
-   : QWidget(parent, Qt::Dialog)
+    : QDockWidget("PlayPanel", parent)
       {
       cachedTickPosition = -1;
       cachedTimePosition = -1;
@@ -45,10 +42,9 @@ PlayPanel::PlayPanel(QWidget* parent)
       setupUi(this);
       setWindowFlags(Qt::Tool);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+      setAllowedAreas(Qt::DockWidgetAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea));
 
-      QSettings settings;
-      restoreGeometry(settings.value("playPanel/geometry").toByteArray());
-      move(settings.value("playPanel/pos", QPoint(DEFAULT_POS_X, DEFAULT_POS_Y)).toPoint());
+      MuseScore::restoreGeometry(this);
 
       setScore(0);
 
@@ -65,24 +61,27 @@ PlayPanel::PlayPanel(QWidget* parent)
       tempoSlider->setDclickValue2(100.0);
       tempoSlider->setUseActualValue(true);
 
+      mgainSlider->setValue(seq->metronomeGain());
+      mgainSlider->setDclickValue1(seq->metronomeGain() - 10.75f);
+      mgainSlider->setDclickValue2(seq->metronomeGain() - 10.75f);
+
       connect(volumeSlider, SIGNAL(valueChanged(double,int)), SLOT(volumeChanged(double,int)));
+      connect(mgainSlider,  SIGNAL(valueChanged(double,int)), SLOT(metronomeGainChanged(double,int)));
       connect(posSlider,    SIGNAL(sliderMoved(int)),         SLOT(setPos(int)));
       connect(tempoSlider,  SIGNAL(valueChanged(double,int)), SLOT(relTempoChanged(double,int)));
       connect(tempoSlider,  SIGNAL(sliderPressed(int)),       SLOT(tempoSliderPressed(int)));
       connect(tempoSlider,  SIGNAL(sliderReleased(int)),      SLOT(tempoSliderReleased(int)));
-      connect(relTempoBox,  SIGNAL(editingFinished()),        SLOT(relTempoChanged()));
+      connect(relTempoBox,  SIGNAL(valueChanged(double)),     SLOT(relTempoChanged()));
       connect(seq,          SIGNAL(heartBeat(int,int,int)),   SLOT(heartBeat(int,int,int)));
       }
 
 PlayPanel::~PlayPanel()
       {
-      QSettings settings;
       // if widget is visible, store geometry and pos into settings
       // if widget is not visible/closed, pos is not reliable (and anyway
       // has been stored into settings when the widget has been hidden)
       if (isVisible()) {
-            settings.setValue("playPanel/pos", pos());
-            settings.setValue("playPanel/geometry", saveGeometry());
+            MuseScore::saveGeometry(this);
             }
       }
 
@@ -110,7 +109,7 @@ void PlayPanel::relTempoChanged()
       {
       double v = relTempoBox->value();
       tempoSlider->setValue(v);
-      emit relTempoChanged(v * .01);
+      relTempoChanged(v, 0);
       }
 
 //---------------------------------------------------------
@@ -137,9 +136,7 @@ void PlayPanel::closeEvent(QCloseEvent* ev)
 
 void PlayPanel::hideEvent(QHideEvent* ev)
       {
-      QSettings settings;
-      settings.setValue("playPanel/pos", pos());
-      settings.setValue("playPanel/geometry", saveGeometry());
+      MuseScore::saveGeometry(this);
       QWidget::hideEvent(ev);
       }
 
@@ -253,6 +250,15 @@ void PlayPanel::volumeChanged(double val, int)
       }
 
 //---------------------------------------------------------
+//   metronomeGainChanged
+//---------------------------------------------------------
+
+void PlayPanel::metronomeGainChanged(double val, int)
+      {
+      emit metronomeGainChanged(val);
+      }
+
+//---------------------------------------------------------
 //    setPos
 //---------------------------------------------------------
 
@@ -337,5 +343,17 @@ void PlayPanel::tempoSliderReleased(int)
       {
       tempoSliderIsPressed = false;
       }
+
+//---------------------------------------------------------
+//   changeEvent
+//---------------------------------------------------------
+
+void PlayPanel::changeEvent(QEvent *event)
+      {
+      QWidget::changeEvent(event);
+      if (event->type() == QEvent::LanguageChange)
+            retranslate();
+      }
+
 }
 

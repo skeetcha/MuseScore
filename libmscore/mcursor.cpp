@@ -11,7 +11,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
-#include "mcursor.h"
+#include "libmscore/mcursor.h"
 #include "libmscore/part.h"
 #include "libmscore/staff.h"
 #include "libmscore/note.h"
@@ -35,7 +35,10 @@ extern MScore* mscore;
 
 MCursor::MCursor(Score* s)
       {
-      _score = s;
+      if (s)
+            _score = s->masterScore();
+      else
+            _score = 0;
       move(0, 0);
       }
 
@@ -70,8 +73,8 @@ Chord* MCursor::addChord(int pitch, const TDuration& duration)
       {
       createMeasures();
       Measure* measure = _score->tick2measure(_tick);
-      Segment* segment = measure->getSegment(Segment::Type::ChordRest, _tick);
-      Chord* chord = static_cast<Chord*>(segment->element(_track));
+      Segment* segment = measure->getSegment(SegmentType::ChordRest, _tick);
+      Chord* chord = toChord(segment->element(_track));
       if (chord == 0) {
             chord = new Chord(_score);
             chord->setTrack(_track);
@@ -95,7 +98,7 @@ void MCursor::addKeySig(Key key)
       {
       createMeasures();
       Measure* measure = _score->tick2measure(_tick);
-      Segment* segment = measure->getSegment(Segment::Type::KeySig, _tick);
+      Segment* segment = measure->getSegment(SegmentType::KeySig, _tick);
       int n = _score->nstaves();
       for (int i = 0; i < n; ++i) {
             KeySig* ks = new KeySig(_score);
@@ -113,7 +116,7 @@ TimeSig* MCursor::addTimeSig(const Fraction& f)
       {
       createMeasures();
       Measure* measure = _score->tick2measure(_tick);
-      Segment* segment = measure->getSegment(Segment::Type::TimeSig, _tick);
+      Segment* segment = measure->getSegment(SegmentType::TimeSig, _tick);
       TimeSig* ts = 0;
       for (int i = 0; i < _score->nstaves(); ++i) {
             ts = new TimeSig(_score);
@@ -132,7 +135,7 @@ TimeSig* MCursor::addTimeSig(const Fraction& f)
 void MCursor::createScore(const QString& name)
       {
       delete _score;
-      _score = new Score(mscore->baseStyle());
+      _score = new MasterScore(mscore->baseStyle());
       _score->setName(name);
       move(0, 0);
       }
@@ -171,11 +174,11 @@ void MCursor::addPart(const QString& instrument)
 
 void MCursor::saveScore()
       {
-      QFile fp(_score->name() + ".mscx");
+      QFile fp(_score->fileInfo()->completeBaseName() + ".mscx");
       if (!fp.open(QIODevice::WriteOnly)) {
             qFatal("Open <%s> failed", qPrintable(fp.fileName()));
             }
-      _score->saveFile(&fp, false);
+      _score->Score::saveFile(&fp, false);
       fp.close();
       }
 

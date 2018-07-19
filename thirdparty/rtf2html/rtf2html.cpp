@@ -277,7 +277,7 @@ QString rtf2html(const QString& iString)
                }
                // special characters
                case rtf_keyword::rkw_line: case rtf_keyword::rkw_softline:
-                  par_html.write("<br>");
+                  par_html.write("<br/>");
                   break;
                case rtf_keyword::rkw_tab:
                   par_html.write("&nbsp;&nbsp;");  // maybe, this can be done better
@@ -420,6 +420,7 @@ QString rtf2html(const QString& iString)
                case rtf_keyword::rkw_trowd:
                   CurCellDefs=CellDefsList.insert(CellDefsList.end(),
                                                   table_cell_defs());
+                  // fall through
                case rtf_keyword::rkw_row:
                   if (!trCurRow->Cells.empty())
                   {

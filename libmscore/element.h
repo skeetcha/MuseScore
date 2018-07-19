@@ -2,7 +2,7 @@
 //  MuseScore
 //  Music Composition & Notation
 //
-//  Copyright (C) 2002-2013 Werner Schweer
+//  Copyright (C) 2002-2017 Werner Schweer
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2
@@ -13,38 +13,34 @@
 #ifndef __ELEMENT_H__
 #define __ELEMENT_H__
 
-#include "mscore.h"
 #include "spatium.h"
 #include "fraction.h"
 #include "scoreElement.h"
-
-class QPainter;
+#include "shape.h"
 
 namespace Ms {
 
-/**
- \file
- Definition of classes Element, ElementList, StaffLines.
-*/
+#ifdef Q_OS_MAC
+#define CONTROL_MODIFIER Qt::AltModifier
+#else
+#define CONTROL_MODIFIER Qt::ControlModifier
+#endif
 
+#ifndef VOICES
+#define VOICES 4
+#endif
 
-class Xml;
-class Measure;
-class Staff;
-class Part;
-class Score;
-class Sym;
-class MuseScoreView;
-class Segment;
-class TextStyle;
-class Element;
+class XmlReader;
+class XmlWriter;
 enum class SymId;
+enum class Pid;
+enum class SubStyleId;
 
 //---------------------------------------------------------
 //   Grip
 //---------------------------------------------------------
 
-enum class Grip : signed char {
+enum class Grip {
       NO_GRIP = -1,
       START = 0, END = 1,                         // arpeggio etc.
           MIDDLE = 2, APERTURE = 3,               // Line
@@ -57,84 +53,87 @@ enum class Grip : signed char {
 //   ElementFlag
 //---------------------------------------------------------
 
-enum class ElementFlag : char {
-      DROP_TARGET  = 0x2,
-      SELECTABLE   = 0x4,
-      MOVABLE      = 0x8,
-      SEGMENT      = 0x10,
-      HAS_TAG      = 0x20,
-      ON_STAFF     = 0x40   // parent is Segment() type
+enum class ElementFlag {
+      NOTHING         = 0x00000000,
+      DROP_TARGET     = 0x00000001,
+      NOT_SELECTABLE  = 0x00000002,
+      MOVABLE         = 0x00000004,
+      COMPOSITION     = 0x00000008,       // true if element is part of another element
+      HAS_TAG         = 0x00000010,       // true if this is a layered element
+      ON_STAFF        = 0x00000020,
+      SELECTED        = 0x00000040,
+      GENERATED       = 0x00000080,
+      INVISIBLE       = 0x00000100,
+      NO_AUTOPLACE    = 0x00000200,
+      SYSTEM          = 0x00000400,
+
+      // measure flags
+      REPEAT_END      = 0x00000800,
+      REPEAT_START    = 0x00001000,
+      REPEAT_JUMP     = 0x00002000,
+      IRREGULAR       = 0x00004000,
+      LINE_BREAK      = 0x00008000,
+      PAGE_BREAK      = 0x00010000,
+      SECTION_BREAK   = 0x00020000,
+      NO_BREAK        = 0x00040000,
+      HEADER          = 0x00080000,
+      TRAILER         = 0x00100000,    // also used in segment
+      KEYSIG          = 0x00200000,
+
+      // segment flags
+      ENABLED         = 0x00400000,    // used for segments
+      EMPTY           = 0x00800000,
+      WRITTEN         = 0x01000000,
       };
 
 typedef QFlags<ElementFlag> ElementFlags;
 Q_DECLARE_OPERATORS_FOR_FLAGS(ElementFlags);
 
-//---------------------------------------------------------
-///   \brief Unit of horizontal measure
-//    represent the space used by a Segment
-//---------------------------------------------------------
-
-class Space {
-      qreal _lw { 0.0 };       // space needed to the left
-      qreal _rw { 0.0 };       // space needed to the right
-
-   public:
-      Space() {}
-      Space(qreal a, qreal b) : _lw(a), _rw(b) {}
-      qreal lw() const             { return _lw; }
-      qreal rw() const             { return _rw; }
-      qreal width() const          { return _lw + _rw; }
-      void setLw(qreal e)          { _lw = e; }
-      void setRw(qreal m)          { _rw = m; }
-      void addL(qreal v)           { _lw += v; }
-      void addR(qreal v)           { _rw += v; }
-      void max(const Space& s);
-      Space& operator+=(const Space& s) {
-            _lw += s._lw;
-            _rw += s._rw;
-            return *this;
-            }
-      };
-
-//---------------------------------------------------------
-//   DropData
-//---------------------------------------------------------
-
-struct DropData {
-      MuseScoreView* view;
-      QPointF pos;
-      QPointF dragOffset;
-      Element* element;
-      Qt::KeyboardModifiers modifiers;
-      Fraction duration;
-
-      DropData();
-      };
+class ElementEditData;
 
 //---------------------------------------------------------
 //   EditData
 //    used in editDrag
 //---------------------------------------------------------
 
-struct EditData {
-      MuseScoreView* view;
-      Grip curGrip;
-      QPointF startMove;
+class EditData {
+      QList<ElementEditData*> data;
+
+   public:
+      MuseScoreView* view              { 0       };
+
+      QVector<QRectF> grip;
+      int grips                        { 0       };         // number of grips
+      Grip curGrip                     { Grip(0) };
+
       QPointF pos;
+      QPointF startMove;
+      QPoint  startMovePixel;
       QPointF lastPos;
       QPointF delta;
-      bool hRaster;
-      bool vRaster;
-      };
+      bool hRaster                     { false };
+      bool vRaster                     { false };
 
-//---------------------------------------------------------
-//   ElementName
-//---------------------------------------------------------
+      int key                          { 0     };
+      Qt::KeyboardModifiers modifiers  { 0     };
+      QString s;
 
-struct ElementName {
-      const char* name;
-      const char* userName;
-      ElementName(const char* _name, const char* _userName) : name(_name), userName(_userName) {}
+      Qt::MouseButtons buttons         { Qt::NoButton };
+
+      // drop data:
+      QPointF dragOffset;
+      Element* element                 { 0     };
+      Fraction duration                { Fraction(1,4) };
+
+      EditData(MuseScoreView* v) : view(v) {}
+      void init();
+      void clearData();
+
+      ElementEditData* getData(const Element*) const;
+      void addData(ElementEditData*);
+      bool control() const  { return modifiers & CONTROL_MODIFIER; }
+      bool shift() const    { return modifiers & Qt::ShiftModifier; }
+      bool isStartEndGrip() { return curGrip == Grip::START || curGrip == Grip::END; }
       };
 
 //-------------------------------------------------------------------
@@ -143,181 +142,29 @@ struct ElementName {
 ///
 ///     The Element class is the virtual base class of all
 ///     score layout elements.
-//
-//    @P bbox       rect                  bounding box relative to pos and userOff (read only)
-//    @P color      color                 element drawing color
-//    @P generated  bool                  true if the element has been generated by layout
-//    @P pagePos    point                 position in page coordinated (read only)
-//    @P parent     Element               the parent element in drawing hierarchy
-//    @P placement  enum (Element.ABOVE, Element.BELOW)
-//    @P pos        point                 position relative to parent
-//    @P selected   bool                  true if the element is currently selected
-//    @P track      int                   the track the elment belongs to
-//    @P type       enum (Element.ACCIDENTAL, .ACCIDENTAL, .AMBITUS, .ARPEGGIO, .BAGPIPE_EMBELLISHMENT, .BAR_LINE, .BEAM, .BEND, .BRACKET, .BREATH, .CHORD, .CHORDLINE, .CLEF, .COMPOUND, .DYNAMIC, .ELEMENT, .ELEMENT_LIST, .FBOX, .FIGURED_BASS, .FINGERING, .FRET_DIAGRAM, .FSYMBOL, .GLISSANDO, .GLISSANDO_SEGMENT, .HAIRPIN, .HAIRPIN_SEGMENT, .HARMONY, .HBOX, .HOOK, .ICON, .IMAGE, .INSTRUMENT_CHANGE, .INSTRUMENT_NAME, .JUMP, .KEYSIG, .LASSO, .LAYOUT_BREAK, .LEDGER_LINE, .LINE, .LYRICS, .LYRICSLINE, .LYRICSLINE_SEGMENT, .MARKER, .MEASURE, .MEASURE_LIST, .NOTE, .NOTEDOT, .NOTEHEAD, .NOTELINE, .OSSIA, .OTTAVA, .OTTAVA_SEGMENT, .PAGE, .PEDAL, .PEDAL_SEGMENT, .REHEARSAL_MARK, .REPEAT_MEASURE, .REST, .SEGMENT, .SELECTION, .SHADOW_NOTE, .SLUR, .SLUR_SEGMENT, .SPACER, .STAFF_LINES, .STAFF_LIST, .STAFF_STATE, .STAFF_TEXT, .STEM, .STEM_SLASH, .SYMBOL, .SYSTEM, .TAB_DURATION_SYMBOL, .TBOX, .TEMPO_TEXT, .TEXT, .TEXTLINE, .TEXTLINE_SEGMENT, .TIE, .TIMESIG, .TREMOLO, .TREMOLOBAR, .TRILL, .TRILL_SEGMENT, .TUPLET, .VBOX, .VOLTA, .VOLTA_SEGMENT) (read only)
-//    @P userOff    point                 manual offset to position determined by layout
-//    @P visible    bool
 //-------------------------------------------------------------------
 
-class Element : public QObject, public ScoreElement {
-      Q_OBJECT
-      Q_ENUMS(Type)
-      Q_ENUMS(Placement)
-
-      Q_PROPERTY(QRectF                   bbox        READ scriptBbox )
-      Q_PROPERTY(QColor                   color       READ color        WRITE undoSetColor)
-      Q_PROPERTY(bool                     generated   READ generated    WRITE setGenerated)
-      Q_PROPERTY(QPointF                  pagePos     READ scriptPagePos)
-      Q_PROPERTY(Ms::Element*             parent      READ parent       WRITE setParent)
-      Q_PROPERTY(Ms::Element::Placement   placement   READ placement    WRITE undoSetPlacement)
-      Q_PROPERTY(QPointF                  pos         READ scriptPos    WRITE scriptSetPos)
-      Q_PROPERTY(bool                     selected    READ selected     WRITE setSelected)
-      Q_PROPERTY(qreal                    spatium     READ spatium)
-      Q_PROPERTY(int                      track       READ track        WRITE setTrack)
-      Q_PROPERTY(Ms::Element::Type        type        READ type)
-      Q_PROPERTY(QPointF                  userOff     READ scriptUserOff WRITE scriptSetUserOff)
-      Q_PROPERTY(bool                     visible     READ visible      WRITE undoSetVisible)
-
+class Element : public ScoreElement {
       Element* _parent { 0 };
-
-      bool _generated;            ///< automatically generated Element
-
-  protected:
-      bool _selected;             ///< set if element is selected
-      bool _visible;              ///< visibility attribute
-      QColor _color;              ///< element color attribute
-
-  public:
-      //-------------------------------------------------------------------
-      //    The value of this enum determines the "stacking order"
-      //    of elements on the canvas.
-      //   Note: keep in sync with array elementNames[] in element.cpp
-      //-------------------------------------------------------------------
-      enum class Type : char {
-            INVALID = 0,
-            SYMBOL,
-            TEXT,
-            INSTRUMENT_NAME,
-            SLUR_SEGMENT,
-            STAFF_LINES,
-            BAR_LINE,
-            SYSTEM_DIVIDER,
-            STEM_SLASH,
-            LINE,
-
-            ARPEGGIO,
-            ACCIDENTAL,
-            STEM,             // list STEM before NOTE: notes in TAB might 'break' stems
-            NOTE,             // and this requires stems to be drawn before notes
-            CLEF,             // elements from CLEF to TIMESIG need to be in the order
-            KEYSIG,           // in which they appear in a measure
-            AMBITUS,
-            TIMESIG,
-            REST,
-            BREATH,
-
-            REPEAT_MEASURE,
-            IMAGE,
-            TIE,
-            ARTICULATION,
-            CHORDLINE,
-            DYNAMIC,
-            BEAM,
-            HOOK,
-            LYRICS,
-            FIGURED_BASS,
-
-            MARKER,
-            JUMP,
-            FINGERING,
-            TUPLET,
-            TEMPO_TEXT,
-            STAFF_TEXT,
-            REHEARSAL_MARK,
-            INSTRUMENT_CHANGE,
-            HARMONY,
-            FRET_DIAGRAM,
-            BEND,
-            TREMOLOBAR,
-            VOLTA,
-            HAIRPIN_SEGMENT,
-            OTTAVA_SEGMENT,
-            TRILL_SEGMENT,
-            TEXTLINE_SEGMENT,
-            VOLTA_SEGMENT,
-            PEDAL_SEGMENT,
-            LYRICSLINE_SEGMENT,
-            GLISSANDO_SEGMENT,
-            LAYOUT_BREAK,
-            SPACER,
-            STAFF_STATE,
-            LEDGER_LINE,
-            NOTEHEAD,
-            NOTEDOT,
-            TREMOLO,
-            MEASURE,
-            SELECTION,
-            LASSO,
-            SHADOW_NOTE,
-            TAB_DURATION_SYMBOL,
-            FSYMBOL,
-            PAGE,
-            HAIRPIN,
-            OTTAVA,
-            PEDAL,
-            TRILL,
-            TEXTLINE,
-            NOTELINE,
-            LYRICSLINE,
-            GLISSANDO,
-            BRACKET,
-
-            SEGMENT,
-            SYSTEM,
-            COMPOUND,
-            CHORD,
-            SLUR,
-            ELEMENT,
-            ELEMENT_LIST,
-            STAFF_LIST,
-            MEASURE_LIST,
-            HBOX,
-            VBOX,
-            TBOX,
-            FBOX,
-            ICON,
-            OSSIA,
-            BAGPIPE_EMBELLISHMENT,
-
-            MAXTYPE
-            };
-
-      enum class Placement : char {
-            ABOVE, BELOW
-            };
-
-  private:
-      Placement _placement;
-
       mutable ElementFlags _flags;
-
+      Placement _placement;
       int _track;                 ///< staffIdx * VOICES + voice
       qreal _mag;                 ///< standard magnification (derived value)
-
       QPointF _pos;               ///< Reference position, relative to _parent.
       QPointF _userOff;           ///< offset from normal layout position:
-                                  ///< user dragged object this amount.
-      QPointF _readPos;
-
       mutable QRectF _bbox;       ///< Bounding box relative to _pos + _userOff
                                   ///< valid after call to layout()
       uint _tag;                  ///< tag bitmask
-   protected:
-      QPointF _startDragPosition;   ///< used during drag
+
+  protected:
+      mutable int _z;
+      QColor _color;              ///< element color attribute
 
    public:
-      Element(Score* s = 0);
+      Element(Score* = 0, ElementFlags = ElementFlag::NOTHING);
       Element(const Element&);
       virtual ~Element();
+
       Element &operator=(const Element&) = delete;
       //@ create a copy of the element
       Q_INVOKABLE virtual Ms::Element* clone() const = 0;
@@ -329,18 +176,24 @@ class Element : public QObject, public ScoreElement {
 
       qreal spatium() const;
 
-      bool selected() const                   { return _selected;   }
-      virtual void setSelected(bool f)        { _selected = f;      }
+      inline void setFlag(ElementFlag f, bool v)       { if (v) _flags |= f; else _flags &= ~ElementFlags(f); }
+      inline void setFlag(ElementFlag f, bool v) const { if (v) _flags |= f; else _flags &= ~ElementFlags(f); }
+      inline bool flag(ElementFlag f) const            { return _flags & f; }
 
-      bool visible() const                    { return _visible;    }
-      virtual void setVisible(bool f)         { _visible = f;       }
+      bool selected() const                   { return flag(ElementFlag::SELECTED); }
+      virtual void setSelected(bool f)        { setFlag(ElementFlag::SELECTED, f);  }
+
+      bool visible() const                    { return !flag(ElementFlag::INVISIBLE);  }
+      virtual void setVisible(bool f)         { setFlag(ElementFlag::INVISIBLE, !f);   }
 
       Placement placement() const             { return _placement;  }
-      void setPlacement(Placement val)        { _placement = val;   }
+      void setPlacement(Placement val)        { _placement = val; }
       void undoSetPlacement(Placement val);
+      bool placeBelow() const                 { return _placement == Placement::BELOW; }
+      bool placeAbove() const                 { return _placement == Placement::ABOVE; }
 
-      bool generated() const                  { return _generated;  }
-      void setGenerated(bool val)             { _generated = val;   }
+      bool generated() const                  { return flag(ElementFlag::GENERATED);  }
+      void setGenerated(bool val)             { setFlag(ElementFlag::GENERATED, val);   }
 
       const QPointF& ipos() const             { return _pos;                    }
       virtual const QPointF pos() const       { return _pos + _userOff;         }
@@ -357,10 +210,10 @@ class Element : public QObject, public ScoreElement {
       qreal pageX() const;
       qreal canvasX() const;
 
-      const QPointF& userOff() const          { return _userOff;  }
-      virtual void setUserOff(const QPointF& o)       { _userOff = o;     }
-      void setUserXoffset(qreal v)            { _userOff.setX(v); }
-      void setUserYoffset(qreal v)            { _userOff.setY(v); }
+      const QPointF& userOff() const             { return _userOff;  }
+      virtual void setUserOff(const QPointF& o)  { _userOff = o;     }
+      void setUserXoffset(qreal v)               { _userOff.setX(v); }
+      void setUserYoffset(qreal v)               { _userOff.setY(v); }
 
       qreal& rUserXoffset()                   { return _userOff.rx(); }
       qreal& rUserYoffset()                   { return _userOff.ry(); }
@@ -374,72 +227,70 @@ class Element : public QObject, public ScoreElement {
       QPointF scriptUserOff() const;
       void scriptSetUserOff(const QPointF& o);
 
-      bool isNudged() const                   { return !(_readPos.isNull() && _userOff.isNull()); }
+//      bool isNudged() const                       { return !(_readPos.isNull() && _userOff.isNull()); }
+      bool isNudged() const                       { return !_userOff.isNull(); }
 
-      const QPointF& readPos() const          { return _readPos;   }
-      void setReadPos(const QPointF& p)       { _readPos = p;      }
-      virtual void adjustReadPos();
-
-      virtual const QRectF& bbox() const      { return _bbox;              }
-      virtual QRectF& bbox()                  { return _bbox;              }
-      virtual qreal height() const            { return bbox().height();    }
-      virtual void setHeight(qreal v)         { _bbox.setHeight(v);        }
-      virtual qreal width() const             { return bbox().width();     }
-      virtual void setWidth(qreal v)          { _bbox.setWidth(v);         }
+      virtual const QRectF& bbox() const          { return _bbox;              }
+      virtual QRectF& bbox()                      { return _bbox;              }
+      virtual qreal height() const                { return bbox().height();    }
+      virtual void setHeight(qreal v)             { _bbox.setHeight(v);        }
+      virtual qreal width() const                 { return bbox().width();     }
+      virtual void setWidth(qreal v)              { _bbox.setWidth(v);         }
       QRectF abbox() const                        { return bbox().translated(pagePos());   }
       QRectF pageBoundingRect() const             { return bbox().translated(pagePos());   }
       QRectF canvasBoundingRect() const           { return bbox().translated(canvasPos()); }
       virtual void setbbox(const QRectF& r) const { _bbox = r;           }
       virtual void addbbox(const QRectF& r) const { _bbox |= r;          }
-      virtual bool contains(const QPointF& p) const;
+      bool contains(const QPointF& p) const;
       bool intersects(const QRectF& r) const;
-      virtual QPainterPath shape() const;
-      virtual qreal baseLine() const          { return -height();       }
+#ifndef NDEBUG
+      virtual Shape shape() const                 { return Shape(bbox(), name());   }
+#else
+      virtual Shape shape() const                 { return Shape(bbox());   }
+#endif
+      virtual qreal baseLine() const              { return -height();       }
 
-      virtual Element::Type type() const = 0;
-      virtual int subtype() const   { return -1; }  // for select gui
-
-      bool isRest() const      { return type() == Element::Type::REST; }
-      bool isChord() const     { return type() == Element::Type::CHORD; }
-      bool isMeasure() const   { return type() == Element::Type::MEASURE; }
-      bool isChordRest() const { return type() == Element::Type::REST || type() == Element::Type::CHORD || type() == Element::Type::REPEAT_MEASURE; }
-
-      bool isDurationElement() const { return isChordRest() || (type() == Element::Type::TUPLET); }
-      bool isSLine() const;
-      bool isSLineSegment() const;
+      virtual int subtype() const                 { return -1; }  // for select gui
 
       virtual void draw(QPainter*) const {}
+      void drawAt(QPainter*p, const QPointF& pt) const { p->translate(pt); draw(p); p->translate(-pt);}
 
-      virtual void writeProperties(Xml& xml) const;
+      virtual void writeProperties(XmlWriter& xml) const;
       virtual bool readProperties(XmlReader&);
 
-      virtual void write(Xml&) const;
+      virtual void write(XmlWriter&) const;
       virtual void read(XmlReader&);
 
-      virtual QRectF drag(EditData*);
-      virtual void endDrag()                  {}
+      virtual void startDrag(EditData&);
+      virtual QRectF drag(EditData&);
+      virtual void endDrag(EditData&);
       virtual QLineF dragAnchor() const       { return QLineF(); }
 
-      virtual bool isEditable() const         { return !_generated; }
-      virtual void startEdit(MuseScoreView*, const QPointF&);
-      virtual bool edit(MuseScoreView*, Grip, int key, Qt::KeyboardModifiers, const QString& s);
-      virtual void editDrag(const EditData&);
-      virtual void endEditDrag()                               {}
-      virtual void endEdit()                                   {}
-      virtual void updateGrips(Grip*, QVector<QRectF>&) const      { }
-      virtual bool nextGrip(Grip*) const;
-      virtual int grips() const                { return 0; }
-      virtual bool prevGrip(Grip*) const;
-      virtual QPointF gripAnchor(Grip) const   { return QPointF(); }
-      virtual void setGrip(Grip, const QPointF&);
-      virtual QPointF getGrip(Grip) const;
+      virtual bool isEditable() const         { return !flag(ElementFlag::GENERATED); }
+
+      virtual void startEdit(EditData&);
+      virtual bool edit(EditData&);
+      virtual void startEditDrag(EditData&);
+      virtual void editDrag(EditData&);
+      virtual void endEditDrag(EditData&);
+      virtual void endEdit(EditData&);
+
+      virtual void editCut(EditData&)            {}
+      virtual void editCopy(EditData&)           {}
+
+      virtual void updateGrips(EditData&) const  {}
+      virtual bool nextGrip(EditData&) const;
+      virtual bool prevGrip(EditData&) const;
+      virtual QPointF gripAnchor(Grip) const     { return QPointF(); }
 
       int track() const                       { return _track; }
       virtual void setTrack(int val)          { _track = val;  }
 
-      virtual int z() const                   { return int(type()) * 100; }  // stacking order
+      int z() const;
+      void setZ(int val)                      { _z = val;  }
 
       int staffIdx() const                    { return _track >> 2;        }
+      virtual int vStaffIdx() const           { return staffIdx();         }
       int voice() const                       { return _track & 3;         }
       void setVoice(int v)                    { _track = (_track / VOICES) * VOICES + v; }
       Staff* staff() const;
@@ -455,24 +306,21 @@ class Element : public QObject, public ScoreElement {
 
       // debug functions
       virtual void dump() const;
-      const char* name() const;
       virtual Q_INVOKABLE QString subtypeName() const;
       //@ Returns the human-readable name of the element type
-      virtual Q_INVOKABLE QString userName() const;
       //@ Returns the name of the element type
       virtual Q_INVOKABLE QString _name() const { return QString(name()); }
       void dumpQPointF(const char*) const;
 
-      virtual Space space() const      { return Space(0.0, width()); }
-
       virtual QColor color() const             { return _color; }
       QColor curColor() const;
-      QColor curColor(const Element* proxy) const;
+      QColor curColor(bool isVisible) const;
+      QColor curColor(bool isVisible, QColor normalColor) const;
       virtual void setColor(const QColor& c)     { _color = c;    }
       void undoSetColor(const QColor& c);
       void undoSetVisible(bool v);
 
-      static Element::Type readType(XmlReader& node, QPointF*, Fraction*);
+      static ElementType readType(XmlReader& node, QPointF*, Fraction*);
 
       QByteArray mimeData(const QPointF&) const;
 /**
@@ -482,41 +330,41 @@ class Element : public QObject, public ScoreElement {
  Reimplemented by elements that accept drops. Used to change cursor shape while
  dragging to indicate drop targets.
 */
-      virtual bool acceptDrop(const DropData&) const { return false; }
+      virtual bool acceptDrop(EditData&) const { return false; }
 
 /**
  Handle a dropped element at canvas relative \a pos of given element
  \a type and \a subtype. Returns dropped element if any.
- The ownership of element in DropData is transfered to the called
+ The ownership of element in DropData is transferred to the called
  element (if not used, element has to be deleted).
  The returned element will be selected if not in note edit mode.
 
  Reimplemented by elements that accept drops.
 */
-      virtual Element* drop(const DropData&) { return 0;}
+      virtual Element* drop(EditData&) { return 0;}
 
 /**
  delivers mouseEvent to element in edit mode
  returns true if mouse event is accepted by element
  */
-      virtual bool mousePress(const QPointF&, QMouseEvent*) { return false; }
+      virtual bool mousePress(EditData&) { return false; }
 
-      mutable bool itemDiscovered;     ///< helper flag for bsp
+      mutable bool itemDiscovered      { false };     ///< helper flag for bsp
 
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true);
 
-      virtual void reset();
+      virtual void reset() override;         // reset all properties & position to default
 
       virtual qreal mag() const        { return _mag;   }
       void setMag(qreal val)           { _mag = val;    }
       qreal magS() const;
 
-      bool isText() const;
       bool isPrintable() const;
-      virtual bool isSpanner() const           { return false; }
-      virtual bool isSpannerSegment() const    { return false; }
-
       qreal point(const Spatium sp) const { return sp.val() * spatium(); }
+
+      virtual int tick() const;       // utility, searches for segment / segment parent
+      virtual int rtick() const;      // utility, searches for segment / segment parent
+      virtual Fraction ftick() const; // fractional tick
 
       //
       // check element for consistency; return false if element
@@ -524,52 +372,54 @@ class Element : public QObject, public ScoreElement {
       //
       virtual bool check() const { return true; }
 
-      QPointF startDragPosition() const           { return _startDragPosition; }
-      void setStartDragPosition(const QPointF& v) { _startDragPosition = v; }
-
-      static const char* name(Element::Type type);
-      static Ms::Element* create(Ms::Element::Type type, Score*);
-      static Element::Type name2type(const QStringRef&);
+      static Ms::Element* create(Ms::ElementType type, Score*);
       static Element* name2Element(const QStringRef&, Score*);
 
-      void setFlag(ElementFlag f, bool v)  {
-            if (v)
-                  _flags |= f;
-            else
-                  _flags &= ~ElementFlags(f);
-            }
-      bool flag(ElementFlag f) const   { return _flags & f; }
-      void setFlags(ElementFlags f)    { _flags = f;    }
-      ElementFlags flags() const       { return _flags; }
-      virtual bool systemFlag() const  { return false;  }
-      bool selectable() const          { return flag(ElementFlag::SELECTABLE);  }
-      void setSelectable(bool val)     { setFlag(ElementFlag::SELECTABLE, val); }
+      virtual bool systemFlag() const          { return flag(ElementFlag::SYSTEM);  }
+      void setSystemFlag(bool v) const { setFlag(ElementFlag::SYSTEM, v);  }
+
+      bool header() const              { return flag(ElementFlag::HEADER);        }
+      void setHeader(bool v)           { setFlag(ElementFlag::HEADER, v);         }
+
+      bool trailer() const             { return flag(ElementFlag::TRAILER); }
+      void setTrailer(bool val)        { setFlag(ElementFlag::TRAILER, val); }
+
+      bool selectable() const          { return !flag(ElementFlag::NOT_SELECTABLE);  }
+      void setSelectable(bool val)     { setFlag(ElementFlag::NOT_SELECTABLE, !val); }
+
       bool dropTarget() const          { return flag(ElementFlag::DROP_TARGET); }
-      void setDropTarget(bool v) const {
-            if (v)
-                  _flags |= ElementFlag::DROP_TARGET;
-            else
-                  _flags &= ~ElementFlags(ElementFlag::DROP_TARGET);
-            }
+      void setDropTarget(bool v) const { setFlag(ElementFlag::DROP_TARGET, v);  }
+
+      bool composition() const          { return flag(ElementFlag::COMPOSITION); }
+      void setComposition(bool v) const { setFlag(ElementFlag::COMPOSITION, v);  }
+
       virtual bool isMovable() const   { return flag(ElementFlag::MOVABLE);     }
-      bool isSegment() const           { return flag(ElementFlag::SEGMENT);     }
+
+      bool enabled() const             { return flag(ElementFlag::ENABLED); }
+      void setEnabled(bool val)        { setFlag(ElementFlag::ENABLED, val); }
+
       uint tag() const                 { return _tag;                      }
       void setTag(uint val)            { _tag = val;                       }
 
-      virtual QVariant getProperty(P_ID) const override;
-      virtual bool setProperty(P_ID, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      bool autoplace() const           { return !flag(ElementFlag::NO_AUTOPLACE); }
+      void setAutoplace(bool v)        { setFlag(ElementFlag::NO_AUTOPLACE, !v); }
 
-      virtual void styleChanged() {}
+      virtual QVariant getProperty(Pid) const override;
+      virtual bool setProperty(Pid, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
-      void drawSymbol(SymId id, QPainter* p, const QPointF& o = QPointF()) const;
+      bool custom(Pid) const;
+      virtual bool isUserModified() const;
+
+      void drawSymbol(SymId id, QPainter* p, const QPointF& o = QPointF(), qreal scale = 1.0) const;
       void drawSymbol(SymId id, QPainter* p, const QPointF& o, int n) const;
-      void drawSymbols(const QList<SymId>&, QPainter* p, const QPointF& o = QPointF()) const;
+      void drawSymbols(const std::vector<SymId>&, QPainter* p, const QPointF& o = QPointF(), qreal scale = 1.0) const;
+      void drawSymbols(const std::vector<SymId>&, QPainter* p, const QPointF& o, const QSizeF& scale) const;
       qreal symHeight(SymId id) const;
       qreal symWidth(SymId id) const;
-      qreal symWidth(const QList<SymId>&) const;
+      qreal symWidth(const std::vector<SymId>&) const;
       QRectF symBbox(SymId id) const;
-      QRectF symBbox(const QList<SymId>&) const;
+      QRectF symBbox(const std::vector<SymId>&) const;
       QPointF symStemDownNW(SymId id) const;
       QPointF symStemUpSE(SymId id) const;
       QPointF symCutOutNE(SymId id) const;
@@ -577,99 +427,63 @@ class Element : public QObject, public ScoreElement {
       QPointF symCutOutSE(SymId id) const;
       QPointF symCutOutSW(SymId id) const;
       qreal symAdvance(SymId id) const;
-      QList<SymId> toTimeSigString(const QString& s) const;
       bool symIsValid(SymId id) const;
 
-      virtual Element* nextElement();  //< Used for navigation
-      virtual Element* prevElement();  //< next-element and prev-element command
-
       bool concertPitch() const;
-      virtual QString accessibleInfo();                                  //< used to populate the status bar
-      virtual QString screenReaderInfo()    { return accessibleInfo(); } //< by default returns accessibleInfo, but can be overriden
-                                                                         //  if the screen-reader needs a special string (see note for example)
-      virtual QString accessibleExtraInfo() { return QString();        } //< used to return info that will be appended to accessibleInfo
-                                                                         // and passed only to the screen-reader
+      virtual Element* nextElement(); // selects the next score element, (notes, rests etc. as well as articulation etc.)
+      virtual Element* prevElement(); // selects the next score element, (notes, rests etc. as well as articulation etc.)
+      virtual Element* nextSegmentElement();  //< Used for navigation
+      virtual Element* prevSegmentElement();  //< next-element and prev-element command
 
-      virtual bool isUserModified() const;
+      virtual QString accessibleInfo() const;         //< used to populate the status bar
+      virtual QString screenReaderInfo() const  {     //< by default returns accessibleInfo, but can be overridden
+            return accessibleInfo();
+            }
+                                                       //  if the screen-reader needs a special string (see note for example)
+      virtual QString accessibleExtraInfo() const {    // used to return info that will be appended to accessibleInfo
+            return QString();                          // and passed only to the screen-reader
+            }
+
+      virtual void triggerLayout() const;
+      virtual void drawEditMode(QPainter*, EditData&);
+
+      void autoplaceSegmentElement(qreal minDistance);      // helper function
+      qreal styleP(Sid idx) const;
+      };
+
+//-----------------------------------------------------------------------------
+//   ElementEditData
+//    holds element specific data during element editing:
+//
+//    startEditDrag(EditData&)    creates data and attaches it to EditData
+//       editDrag(EditData&)
+//    endEditDrag(EditData&)      use data to create undo records
+//-----------------------------------------------------------------------------
+
+struct PropertyData {
+      Pid id;
+      QVariant data;
+      };
+
+class ElementEditData {
+   public:
+      Element* e;
+      QList<PropertyData> propertyData;
+
+      void pushProperty(Pid pid) { propertyData.push_back(PropertyData({pid, e->getProperty(pid) })); }
       };
 
 //---------------------------------------------------------
 //   ElementList
 //---------------------------------------------------------
 
-// class ElementList : public std::list<Element*> {
-class ElementList : public QList<Element*> {
+class ElementList : public std::vector<Element*> {
    public:
       ElementList() {}
       bool remove(Element*);
       void replace(Element* old, Element* n);
-      void write(Xml&) const;
-      void write(Xml&, const char* name) const;
-      };
-
-//-------------------------------------------------------------------
-//   @@ StaffLines
-///    The StaffLines class is the graphic representation of a staff,
-///    it draws the horizontal staff lines.
-//-------------------------------------------------------------------
-
-class StaffLines : public Element {
-      Q_OBJECT
-
-      qreal dist;
-      qreal lw;
-      int lines;
-
-   public:
-      StaffLines(Score*);
-      virtual StaffLines* clone() const    { return new StaffLines(*this); }
-      virtual Element::Type type() const   { return Element::Type::STAFF_LINES; }
-      virtual void layout();
-
-      Measure* measure() const             { return (Measure*)parent(); }
-      virtual void draw(QPainter*) const;
-      virtual QPointF pagePos() const;    ///< position in page coordinates
-      virtual QPointF canvasPos() const;  ///< position in page coordinates
-      qreal y1() const;
-      qreal staffHeight() const { return (lines-1) * dist; }
-      };
-
-//---------------------------------------------------------
-//   @@ Line
-//---------------------------------------------------------
-
-class Line : public Element {
-      Q_OBJECT
-
-      Spatium _width;
-      Spatium _len;
-      int _z;                     ///< stacking order when drawing or selecting;
-                                  ///< elements are drawn from high number to low number;
-                                  ///< default is type() * 100;
-
-   protected:
-      bool vertical;
-
-   public:
-      Line(Score*);
-      Line(Score*, bool vertical);
-      Line &operator=(const Line&);
-
-      virtual Line* clone() const        { return new Line(*this); }
-      virtual Element::Type type() const { return Element::Type::LINE; }
-      virtual void layout();
-
-      virtual void draw(QPainter*) const;
-      void writeProperties(Xml& xml) const;
-      bool readProperties(XmlReader&);
-      void dump() const;
-
-      Spatium len()    const { return _len; }
-      Spatium lineWidth()  const { return _width; }
-      void setLen(Spatium);
-      void setLineWidth(Spatium);
-      virtual int z() const               { return _z; }
-      void setZ(int val)                  { _z = val;  }
+      void write(XmlWriter&) const;
+      void write(XmlWriter&, const char* name) const;
       };
 
 //---------------------------------------------------------
@@ -677,8 +491,6 @@ class Line : public Element {
 //---------------------------------------------------------
 
 class Compound : public Element {
-      Q_OBJECT
-
       QList<Element*> elements;
 
    protected:
@@ -687,7 +499,7 @@ class Compound : public Element {
    public:
       Compound(Score*);
       Compound(const Compound&);
-      virtual Element::Type type() const = 0;
+      virtual ElementType type() const = 0;
 
       virtual void draw(QPainter*) const;
       virtual void addElement(Element*, qreal x, qreal y);
@@ -703,10 +515,7 @@ extern void collectElements(void* data, Element* e);
 
 }     // namespace Ms
 
-
-
-Q_DECLARE_METATYPE(Ms::Element::Type);
-Q_DECLARE_METATYPE(Ms::Element::Placement);
+Q_DECLARE_METATYPE(Ms::ElementType);
 
 #endif
 

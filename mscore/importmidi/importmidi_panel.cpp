@@ -47,7 +47,7 @@ void ImportMidiPanel::setMidiFile(const QString &fileName)
       if (!QFile(_midiFile).exists())
             return;
 
-      MidiOperations::Data &opers = preferences.midiImportOperations;
+      MidiOperations::Data &opers = midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       if (opers.data()->processingsOfOpenedFile == 1) {     // initial processing of MIDI file
@@ -85,7 +85,7 @@ void ImportMidiPanel::setMidiFile(const QString &fileName)
 
 void ImportMidiPanel::saveTableViewState()
       {
-      MidiOperations::Data &opers = preferences.midiImportOperations;
+      MidiOperations::Data &opers = midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       const QByteArray hData = _ui->tracksView->horizontalHeader()->saveState();
@@ -96,7 +96,7 @@ void ImportMidiPanel::saveTableViewState()
 
 void ImportMidiPanel::restoreTableViewState()
       {
-      MidiOperations::Data &opers = preferences.midiImportOperations;
+      MidiOperations::Data &opers = midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       const QByteArray hData = opers.data()->HHeaderData;
@@ -121,9 +121,6 @@ bool ImportMidiPanel::isMidiFile(const QString &fileName)
 
 void ImportMidiPanel::setupUi()
       {
-      _ui->pushButtonUp->setIcon(*icons[int(Icons::arrowUp_ICON)]);
-      _ui->pushButtonDown->setIcon(*icons[int(Icons::arrowDown_ICON)]);
-
       connect(_updateUiTimer, SIGNAL(timeout()), this, SLOT(updateUi()));
       connect(_ui->pushButtonApply, SIGNAL(clicked()), SLOT(applyMidiImport()));
       connect(_ui->pushButtonCancel, SIGNAL(clicked()), SLOT(cancelChanges()));
@@ -180,7 +177,7 @@ void ImportMidiPanel::hidePanel()
 
 void ImportMidiPanel::setReorderedIndexes()
       {
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
       for (int i = 0; i != _model->trackCount(); ++i) {
             const int trackRow = _model->rowFromTrackIndex(i);
             const int reorderedRow = _ui->tracksView->verticalHeader()->logicalIndex(trackRow);
@@ -196,7 +193,7 @@ void ImportMidiPanel::applyMidiImport()
 
       _importInProgress = true;
 
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
                   // update charset
       if (opers.data()->charset != _ui->comboBoxCharset->currentText()) {
@@ -221,7 +218,7 @@ void ImportMidiPanel::cancelChanges()
       if (!canTryCancelChanges())
             return;
 
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
 
       _model->reset(opers.data()->trackOpers,
@@ -249,7 +246,7 @@ bool ImportMidiPanel::canTryCancelChanges() const
       if (!_model->isAllApplied())
             return true;
 
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, _midiFile);
       if (!opers.data())
             return false;
@@ -305,7 +302,7 @@ void ImportMidiPanel::excludeMidiFile(const QString &fileName)
       if (_importInProgress || _reopenInProgress)
             return;
 
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
       opers.excludeMidiFile(fileName);
 
       if (fileName == _midiFile) {

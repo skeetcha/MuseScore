@@ -1,7 +1,6 @@
 //=============================================================================
 //  MuseScore
 //  Music Composition & Notation
-//  $Id:$
 //
 //  Copyright (C) 2013 Werner Schweer and others
 //
@@ -24,10 +23,9 @@ namespace Ms {
 //   InspectorArpeggio
 //---------------------------------------------------------
 
-class InspectorArpeggio : public InspectorBase {
+class InspectorArpeggio : public InspectorElementBase {
       Q_OBJECT
 
-      UiInspectorElement   e;
       Ui::InspectorArpeggio g;
 
    public:

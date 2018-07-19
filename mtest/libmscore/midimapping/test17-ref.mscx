@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,14 +22,6 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -288,7 +264,9 @@
       </Part>
     <Part>
       <Staff id="5">
-        <StaffType group="pitched">
+        <StaffType group="percussion">
+          <name>perc5Line</name>
+          <keysig>0</keysig>
           </StaffType>
         </Staff>
       <trackName>Drums</trackName>
@@ -298,186 +276,431 @@
         <trackName>Drumset</trackName>
         <instrumentId>drum.group.set</instrumentId>
         <useDrumset>1</useDrumset>
+        <Drum pitch="27">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>High Q</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="28">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Slap</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="29">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Scratch Push</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="30">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Scratch Pull</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="31">
+          <head>cross</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Sticks</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="32">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Square Click</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="33">
+          <head>cross</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Metronome Click</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="34">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Metronome Bell</name>
+          <stem>1</stem>
+          </Drum>
         <Drum pitch="35">
-          <head>0</head>
+          <head>normal</head>
           <line>7</line>
-          <voice>1</voice>
+          <voice>0</voice>
           <name>Acoustic Bass Drum</name>
-          <stem>2</stem>
+          <stem>1</stem>
           </Drum>
         <Drum pitch="36">
-          <head>0</head>
+          <head>normal</head>
           <line>7</line>
-          <voice>1</voice>
+          <voice>0</voice>
           <name>Bass Drum 1</name>
-          <stem>2</stem>
-          <shortcut>B</shortcut>
+          <stem>1</stem>
           </Drum>
         <Drum pitch="37">
-          <head>1</head>
+          <head>cross</head>
           <line>3</line>
           <voice>0</voice>
           <name>Side Stick</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="38">
-          <head>0</head>
+          <head>normal</head>
           <line>3</line>
           <voice>0</voice>
           <name>Acoustic Snare</name>
           <stem>1</stem>
-          <shortcut>A</shortcut>
+          </Drum>
+        <Drum pitch="39">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Hand Clap</name>
+          <stem>1</stem>
           </Drum>
         <Drum pitch="40">
-          <head>0</head>
+          <head>normal</head>
           <line>3</line>
           <voice>0</voice>
           <name>Electric Snare</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="41">
-          <head>0</head>
-          <line>5</line>
+          <head>normal</head>
+          <line>6</line>
           <voice>0</voice>
           <name>Low Floor Tom</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="42">
-          <head>1</head>
+          <head>cross</head>
           <line>-1</line>
           <voice>0</voice>
           <name>Closed Hi-Hat</name>
           <stem>1</stem>
-          <shortcut>G</shortcut>
           </Drum>
         <Drum pitch="43">
-          <head>0</head>
+          <head>normal</head>
           <line>5</line>
-          <voice>1</voice>
+          <voice>0</voice>
           <name>High Floor Tom</name>
-          <stem>2</stem>
+          <stem>1</stem>
           </Drum>
         <Drum pitch="44">
-          <head>1</head>
-          <line>9</line>
-          <voice>1</voice>
+          <head>cross</head>
+          <line>7</line>
+          <voice>0</voice>
           <name>Pedal Hi-Hat</name>
-          <stem>2</stem>
-          <shortcut>F</shortcut>
+          <stem>1</stem>
           </Drum>
         <Drum pitch="45">
-          <head>0</head>
-          <line>2</line>
+          <head>normal</head>
+          <line>4</line>
           <voice>0</voice>
           <name>Low Tom</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="46">
-          <head>1</head>
-          <line>1</line>
+          <head>cross</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Open Hi-Hat</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="47">
-          <head>0</head>
-          <line>1</line>
+          <head>normal</head>
+          <line>2</line>
           <voice>0</voice>
           <name>Low-Mid Tom</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="48">
-          <head>0</head>
-          <line>0</line>
+          <head>normal</head>
+          <line>1</line>
           <voice>0</voice>
           <name>Hi-Mid Tom</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="49">
-          <head>1</head>
-          <line>-2</line>
+          <head>diamond</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Crash Cymbal 1</name>
           <stem>1</stem>
-          <shortcut>C</shortcut>
           </Drum>
         <Drum pitch="50">
-          <head>0</head>
+          <head>normal</head>
           <line>0</line>
           <voice>0</voice>
           <name>High Tom</name>
           <stem>1</stem>
-          <shortcut>E</shortcut>
           </Drum>
         <Drum pitch="51">
-          <head>1</head>
-          <line>0</line>
+          <head>diamond</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Ride Cymbal 1</name>
           <stem>1</stem>
-          <shortcut>D</shortcut>
           </Drum>
         <Drum pitch="52">
-          <head>1</head>
-          <line>-3</line>
+          <head>cross</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Chinese Cymbal</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="53">
-          <head>2</head>
-          <line>0</line>
+          <head>diamond</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Ride Bell</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="54">
-          <head>2</head>
+          <head>cross</head>
           <line>2</line>
           <voice>0</voice>
           <name>Tambourine</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="55">
-          <head>1</head>
-          <line>-3</line>
+          <head>normal</head>
+          <line>3</line>
           <voice>0</voice>
           <name>Splash Cymbal</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="56">
-          <head>3</head>
+          <head>normal</head>
           <line>1</line>
           <voice>0</voice>
           <name>Cowbell</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="57">
-          <head>1</head>
-          <line>-3</line>
+          <head>diamond</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Crash Cymbal 2</name>
           <stem>1</stem>
           </Drum>
+        <Drum pitch="58">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Vibraslap</name>
+          <stem>1</stem>
+          </Drum>
         <Drum pitch="59">
-          <head>1</head>
-          <line>2</line>
+          <head>diamond</head>
+          <line>-1</line>
           <voice>0</voice>
           <name>Ride Cymbal 2</name>
           <stem>1</stem>
           </Drum>
+        <Drum pitch="60">
+          <head>normal</head>
+          <line>8</line>
+          <voice>0</voice>
+          <name>Hi Bongo</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="61">
+          <head>normal</head>
+          <line>9</line>
+          <voice>0</voice>
+          <name>Low Bongo</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="62">
+          <head>cross</head>
+          <line>5</line>
+          <voice>0</voice>
+          <name>Mute Hi Conga</name>
+          <stem>1</stem>
+          </Drum>
         <Drum pitch="63">
-          <head>1</head>
+          <head>cross</head>
           <line>4</line>
           <voice>0</voice>
           <name>Open Hi Conga</name>
           <stem>1</stem>
           </Drum>
         <Drum pitch="64">
-          <head>1</head>
+          <head>cross</head>
           <line>6</line>
           <voice>0</voice>
           <name>Low Conga</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="65">
+          <head>cross</head>
+          <line>8</line>
+          <voice>0</voice>
+          <name>High Timbale</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="66">
+          <head>cross</head>
+          <line>9</line>
+          <voice>0</voice>
+          <name>Low Timbale</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="67">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>High Agogo</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="68">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Low Agogo</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="69">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Cabasa</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="70">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Maracas</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="71">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Short Whistle</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="72">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Long Whistle</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="73">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Short Güiro</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="74">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Long Güiro</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="75">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Claves</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="76">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Hi Wood Block</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="77">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Low Wood Block</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="78">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Mute Cuica</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="79">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Open Cuica</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="80">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Mute Triangle</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="81">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Open Triangle</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="82">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Shaker</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="83">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Sleigh Bell</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="84">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Bell Tree</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="85">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Castanets</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="86">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Mute Surdo</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="87">
+          <head>normal</head>
+          <line>3</line>
+          <voice>0</voice>
+          <name>Open Surdo</name>
           <stem>1</stem>
           </Drum>
         <clef>PERC</clef>
@@ -559,11 +782,7 @@
             <string>4</string>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
-        <tick>0</tick>
+        <move>0/1</move>
         <Rest>
           <lid>8</lid>
           <track>1</track>
@@ -619,11 +838,7 @@
             <string>3</string>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
-        <tick>0</tick>
+        <move>0/1</move>
         <Rest>
           <lid>19</lid>
           <track>5</track>
@@ -679,11 +894,7 @@
             <string>2</string>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
-        <tick>0</tick>
+        <move>0/1</move>
         <Rest>
           <lid>29</lid>
           <track>9</track>
@@ -739,11 +950,7 @@
             <string>1</string>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
-        <tick>0</tick>
+        <move>0/1</move>
         <Rest>
           <lid>39</lid>
           <track>13</track>
@@ -793,15 +1000,11 @@
           <durationType>whole</durationType>
           <Note>
             <lid>48</lid>
-            <pitch>72</pitch>
-            <tpc>14</tpc>
+            <pitch>38</pitch>
+            <tpc>16</tpc>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
-        <tick>0</tick>
+        <move>0/1</move>
         <Rest>
           <lid>49</lid>
           <track>17</track>
@@ -830,36 +1033,12 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>1</linkedTo>
@@ -873,6 +1052,7 @@
             <name>tab6StrCommon</name>
             <lines>6</lines>
             <lineDistance>1.5</lineDistance>
+            <stepOffset>2</stepOffset>
             <timesig>0</timesig>
             <durations>0</durations>
             <durationFontName>MuseScore Tab Modern</durationFontName>
@@ -991,11 +1171,7 @@
               <string>4</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>8</lid>
             <track>1</track>
@@ -1035,11 +1211,7 @@
               <string>4</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>8</lid>
             <track>5</track>
@@ -1070,36 +1242,12 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>2</linkedTo>
@@ -1113,6 +1261,7 @@
             <name>tab6StrCommon</name>
             <lines>6</lines>
             <lineDistance>1.5</lineDistance>
+            <stepOffset>2</stepOffset>
             <timesig>0</timesig>
             <durations>0</durations>
             <durationFontName>MuseScore Tab Modern</durationFontName>
@@ -1231,11 +1380,7 @@
               <string>3</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>19</lid>
             <track>1</track>
@@ -1275,11 +1420,7 @@
               <string>3</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>19</lid>
             <track>5</track>
@@ -1310,36 +1451,12 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>3</linkedTo>
@@ -1353,6 +1470,7 @@
             <name>tab6StrCommon</name>
             <lines>6</lines>
             <lineDistance>1.5</lineDistance>
+            <stepOffset>2</stepOffset>
             <timesig>0</timesig>
             <durations>0</durations>
             <durationFontName>MuseScore Tab Modern</durationFontName>
@@ -1471,11 +1589,7 @@
               <string>2</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>29</lid>
             <track>1</track>
@@ -1515,11 +1629,7 @@
               <string>2</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>29</lid>
             <track>5</track>
@@ -1550,36 +1660,12 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>4</linkedTo>
@@ -1593,6 +1679,7 @@
             <name>tab6StrCommon</name>
             <lines>6</lines>
             <lineDistance>1.5</lineDistance>
+            <stepOffset>2</stepOffset>
             <timesig>0</timesig>
             <durations>0</durations>
             <durationFontName>MuseScore Tab Modern</durationFontName>
@@ -1711,11 +1798,7 @@
               <string>1</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>39</lid>
             <track>1</track>
@@ -1755,11 +1838,7 @@
               <string>1</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>39</lid>
             <track>5</track>
@@ -1790,40 +1869,18 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>5</linkedTo>
-          <StaffType group="pitched">
+          <StaffType group="percussion">
+            <name>perc5Line</name>
+            <keysig>0</keysig>
             </StaffType>
           </Staff>
         <trackName></trackName>
@@ -1833,186 +1890,431 @@
           <trackName>Drumset</trackName>
           <instrumentId>drum.group.set</instrumentId>
           <useDrumset>1</useDrumset>
+          <Drum pitch="27">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>High Q</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="28">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Slap</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="29">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Scratch Push</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="30">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Scratch Pull</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="31">
+            <head>cross</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Sticks</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="32">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Square Click</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="33">
+            <head>cross</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Metronome Click</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="34">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Metronome Bell</name>
+            <stem>1</stem>
+            </Drum>
           <Drum pitch="35">
-            <head>0</head>
+            <head>normal</head>
             <line>7</line>
-            <voice>1</voice>
+            <voice>0</voice>
             <name>Acoustic Bass Drum</name>
-            <stem>2</stem>
+            <stem>1</stem>
             </Drum>
           <Drum pitch="36">
-            <head>0</head>
+            <head>normal</head>
             <line>7</line>
-            <voice>1</voice>
+            <voice>0</voice>
             <name>Bass Drum 1</name>
-            <stem>2</stem>
-            <shortcut>B</shortcut>
+            <stem>1</stem>
             </Drum>
           <Drum pitch="37">
-            <head>1</head>
+            <head>cross</head>
             <line>3</line>
             <voice>0</voice>
             <name>Side Stick</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="38">
-            <head>0</head>
+            <head>normal</head>
             <line>3</line>
             <voice>0</voice>
             <name>Acoustic Snare</name>
             <stem>1</stem>
-            <shortcut>A</shortcut>
+            </Drum>
+          <Drum pitch="39">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Hand Clap</name>
+            <stem>1</stem>
             </Drum>
           <Drum pitch="40">
-            <head>0</head>
+            <head>normal</head>
             <line>3</line>
             <voice>0</voice>
             <name>Electric Snare</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="41">
-            <head>0</head>
-            <line>5</line>
+            <head>normal</head>
+            <line>6</line>
             <voice>0</voice>
             <name>Low Floor Tom</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="42">
-            <head>1</head>
+            <head>cross</head>
             <line>-1</line>
             <voice>0</voice>
             <name>Closed Hi-Hat</name>
             <stem>1</stem>
-            <shortcut>G</shortcut>
             </Drum>
           <Drum pitch="43">
-            <head>0</head>
+            <head>normal</head>
             <line>5</line>
-            <voice>1</voice>
+            <voice>0</voice>
             <name>High Floor Tom</name>
-            <stem>2</stem>
+            <stem>1</stem>
             </Drum>
           <Drum pitch="44">
-            <head>1</head>
-            <line>9</line>
-            <voice>1</voice>
+            <head>cross</head>
+            <line>7</line>
+            <voice>0</voice>
             <name>Pedal Hi-Hat</name>
-            <stem>2</stem>
-            <shortcut>F</shortcut>
+            <stem>1</stem>
             </Drum>
           <Drum pitch="45">
-            <head>0</head>
-            <line>2</line>
+            <head>normal</head>
+            <line>4</line>
             <voice>0</voice>
             <name>Low Tom</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="46">
-            <head>1</head>
-            <line>1</line>
+            <head>cross</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Open Hi-Hat</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="47">
-            <head>0</head>
-            <line>1</line>
+            <head>normal</head>
+            <line>2</line>
             <voice>0</voice>
             <name>Low-Mid Tom</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="48">
-            <head>0</head>
-            <line>0</line>
+            <head>normal</head>
+            <line>1</line>
             <voice>0</voice>
             <name>Hi-Mid Tom</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="49">
-            <head>1</head>
-            <line>-2</line>
+            <head>diamond</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Crash Cymbal 1</name>
             <stem>1</stem>
-            <shortcut>C</shortcut>
             </Drum>
           <Drum pitch="50">
-            <head>0</head>
+            <head>normal</head>
             <line>0</line>
             <voice>0</voice>
             <name>High Tom</name>
             <stem>1</stem>
-            <shortcut>E</shortcut>
             </Drum>
           <Drum pitch="51">
-            <head>1</head>
-            <line>0</line>
+            <head>diamond</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Ride Cymbal 1</name>
             <stem>1</stem>
-            <shortcut>D</shortcut>
             </Drum>
           <Drum pitch="52">
-            <head>1</head>
-            <line>-3</line>
+            <head>cross</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Chinese Cymbal</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="53">
-            <head>2</head>
-            <line>0</line>
+            <head>diamond</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Ride Bell</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="54">
-            <head>2</head>
+            <head>cross</head>
             <line>2</line>
             <voice>0</voice>
             <name>Tambourine</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="55">
-            <head>1</head>
-            <line>-3</line>
+            <head>normal</head>
+            <line>3</line>
             <voice>0</voice>
             <name>Splash Cymbal</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="56">
-            <head>3</head>
+            <head>normal</head>
             <line>1</line>
             <voice>0</voice>
             <name>Cowbell</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="57">
-            <head>1</head>
-            <line>-3</line>
+            <head>diamond</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Crash Cymbal 2</name>
             <stem>1</stem>
             </Drum>
+          <Drum pitch="58">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Vibraslap</name>
+            <stem>1</stem>
+            </Drum>
           <Drum pitch="59">
-            <head>1</head>
-            <line>2</line>
+            <head>diamond</head>
+            <line>-1</line>
             <voice>0</voice>
             <name>Ride Cymbal 2</name>
             <stem>1</stem>
             </Drum>
+          <Drum pitch="60">
+            <head>normal</head>
+            <line>8</line>
+            <voice>0</voice>
+            <name>Hi Bongo</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="61">
+            <head>normal</head>
+            <line>9</line>
+            <voice>0</voice>
+            <name>Low Bongo</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="62">
+            <head>cross</head>
+            <line>5</line>
+            <voice>0</voice>
+            <name>Mute Hi Conga</name>
+            <stem>1</stem>
+            </Drum>
           <Drum pitch="63">
-            <head>1</head>
+            <head>cross</head>
             <line>4</line>
             <voice>0</voice>
             <name>Open Hi Conga</name>
             <stem>1</stem>
             </Drum>
           <Drum pitch="64">
-            <head>1</head>
+            <head>cross</head>
             <line>6</line>
             <voice>0</voice>
             <name>Low Conga</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="65">
+            <head>cross</head>
+            <line>8</line>
+            <voice>0</voice>
+            <name>High Timbale</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="66">
+            <head>cross</head>
+            <line>9</line>
+            <voice>0</voice>
+            <name>Low Timbale</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="67">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>High Agogo</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="68">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Low Agogo</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="69">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Cabasa</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="70">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Maracas</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="71">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Short Whistle</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="72">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Long Whistle</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="73">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Short Güiro</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="74">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Long Güiro</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="75">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Claves</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="76">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Hi Wood Block</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="77">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Low Wood Block</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="78">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Mute Cuica</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="79">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Open Cuica</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="80">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Mute Triangle</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="81">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Open Triangle</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="82">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Shaker</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="83">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Sleigh Bell</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="84">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Bell Tree</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="85">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Castanets</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="86">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Mute Surdo</name>
+            <stem>1</stem>
+            </Drum>
+          <Drum pitch="87">
+            <head>normal</head>
+            <line>3</line>
+            <voice>0</voice>
+            <name>Open Surdo</name>
             <stem>1</stem>
             </Drum>
           <clef>PERC</clef>
@@ -2090,15 +2392,11 @@
             <durationType>whole</durationType>
             <Note>
               <lid>48</lid>
-              <pitch>72</pitch>
-              <tpc>14</tpc>
+              <pitch>38</pitch>
+              <tpc>16</tpc>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
-          <tick>0</tick>
+          <move>0/1</move>
           <Rest>
             <lid>49</lid>
             <track>1</track>

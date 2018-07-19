@@ -24,16 +24,10 @@ namespace Ms {
 //---------------------------------------------------------
 
 class BSymbol : public Element, public ElementLayout {
-      Q_OBJECT
-
       QList<Element*> _leafs;
-      int _z;                     ///< stacking order when drawing or selecting;
-                                  ///< elements are drawn from high number to low number;
-                                  ///< default is type() * 100;
-      bool _systemFlag;
 
    public:
-      BSymbol(Score* s);
+      BSymbol(Score* s, ElementFlags f = ElementFlag::NOTHING);
       BSymbol(const BSymbol&);
 
       BSymbol &operator=(const BSymbol&) = delete;
@@ -41,12 +35,12 @@ class BSymbol : public Element, public ElementLayout {
       virtual void add(Element*) override;
       virtual void remove(Element*) override;
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
-      virtual bool acceptDrop(const DropData&) const override;
-      virtual Element* drop(const DropData&) override;
+      virtual bool acceptDrop(EditData&) const override;
+      virtual Element* drop(EditData&) override;
       virtual void layout() override;
-      virtual QRectF drag(EditData*) override;
+      virtual QRectF drag(EditData&) override;
 
-      void writeProperties(Xml& xml) const;
+      void writeProperties(XmlWriter& xml) const;
       bool readProperties(XmlReader&);
 
       const QList<Element*>& leafs() const { return _leafs; }
@@ -55,10 +49,6 @@ class BSymbol : public Element, public ElementLayout {
       virtual QPointF canvasPos() const override;
       virtual QLineF dragAnchor() const override;
       Segment* segment() const            { return (Segment*)parent(); }
-      virtual int z() const override      { return _z; }
-      void setZ(int val)                  { _z = val;  }
-      bool systemFlag() const             { return _systemFlag; }
-      void setSystemFlag(bool val)        { _systemFlag = val;  }
       };
 
 }     // namespace Ms

@@ -25,9 +25,9 @@ namespace Ms {
 //---------------------------------------------------------
 
 TremoloBar::TremoloBar(Score* s)
-   : Element(s)
+   : Element(s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
       {
-      setFlags(ElementFlag::MOVABLE | ElementFlag::SELECTABLE);
+      initSubStyle(SubStyleId::TREMOLO_BAR);
       }
 
 //---------------------------------------------------------
@@ -37,43 +37,28 @@ TremoloBar::TremoloBar(Score* s)
 void TremoloBar::layout()
       {
       qreal _spatium = spatium();
+      if (parent())
+            setPos(0.0, -_spatium * 3.0);
+      else
+            setPos(QPointF());
 
-      setPos(0.0, 0.0);
-      if (staff() && !staff()->isTabStaff()) {
-            setbbox(QRectF());
-            if (!parent()) {
-                  noteWidth = -_spatium*2;
-                  notePos   = QPointF(0.0, _spatium*3);
-                  }
-            }
+      /* we place the tremolo bars starting slightly before the
+       *  notehead, and end it slightly after, drawing above the
+       *  note. The values specified in Guitar Pro are very large, too
+       *  large for the scale used in Musescore. We used the
+       *  timeFactor and pitchFactor below to reduce these values down
+       *  consistently to values that make sense to draw with the
+       *  Musescore scale. */
 
-      _lw = _spatium * 0.1;
-      Note* note = 0;
-      if (note == 0) {
-            noteWidth = 0.0;
-            notePos = QPointF();
-            }
-      else {
-            noteWidth = note->width();
-            notePos = note->pos();
-            }
-//      int n    = _points.size();
-//      int pt   = 0;
-//      qreal x = noteWidth * .5;
-//      qreal y = notePos.y() - _spatium;
-//      qreal x2, y2;
+      qreal timeFactor  = _userMag / 1.0;
+      qreal pitchFactor = -_spatium * .02;
 
-      QRectF bb (0, 0, _spatium, -_spatium * 5);
-#if 0
-      for (int pt = 0; pt < n; ++pt) {
-            if (pt == (n-1))
-                  break;
-            x = x2;
-            y = y2;
-            }
-#endif
-      bb.adjust(-_lw, -_lw, _lw, _lw);
-      setbbox(bb);
+      polygon.clear();
+      for (auto v : _points)
+            polygon << QPointF(v.time * timeFactor, v.pitch * pitchFactor);
+
+      qreal w = _lw.val() * _spatium;
+      setbbox(polygon.boundingRect().adjusted(-w, -w, w, w));
       }
 
 //---------------------------------------------------------
@@ -82,44 +67,21 @@ void TremoloBar::layout()
 
 void TremoloBar::draw(QPainter* painter) const
       {
-      QPen pen(curColor(), _lw, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+      QPen pen(curColor(), _lw.val() * spatium(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
       painter->setPen(pen);
-      painter->setBrush(QBrush(Qt::black));
-
-      qreal _spatium = spatium();
-      const TextStyle* st = &score()->textStyle(TextStyleType::BENCH);
-      QFont f = st->fontPx(_spatium);
-      painter->setFont(f);
-
-      int n    = _points.size();
-
-      int previousTime  = _points[0].time;
-      int previousPitch = _points[0].pitch;
-      /* we place the tremolo bars starting slightly before the
-       *  notehead, and end it slightly after, drawing above the
-       *  note. The values specified in Guitar Pro are very large, too
-       *  large for the scale used in Musescore. We used the
-       *  timeFactor and pitchFactor below to reduce these values down
-       *  consistently to values that make sense to draw with the
-       *  Musescore scale. */
-      qreal timeFactor  = 10.0 / _userMag;
-      qreal pitchFactor = 25.0 / _userMag;
-      for (int pt = 1; pt < n; ++pt) {
-            painter->drawLine(QLineF(previousTime/timeFactor, -previousPitch/pitchFactor-_spatium*3,
-                                     _points[pt].time/timeFactor, -_points[pt].pitch/pitchFactor-_spatium*3));
-            previousTime = _points[pt].time;
-            previousPitch = _points[pt].pitch;
-            }
+      painter->drawPolyline(polygon);
       }
 
 //---------------------------------------------------------
 //   write
 //---------------------------------------------------------
 
-void TremoloBar::write(Xml& xml) const
+void TremoloBar::write(XmlWriter& xml) const
       {
       xml.stag("TremoloBar");
-      writeProperty(xml, P_ID::MAG);
+      writeProperty(xml, Pid::MAG);
+      writeProperty(xml, Pid::LINE_WIDTH);
+      writeProperty(xml, Pid::PLAY);
       for (const PitchValue& v : _points) {
             xml.tagE(QString("point time=\"%1\" pitch=\"%2\" vibrato=\"%3\"")
                .arg(v.time).arg(v.pitch).arg(v.vibrato));
@@ -134,7 +96,8 @@ void TremoloBar::write(Xml& xml) const
 void TremoloBar::read(XmlReader& e)
       {
       while (e.readNextStartElement()) {
-            if (e.name() == "point") {
+            auto tag = e.name();
+            if (tag == "point") {
                   PitchValue pv;
                   pv.time    = e.intAttribute("time");
                   pv.pitch   = e.intAttribute("pitch");
@@ -142,45 +105,32 @@ void TremoloBar::read(XmlReader& e)
                   _points.append(pv);
                   e.readNext();
                   }
-            else if (e.name() == "mag")
+            else if (tag == "mag")
                   _userMag = e.readDouble(0.1, 10.0);
+            else if (readStyledProperty(e, tag))
+                  ;
+            else if (tag == "play")
+                  setPlay(e.readInt());
             else
                   e.unknown();
             }
       }
 
 //---------------------------------------------------------
-//   undoSetUserMag
-//---------------------------------------------------------
-
-void TremoloBar::undoSetUserMag(qreal val)
-      {
-      score()->undoChangeProperty(this, P_ID::MAG, val);
-      }
-
-//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-QVariant TremoloBar::getProperty(P_ID propertyId) const
+QVariant TremoloBar::getProperty(Pid propertyId) const
       {
       switch (propertyId) {
-            case P_ID::MAG:            return userMag();
+            case Pid::LINE_WIDTH:
+                  return lineWidth();
+            case Pid::MAG:
+                  return userMag();
+            case Pid::PLAY:
+                  return play();
             default:
                   return Element::getProperty(propertyId);
-            }
-      }
-
-//---------------------------------------------------------
-//   propertyDefault
-//---------------------------------------------------------
-
-QVariant TremoloBar::propertyDefault(P_ID propertyId) const
-      {
-      switch (propertyId) {
-            case P_ID::MAG:            return 1.0;
-            default:
-                  return Element::propertyDefault(propertyId);
             }
       }
 
@@ -188,17 +138,42 @@ QVariant TremoloBar::propertyDefault(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool TremoloBar::setProperty(P_ID propertyId, const QVariant& v)
+bool TremoloBar::setProperty(Pid propertyId, const QVariant& v)
       {
       switch (propertyId) {
-            case P_ID::MAG:
+            case Pid::LINE_WIDTH:
+                  setLineWidth(v.value<Spatium>());
+                  break;
+            case Pid::MAG:
                   setUserMag(v.toDouble());
+                  break;
+            case Pid::PLAY:
+                  setPlay(v.toBool());
+                  score()->setPlaylistDirty();
                   break;
             default:
                   return Element::setProperty(propertyId, v);
             }
-      score()->setLayoutAll(true);
+      triggerLayout();
       return true;
+      }
+
+//---------------------------------------------------------
+//   propertyDefault
+//---------------------------------------------------------
+
+QVariant TremoloBar::propertyDefault(Pid propertyId) const
+      {
+      switch (propertyId) {
+            case Pid::LINE_WIDTH:
+                  return score()->styleV(Sid::tremoloBarLineWidth);
+            case Pid::MAG:
+                  return 1.0;
+            case Pid::PLAY:
+                  return true;
+            default:
+                  return Element::propertyDefault(propertyId);
+            }
       }
 
 }

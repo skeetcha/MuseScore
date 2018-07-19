@@ -23,9 +23,8 @@ namespace Ms {
 //---------------------------------------------------------
 
 Hook::Hook(Score* s)
-  : Symbol(s)
+  : Symbol(s, ElementFlag::NOTHING)
       {
-      setFlag(ElementFlag::MOVABLE, false);
       setZ(int(type()) * 100);
       }
 
@@ -45,6 +44,7 @@ void Hook::setHookType(int i)
             case 5:    setSym(SymId::flag128thUp);   break;
             case 6:    setSym(SymId::flag256thUp);   break;
             case 7:    setSym(SymId::flag512thUp);   break;
+            case 8:    setSym(SymId::flag1024thUp);  break;
 
             case -1:   setSym(SymId::flag8thDown);   break;
             case -2:   setSym(SymId::flag16thDown);  break;
@@ -53,6 +53,7 @@ void Hook::setHookType(int i)
             case -5:   setSym(SymId::flag128thDown); break;
             case -6:   setSym(SymId::flag256thDown); break;
             case -7:   setSym(SymId::flag512thDown); break;
+            case -8:   setSym(SymId::flag1024thDown);break;
             default:
                   qDebug("no hook for subtype %d", i);
                   break;
@@ -65,7 +66,6 @@ void Hook::setHookType(int i)
 
 void Hook::layout()
       {
-      ElementLayout::layout(this);
       setbbox(symBbox(_sym));
       }
 

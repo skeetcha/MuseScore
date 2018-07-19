@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MuseScore: Instruments</string>
+   <string>Instruments</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -101,18 +101,8 @@
            <property name="placeholderText">
             <string>Search</string>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="clearSearch">
-           <property name="accessibleName">
-            <string>Clear</string>
-           </property>
-           <property name="accessibleDescription">
-            <string>Clear Search box</string>
-           </property>
-           <property name="text">
-            <string>Clear</string>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -219,7 +209,11 @@
           <string>Up</string>
          </property>
          <property name="text">
-          <string/>
+          <string notr="true"/>
+         </property>
+         <property name="icon">
+          <iconset resource="musescore.qrc">
+           <normaloff>:/data/icons/arrow_up.svg</normaloff>:/data/icons/arrow_up.svg</iconset>
          </property>
         </widget>
        </item>
@@ -238,7 +232,11 @@
           <string>Down</string>
          </property>
          <property name="text">
-          <string/>
+          <string notr="true"/>
+         </property>
+         <property name="icon">
+          <iconset resource="musescore.qrc">
+           <normaloff>:/data/icons/arrow_down.svg</normaloff>:/data/icons/arrow_down.svg</iconset>
          </property>
         </widget>
        </item>
@@ -310,7 +308,7 @@
        </sizepolicy>
       </property>
       <property name="accessibleName">
-       <string>Partitur List</string>
+       <string>Part list</string>
       </property>
       <property name="alternatingRowColors">
        <bool>true</bool>
@@ -361,7 +359,6 @@
   <tabstop>instrumentGenreFilter</tabstop>
   <tabstop>instrumentList</tabstop>
   <tabstop>search</tabstop>
-  <tabstop>clearSearch</tabstop>
   <tabstop>addButton</tabstop>
   <tabstop>removeButton</tabstop>
   <tabstop>upButton</tabstop>
@@ -370,6 +367,8 @@
   <tabstop>linkedButton</tabstop>
   <tabstop>partiturList</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="musescore.qrc"/>
+ </resources>
  <connections/>
 </ui>

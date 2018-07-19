@@ -26,16 +26,21 @@ namespace Ms {
 //   InspectorOttava
 //---------------------------------------------------------
 
-class InspectorOttava : public InspectorBase {
+class InspectorOttava : public InspectorElementBase {
       Q_OBJECT
 
-      UiInspectorElement    e;
       Ui::InspectorLine     l;
-      //Ui::InspectorTextLine tl;
+      Ui::InspectorTextLine tl;
       Ui::InspectorOttava   o;
+
+      void updateLineType();
+      void updateBeginHookType();
+      void updateEndHookType();
+      virtual void valueChanged(int) override;
 
    public:
       InspectorOttava(QWidget* parent);
+      virtual void setElement() override;
       };
 
 

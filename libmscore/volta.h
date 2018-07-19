@@ -13,12 +13,12 @@
 #ifndef __VOLTA_H__
 #define __VOLTA_H__
 
-#include "textline.h"
+#include "textlinebase.h"
 
 namespace Ms {
 
 class Score;
-class Xml;
+class XmlWriter;
 class Volta;
 class Measure;
 
@@ -29,21 +29,17 @@ extern LineSegment* voltaDebug;
 //   @@ VoltaSegment
 //---------------------------------------------------------
 
-class VoltaSegment : public TextLineSegment {
-      Q_OBJECT
-
+class VoltaSegment final : public TextLineBaseSegment {
    public:
-      VoltaSegment(Score* s) : TextLineSegment(s) {}
-      virtual Element::Type type() const override   { return Element::Type::VOLTA_SEGMENT; }
+      VoltaSegment(Score* s) : TextLineBaseSegment(s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {}
+      virtual ElementType type() const override     { return ElementType::VOLTA_SEGMENT; }
       virtual VoltaSegment* clone() const override  { return new VoltaSegment(*this); }
       Volta* volta() const                          { return (Volta*)spanner(); }
       virtual void layout() override;
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
-      virtual PropertyStyle propertyStyle(P_ID) const override;
-      virtual void resetProperty(P_ID id) override;
-      virtual void styleChanged() override;
+
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
       };
 
 //---------------------------------------------------------
@@ -51,15 +47,8 @@ class VoltaSegment : public TextLineSegment {
 //   @P voltaType  enum (Volta.CLOSE, Volta.OPEN)
 //---------------------------------------------------------
 
-class Volta : public TextLine {
-      Q_OBJECT
-
-      Q_PROPERTY(Ms::Volta::Type voltaType READ voltaType WRITE undoSetVoltaType)
-      Q_ENUMS(Type)
-
+class Volta final : public TextLineBase {
       QList<int> _endings;
-      PropertyStyle lineWidthStyle;
-      PropertyStyle lineStyleStyle;
 
    public:
       enum class Type : char {
@@ -68,10 +57,10 @@ class Volta : public TextLine {
 
       Volta(Score* s);
       virtual Volta* clone()       const override { return new Volta(*this); }
-      virtual Element::Type type() const override { return Element::Type::VOLTA; }
+      virtual ElementType type() const override   { return ElementType::VOLTA; }
       virtual LineSegment* createLineSegment() override;
 
-      virtual void write(Xml&) const override;
+      virtual void write(XmlWriter&) const override;
       virtual void read(XmlReader& e) override;
 
       QList<int> endings() const           { return _endings; }
@@ -80,23 +69,17 @@ class Volta : public TextLine {
       void setText(const QString& s);
       QString text() const;
 
-      void setVoltaType(Type val);
-      void undoSetVoltaType(Type val);
-      Type voltaType() const;
-
       bool hasEnding(int repeat) const;
+      int lastEnding() const;
+      void setVoltaType(Volta::Type);     // deprecated
+      Type voltaType() const;             // deprecated
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
-      virtual PropertyStyle propertyStyle(P_ID) const override;
-      virtual void resetProperty(P_ID id) override;
-      virtual void styleChanged() override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
-      virtual void setYoff(qreal) override;
-      virtual void reset() override;
       virtual bool systemFlag() const override  { return true;  }
-      virtual QString accessibleInfo() override;
+      virtual QString accessibleInfo() const override;
       };
 
 }     // namespace Ms

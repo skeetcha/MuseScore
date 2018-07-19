@@ -26,9 +26,19 @@ target_link_libraries(
       libmscore
       synthesizer
       midi
-      xmlstream
       qzip
       z
+      )
+
+if (OMR)
+      target_link_libraries(${TARGET} omr poppler)
+      if (OCR)
+            target_link_libraries(${TARGET} tesseract_api)
+      endif (OCR)
+endif (OMR)
+
+target_link_libraries(
+      ${TARGET}
       ${QT_LIBRARIES}
       mscore_freetype
       z
@@ -40,13 +50,6 @@ if (NOT MINGW AND NOT APPLE)
       pthread)
 endif (NOT MINGW AND NOT APPLE)
 
-if (OMR)
-      target_link_libraries(${TARGET} omr fitz openjpeg jbig2dec jpeg fontconfig)
-      if (OCR)
-            target_link_libraries(${TARGET} tesseract_api)
-      endif (OCR)
-endif (OMR)
-
 if (APPLE)
 target_link_libraries(${TARGET} ${OsxFrameworks})
 target_link_libraries(${TARGET}
@@ -57,7 +60,7 @@ set_target_properties (
       ${TARGET}
       PROPERTIES
       AUTOMOC true
-      COMPILE_FLAGS "-include all.h -D QT_GUI_LIB -D TESTROOT=\\\\\"${PROJECT_SOURCE_DIR}\\\\\" -g -Wall -Wextra"
+      COMPILE_FLAGS "-include all.h -D QT_GUI_LIB -D TESTROOT=\\\"${PROJECT_SOURCE_DIR}\\\" -g -Wall -Wextra"
       LINK_FLAGS    "-g -stdlib=libc++"
       )
 else(APPLE)
@@ -69,5 +72,13 @@ set_target_properties (
       LINK_FLAGS    "-g"
       )
 endif(APPLE)
+
+if (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
+set_target_properties (
+      ${TARGET}
+      PROPERTIES
+      COMPILE_FLAGS "-include all.h -D QT_GUI_LIB -D TESTROOT=\\\\\"${PROJECT_SOURCE_DIR}\\\\\" -g -Wall -Wextra"
+      )
+endif (APPLE AND (CMAKE_VERSION VERSION_LESS "3.5.0"))
 
 add_test(${TARGET} ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}  -xunitxml -o result.xml)

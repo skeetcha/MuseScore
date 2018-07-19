@@ -15,8 +15,6 @@
 
 #include "bsymbol.h"
 
-class QPainter;
-
 namespace Ms {
 
 class Segment;
@@ -26,32 +24,32 @@ enum class SymId;
 //---------------------------------------------------------
 //   @@ Symbol
 ///    Symbol constructed from builtin symbol.
+//
+//   @P symbol       string       the SMuFL name of the symbol
 //---------------------------------------------------------
 
 class Symbol : public BSymbol {
-      Q_OBJECT
-
    protected:
       SymId _sym;
       const ScoreFont* _scoreFont = nullptr;
 
    public:
-      Symbol(Score* s);
+      Symbol(Score* s, ElementFlags f = ElementFlag::MOVABLE);
       Symbol(const Symbol&);
 
       Symbol &operator=(const Symbol&) = delete;
 
       virtual Symbol* clone() const      { return new Symbol(*this); }
-      virtual Element::Type type() const { return Element::Type::SYMBOL; }
+      virtual ElementType type() const   { return ElementType::SYMBOL; }
 
       void setSym(SymId s, const ScoreFont* sf = nullptr) { _sym  = s; _scoreFont = sf;    }
       SymId sym() const                  { return _sym;  }
+      QString symName() const;
 
       virtual void draw(QPainter*) const override;
-      virtual void write(Xml& xml) const override;
+      virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
       virtual void layout() override;
-      void setAbove(bool);
 
       virtual qreal baseLine() const     { return 0.0; }
       virtual Segment* segment() const   { return (Segment*)parent(); }
@@ -62,9 +60,7 @@ class Symbol : public BSymbol {
 ///    Symbol constructed from a font glyph.
 //---------------------------------------------------------
 
-class FSymbol : public BSymbol {
-      Q_OBJECT
-
+class FSymbol final : public BSymbol {
       QFont _font;
       int _code;
 
@@ -73,10 +69,10 @@ class FSymbol : public BSymbol {
       FSymbol(const FSymbol&);
 
       virtual FSymbol* clone() const    { return new FSymbol(*this); }
-      virtual Element::Type type() const  { return Element::Type::FSYMBOL; }
+      virtual ElementType type() const  { return ElementType::FSYMBOL; }
 
       virtual void draw(QPainter*) const;
-      virtual void write(Xml& xml) const;
+      virtual void write(XmlWriter& xml) const;
       virtual void read(XmlReader&);
       virtual void layout();
 

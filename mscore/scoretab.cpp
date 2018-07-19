@@ -17,11 +17,11 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
+
 #include "shortcut.h"
 #include "musescore.h"
 #include "config.h"
 #include "scoretab.h"
-#include "scoreview.h"
 #include "scoreview.h"
 #include "libmscore/score.h"
 #include "magbox.h"
@@ -37,7 +37,7 @@ namespace Ms {
 //   ScoreTab
 //---------------------------------------------------------
 
-ScoreTab::ScoreTab(QList<Score*>* sl, QWidget* parent)
+ScoreTab::ScoreTab(QList<MasterScore*>* sl, QWidget* parent)
    : QWidget(parent)
       {
       mainWindow = static_cast<MuseScore*>(parent);
@@ -58,6 +58,7 @@ ScoreTab::ScoreTab(QList<Score*>* sl, QWidget* parent)
       tab->setSelectionBehaviorOnRemove(QTabBar::SelectRightTab);
       tab->setFocusPolicy(Qt::ClickFocus);
       tab->setTabsClosable(true);
+      tab->setMovable(true);
 
       tab2 = new QTabBar(this);
       tab2->setExpanding(false);
@@ -71,12 +72,13 @@ ScoreTab::ScoreTab(QList<Score*>* sl, QWidget* parent)
       layout->addWidget(tab2);
       layout->addLayout(stack);
 
-      foreach(Score* s, *sl)
+      for (MasterScore* s : *sl)
             insertTab(s);
 
       connect(tab, SIGNAL(currentChanged(int)), this, SLOT(setCurrent(int)));
       connect(tab2, SIGNAL(currentChanged(int)), this, SLOT(setExcerpt(int)));
       connect(tab, SIGNAL(tabCloseRequested(int)), this, SIGNAL(tabCloseRequested(int)));
+      connect(tab, SIGNAL(tabMoved(int,int)), this, SLOT(tabMoved(int,int)));
       }
 
 ScoreTab::~ScoreTab()
@@ -141,6 +143,31 @@ void ScoreTab::clearTab2()
       }
 
 //---------------------------------------------------------
+//   tabMoved
+//---------------------------------------------------------
+
+void ScoreTab::tabMoved(int from, int to)
+      {
+      static bool scoreListChanged = false;
+      if (scoreListChanged == false) {
+            qDebug("Moved score tab %d to %d", from, to);
+            scoreList->move(from, to);
+
+            // now move the tab in the other ScoreTab...but don't update the scoreList a second time!
+            scoreListChanged = true;
+            if (this == mscore->getTab1()) {
+                  if (mscore->getTab2())
+                        mscore->getTab2()->getTab()->moveTab(from, to);
+                  }
+            else if (this == mscore->getTab2()) {
+                  if (mscore->getTab1())
+                        mscore->getTab1()->getTab()->moveTab(from, to);
+                  }
+            scoreListChanged = false;
+            }
+      }
+
+//---------------------------------------------------------
 //   setCurrent
 //---------------------------------------------------------
 
@@ -173,9 +200,9 @@ void ScoreTab::setCurrent(int n)
 #ifdef OMR
       if (v) {
             Score* score = v->score();
-            if (score->showOmr() && score->omr()) {
+            if (score->masterScore()->showOmr() && score->masterScore()->omr()) {
                   if (vs->count() < 2) {
-                        Omr* omr    = score->omr();
+                        Omr* omr    = score->masterScore()->omr();
                         OmrView* sv = omr->newOmrView(v);
                         v->setOmrView(sv);
                         vs->addWidget(sv);
@@ -202,16 +229,13 @@ void ScoreTab::setCurrent(int n)
       stack->setCurrentWidget(vs);
       clearTab2();
       if (v) {
-            Score* score = v->score();
-            if (score->parentScore())
-                  score = score->parentScore();
+            MasterScore* score = v->score()->masterScore();
             QList<Excerpt*>& excerpts = score->excerpts();
             if (!excerpts.isEmpty()) {
                   tab2->blockSignals(true);
-                  tab2->addTab(score->name().replace("&","&&"));
-                  foreach(const Excerpt* excerpt, excerpts) {
-                        tab2->addTab(excerpt->partScore()->name().replace("&","&&"));
-                        }
+                  tab2->addTab(score->fileInfo()->completeBaseName().replace("&","&&"));
+                  for (const Excerpt* excerpt : excerpts)
+                        tab2->addTab(excerpt->title().replace("&","&&"));
                   tab2->setCurrentIndex(tsv->part);
                   tab2->blockSignals(false);
                   tab2->setVisible(true);
@@ -239,7 +263,8 @@ void ScoreTab::updateExcerpts()
       ScoreView* v = view(idx);
       if (!v)
             return;
-      Score* score = v->score()->rootScore();
+
+      MasterScore* score = v->score()->masterScore();
       clearTab2();
       //delete all scoreviews for parts, especially for the deleted ones
       int n = stack->count() - 1;
@@ -247,7 +272,7 @@ void ScoreTab::updateExcerpts()
             QSplitter* vs = static_cast<QSplitter*>(stack->widget(i));
             ScoreView* sview = static_cast<ScoreView*>(vs->widget(0));
 
-            if (sview->score() != score && sview->score()->rootScore() == score) {
+            if (sview->score() != score && sview->score()->masterScore() == score) {
                   stack->takeAt(i);
                   sview->deleteLater();
                   }
@@ -256,18 +281,20 @@ void ScoreTab::updateExcerpts()
       QList<Excerpt*>& excerpts = score->excerpts();
       if (!excerpts.isEmpty()) {
             tab2->blockSignals(true);
-            tab2->addTab(score->name().replace("&","&&"));
-            foreach(const Excerpt* excerpt, excerpts)
-                  tab2->addTab(excerpt->partScore()->name().replace("&","&&"));
+            tab2->addTab(score->fileInfo()->completeBaseName().replace("&","&&"));
+            for (const Excerpt* excerpt : excerpts)
+                  tab2->addTab(excerpt->title().replace("&","&&"));
             tab2->blockSignals(false);
             tab2->setVisible(true);
-
-            setExcerpt(0);
             }
       else {
             tab2->setVisible(false);
-            setExcerpt(0);
             }
+      blockSignals(true);
+      setExcerpt(0);
+      blockSignals(false);
+
+      getAction("file-part-export")->setEnabled(excerpts.size() > 0);
       }
 
 //---------------------------------------------------------
@@ -294,7 +321,7 @@ void ScoreTab::setExcerpt(int n)
             }
       if (!vs) {
             vs = new QSplitter;
-            v = new ScoreView;
+            v  = new ScoreView;
             vs->addWidget(v);
             v->setScore(score);
             stack->addWidget(vs);
@@ -309,11 +336,11 @@ void ScoreTab::setExcerpt(int n)
 //   insertTab
 //---------------------------------------------------------
 
-void ScoreTab::insertTab(Score* s)
+void ScoreTab::insertTab(MasterScore* s)
       {
       int idx = scoreList->indexOf(s);
       tab->blockSignals(true);
-      tab->insertTab(idx, s->name().replace("&","&&"));
+      tab->insertTab(idx, s->fileInfo()->completeBaseName().replace("&","&&"));
       tab->setTabData(idx, QVariant::fromValue<void*>(new TabScoreView(s)));
       tab->blockSignals(false);
       }

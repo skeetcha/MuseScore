@@ -24,8 +24,8 @@ namespace Ms {
 LayoutBreak::LayoutBreak(Score* score)
    : Element(score)
       {
-      _layoutBreakType     = Type(propertyDefault(P_ID::LAYOUT_BREAK).toInt());
-      _pause               = score->styleD(StyleIdx::SectionPause);
+      _layoutBreakType     = Type(propertyDefault(Pid::LAYOUT_BREAK).toInt());
+      _pause               = score->styleD(Sid::SectionPause);
       _startWithLongNames  = true;
       _startWithMeasureOne = true;
       lw                   = spatium() * 0.3;
@@ -35,9 +35,9 @@ LayoutBreak::LayoutBreak(Score* score)
 LayoutBreak::LayoutBreak(const LayoutBreak& lb)
    : Element(lb)
       {
-      _layoutBreakType = lb._layoutBreakType;
-      lw = lb.lw;
-      _pause = lb._pause;
+      _layoutBreakType     = lb._layoutBreakType;
+      lw                   = lb.lw;
+      _pause               = lb._pause;
       _startWithLongNames  = lb._startWithLongNames;
       _startWithMeasureOne = lb._startWithMeasureOne;
       layout0();
@@ -47,13 +47,13 @@ LayoutBreak::LayoutBreak(const LayoutBreak& lb)
 //   write
 //---------------------------------------------------------
 
-void LayoutBreak::write(Xml& xml) const
+void LayoutBreak::write(XmlWriter& xml) const
       {
       xml.stag(name());
       Element::writeProperties(xml);
 
-      writeProperty(xml, P_ID::LAYOUT_BREAK);
-      writeProperty(xml, P_ID::PAUSE);
+      writeProperty(xml, Pid::LAYOUT_BREAK);
+      writeProperty(xml, Pid::PAUSE);
 
       if (!_startWithLongNames)
             xml.tag("startWithLongNames", _startWithLongNames);
@@ -71,7 +71,7 @@ void LayoutBreak::read(XmlReader& e)
       while (e.readNextStartElement()) {
             const QStringRef& tag(e.name());
             if (tag == "subtype")
-                  setProperty(P_ID::LAYOUT_BREAK, Ms::getProperty(P_ID::LAYOUT_BREAK, e));
+                  setLayoutBreakType(Type(Ms::getProperty(Pid::LAYOUT_BREAK, e).toInt()));
             else if (tag == "pause")
                   _pause = e.readDouble();
             else if (tag == "startWithLongNames")
@@ -98,7 +98,7 @@ void LayoutBreak::draw(QPainter* painter) const
       stroker.setJoinStyle(Qt::MiterJoin);
       stroker.setCapStyle(Qt::SquareCap);
 
-      QVector<qreal> dashes ;
+      QVector<qreal> dashes;
       dashes.append(1);
       dashes.append(3);
       stroker.setDashPattern(dashes);
@@ -106,12 +106,10 @@ void LayoutBreak::draw(QPainter* painter) const
 
       painter->fillPath(stroke, selected() ? MScore::selectColor[0] : MScore::layoutBreakColor);
 
-
       painter->setPen(QPen(selected() ? MScore::selectColor[0] : MScore::layoutBreakColor,
          lw, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
       painter->setBrush(Qt::NoBrush);
       painter->drawPath(path2);
-
       }
 
 //---------------------------------------------------------
@@ -129,7 +127,7 @@ void LayoutBreak::layout0()
       QRectF rect(0.0, 0.0, w, h);
       path.addRect(rect);
 
-      switch(layoutBreakType()) {
+      switch (layoutBreakType()) {
             case Type::LINE:
                   path2.moveTo(w * .8, h * .3);
                   path2.lineTo(w * .8, h * .6);
@@ -162,6 +160,21 @@ void LayoutBreak::layout0()
 
                   path2.moveTo(w*.55, h*.21); // 0.01 to avoid overlap
                   path2.lineTo(w*.55, h*.79);
+                  break;
+
+            case Type::NOBREAK:
+                  path2.moveTo(w * .1,  h * .5);
+                  path2.lineTo(w * .9,  h * .5);
+
+                  path2.moveTo(w * .7, h * .3);
+                  path2.lineTo(w * .5, h * .5);
+                  path2.lineTo(w * .7, h * .7);
+                  path2.lineTo(w * .7, h * .3);
+
+                  path2.moveTo(w * .3,  h * .3);
+                  path2.lineTo(w * .5,  h * .5);
+                  path2.lineTo(w * .3,  h * .7);
+                  path2.lineTo(w * .3,  h * .3);
                   break;
 
             default:
@@ -197,17 +210,17 @@ void LayoutBreak::spatiumChanged(qreal, qreal)
 //   acceptDrop
 //---------------------------------------------------------
 
-bool LayoutBreak::acceptDrop(const DropData& data) const
+bool LayoutBreak::acceptDrop(EditData& data) const
       {
-      return data.element->type() == Element::Type::LAYOUT_BREAK
-         && static_cast<LayoutBreak*>(data.element)->layoutBreakType() != layoutBreakType();
+      return data.element->type() == ElementType::LAYOUT_BREAK
+         && toLayoutBreak(data.element)->layoutBreakType() != layoutBreakType();
       }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-Element* LayoutBreak::drop(const DropData& data)
+Element* LayoutBreak::drop(EditData& data)
       {
       Element* e = data.element;
       score()->undoChangeElement(this, e);
@@ -218,12 +231,12 @@ Element* LayoutBreak::drop(const DropData& data)
 //   getProperty
 //---------------------------------------------------------
 
-QVariant LayoutBreak::getProperty(P_ID propertyId) const
+QVariant LayoutBreak::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
-            case P_ID::LAYOUT_BREAK:
+            case Pid::LAYOUT_BREAK:
                   return int(_layoutBreakType);
-            case P_ID::PAUSE:
+            case Pid::PAUSE:
                   return _pause;
             default:
                   return Element::getProperty(propertyId);
@@ -234,22 +247,21 @@ QVariant LayoutBreak::getProperty(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool LayoutBreak::setProperty(P_ID propertyId, const QVariant& v)
+bool LayoutBreak::setProperty(Pid propertyId, const QVariant& v)
       {
       switch(propertyId) {
-            case P_ID::LAYOUT_BREAK:
+            case Pid::LAYOUT_BREAK:
                   setLayoutBreakType(Type(v.toInt()));
                   break;
-            case P_ID::PAUSE:
+            case Pid::PAUSE:
                   setPause(v.toDouble());
-                  score()->addLayoutFlags(LayoutFlag::FIX_TICKS);
                   break;
             default:
                   if (!Element::setProperty(propertyId, v))
                         return false;
                   break;
             }
-      score()->setLayoutAll(true);
+      score()->setLayoutAll();
       setGenerated(false);
       return true;
       }
@@ -258,13 +270,13 @@ bool LayoutBreak::setProperty(P_ID propertyId, const QVariant& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-QVariant LayoutBreak::propertyDefault(P_ID id) const
+QVariant LayoutBreak::propertyDefault(Pid id) const
       {
       switch(id) {
-            case P_ID::LAYOUT_BREAK:
+            case Pid::LAYOUT_BREAK:
                   return QVariant(); // LAYOUT_BREAK_LINE;
-            case P_ID::PAUSE:
-                  return score()->styleD(StyleIdx::SectionPause);
+            case Pid::PAUSE:
+                  return score()->styleD(Sid::SectionPause);
             default:
                   return Element::propertyDefault(id);
             }
@@ -276,7 +288,7 @@ QVariant LayoutBreak::propertyDefault(P_ID id) const
 
 void LayoutBreak::undoSetLayoutBreakType(Type t)
       {
-      undoChangeProperty(P_ID::LAYOUT_BREAK, int(t));
+      undoChangeProperty(Pid::LAYOUT_BREAK, int(t));
       }
 
 }

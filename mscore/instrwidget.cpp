@@ -21,6 +21,7 @@
 #include "config.h"
 #include "icons.h"
 #include "instrwidget.h"
+#include "stringutils.h"
 
 #include "libmscore/clef.h"
 #include "libmscore/instrtemplate.h"
@@ -39,7 +40,6 @@
 
 namespace Ms {
 
-extern bool useFactorySettings;
 void filterInstruments(QTreeWidget *instrumentList, const QString &searchPhrase = QString());
 
 //---------------------------------------------------------
@@ -55,9 +55,14 @@ void filterInstruments(QTreeWidget* instrumentList, const QString &searchPhrase)
             QTreeWidgetItem* ci = 0;
 
             for (int cidx = 0; (ci = item->child(cidx)); ++cidx) {
-                  // replace the unicode b (accidential) so a search phrase of "bb" would give Bb Trumpet...
+                  // replace the unicode b (accidental) so a search phrase of "bb" would give Bb Trumpet...
                   QString text = ci->text(0).replace(QChar(0x266d), QChar('b'));
-                  bool isMatch = text.contains(searchPhrase, Qt::CaseInsensitive);
+
+                  // remove ligatures and diacritics
+                  QString removedSpecialChar = stringutils::removeLigatures(text);
+                  removedSpecialChar = stringutils::removeDiacritics(removedSpecialChar);
+
+                  bool isMatch = text.contains(searchPhrase, Qt::CaseInsensitive) || removedSpecialChar.contains(searchPhrase, Qt::CaseInsensitive);
                   ci->setHidden(!isMatch);
 
                   if (isMatch)
@@ -107,6 +112,7 @@ void StaffListItem::initStaffTypeCombo(bool forceRecreate)
       // or a memory leak may result
 
       bool canUseTabs = false; // assume only normal staves are applicable
+      int numFrettedStrings = 0;
       bool canUsePerc = false;
       PartListItem* part = static_cast<PartListItem*>(QTreeWidgetItem::parent());
 
@@ -115,7 +121,9 @@ void StaffListItem::initStaffTypeCombo(bool forceRecreate)
       if (part) {
             const StringData* stringData = part->it ? &(part->it->stringData) :
                         ( (part->part && part->part->instrument()) ? part->part->instrument()->stringData() : 0);
-            canUseTabs = stringData && stringData->strings() > 0;
+            canUseTabs = stringData && stringData->frettedStrings() > 0;
+            if (canUseTabs)
+                  numFrettedStrings = stringData->frettedStrings();
             canUsePerc = part->it ? part->it->useDrumset :
                         ( (part->part && part->part->instrument()) ? part->part->instrument()->useDrumset() : false);
             }
@@ -125,7 +133,7 @@ void StaffListItem::initStaffTypeCombo(bool forceRecreate)
       for (const StaffType& st : StaffType::presets()) {
             if ( (st.group() == StaffGroup::STANDARD && (!canUsePerc))    // percussion excludes standard
                         || (st.group() == StaffGroup::PERCUSSION && canUsePerc)
-                        || (st.group() == StaffGroup::TAB && canUseTabs)) {
+                        || (st.group() == StaffGroup::TAB && canUseTabs && st.lines() <= numFrettedStrings)) {
                   _staffTypeCombo->addItem(st.name(), idx);
                   }
             ++idx;
@@ -236,7 +244,7 @@ void StaffListItem::staffTypeChanged(int idx)
       PartListItem* pli = static_cast<PartListItem*>(QTreeWidgetItem::parent());
       pli->updateClefs();
 
-      if (_staff && _staff->staffType()->name() != stfType->name()) {
+      if (_staff && _staff->staffType(0)->name() != stfType->name()) {
             if (_op != ListItemOp::I_DELETE && _op != ListItemOp::ADD)
                   _op = ListItemOp::UPDATE;
             }
@@ -355,8 +363,6 @@ InstrumentsWidget::InstrumentsWidget(QWidget* parent)
    : QWidget(parent)
       {
       setupUi(this);
-      upButton->setIcon(*icons[int(Icons::arrowUp_ICON)]);
-      downButton->setIcon(*icons[int(Icons::arrowDown_ICON)]);
       splitter->setStretchFactor(0, 10);
       splitter->setStretchFactor(1, 0);
       splitter->setStretchFactor(2, 15);
@@ -407,7 +413,7 @@ void populateGenreCombo(QComboBox* combo)
 void populateInstrumentList(QTreeWidget* instrumentList)
       {
       instrumentList->clear();
-      // TODO: memory leak
+      // TODO: memory leak?
       foreach(InstrumentGroup* g, instrumentGroups) {
             InstrumentTemplateListItem* group = new InstrumentTemplateListItem(g->name, instrumentList);
             group->setFlags(Qt::ItemIsEnabled);
@@ -425,7 +431,6 @@ void InstrumentsWidget::buildTemplateList()
       {
       // clear search if instrument list is updated
       search->clear();
-      filterInstruments(instrumentList, search->text());
 
       populateInstrumentList(instrumentList);
       populateGenreCombo(instrumentGenreFilter);
@@ -451,7 +456,7 @@ void InstrumentsWidget::genPartList(Score* cs)
       {
       partiturList->clear();
 
-      foreach(Part* p, cs->parts()) {
+      foreach (Part* p, cs->parts()) {
             PartListItem* pli = new PartListItem(p, partiturList);
             pli->setVisible(p->show());
             foreach (Staff* s, *p->staves()) {
@@ -460,10 +465,11 @@ void InstrumentsWidget::genPartList(Score* cs)
                   sli->setClefType(s->clefType(0));
                   sli->setDefaultClefType(s->defaultClefType());
                   sli->setPartIdx(s->rstaff());
-                  const LinkedStaves* ls = s->linkedStaves();
+                  const LinkedElements* ls = s->links();
                   bool bLinked = false;
-                  if (ls && !ls->isEmpty()) {
-                        foreach(Staff* ps, ls->staves()) {
+                  if (ls && !ls->empty()) {
+                        for (auto le : *ls) {
+                              Staff* ps = toStaff(le);
                               if (ps != s && ps->score() == s->score()) {
                                     bLinked = true;
                                     break;
@@ -471,7 +477,7 @@ void InstrumentsWidget::genPartList(Score* cs)
                               }
                         }
                   sli->setLinked(bLinked);
-                  sli->setStaffType(s->staffType());
+                  sli->setStaffType(s->staffType(0));    // TODO
                   }
             pli->updateClefs();
             partiturList->setItemExpanded(pli, true);
@@ -878,25 +884,12 @@ void InstrumentsWidget::on_linkedButton_clicked()
 
 void InstrumentsWidget::on_search_textChanged(const QString &searchPhrase)
       {
-      if (searchPhrase.isEmpty())
-            return;
-
-      filterInstruments(instrumentList, searchPhrase);
       instrumentGenreFilter->blockSignals(true);
       instrumentGenreFilter->setCurrentIndex(0);
       instrumentGenreFilter->blockSignals(false);
+      filterInstruments(instrumentList, searchPhrase);
       }
 
-//---------------------------------------------------------
-//   on_clearSearch_clicked
-//---------------------------------------------------------
-
-void InstrumentsWidget::on_clearSearch_clicked()
-      {
-      search->clear();
-      QString genre = instrumentGenreFilter->currentData().toString();
-      filterInstrumentsByGenre(instrumentList, genre);
-      }
 
 //---------------------------------------------------------
 //   on_instrumentGenreFilter_currentTextChanged
@@ -937,19 +930,6 @@ void InstrumentsWidget::filterInstrumentsByGenre(QTreeWidget *instrumentList, QS
                   }
             ++iList;
             }
-      }
-
-//---------------------------------------------------------
-//   writeSettings
-//---------------------------------------------------------
-
-void InstrumentsWidget::writeSettings()
-      {
-      QSettings settings;
-      settings.beginGroup("Instruments");
-      settings.setValue("size", size());
-      settings.setValue("pos", pos());
-      settings.endGroup();
       }
 
 //---------------------------------------------------------
@@ -1000,8 +980,8 @@ void InstrumentsWidget::createInstruments(Score* cs)
                   }
             // if a staff was removed from instrument:
             if (part->staff(0)->barLineSpan() > rstaff) {
-                  part->staff(0)->setBarLineSpan(rstaff);
-                  part->staff(0)->setBracket(0, BracketType::NO_BRACKET);
+//TODO                  part->staff(0)->setBarLineSpan(rstaff);
+                  part->staff(0)->setBracketType(0, BracketType::NO_BRACKET);
                   }
 
             // insert part
@@ -1012,6 +992,7 @@ void InstrumentsWidget::createInstruments(Score* cs)
                   m->cmdAddStaves(sidx, eidx, true);
             staffIdx += rstaff;
             }
+#if 0 // TODO
       //
       // check for bar lines
       //
@@ -1030,8 +1011,8 @@ void InstrumentsWidget::createInstruments(Score* cs)
 
             staffIdx = nstaffIdx;
             }
-
-      cs->setLayoutAll(true);
+#endif
+      cs->setLayoutAll();
       }
 
 //---------------------------------------------------------

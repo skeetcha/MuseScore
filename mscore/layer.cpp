@@ -31,9 +31,11 @@ namespace Ms {
 LayerManager::LayerManager(Score* s, QWidget* parent)
    : QDialog(parent)
       {
-      score = s;
+      setObjectName("LayerManager");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
+      score = s;
 
       for (int i = 0; i < 31; ++i) {
             QTableWidgetItem* item = new QTableWidgetItem(score->layerTags()[i+1]);
@@ -61,10 +63,13 @@ LayerManager::LayerManager(Score* s, QWidget* parent)
             ++row;
             }
       layers->setCurrentCell(score->currentLayer(), 0);
+
       connect(createButton, SIGNAL(clicked()), SLOT(createClicked()));
       connect(deleteButton, SIGNAL(clicked()), SLOT(deleteClicked()));
       connect(addTagButton, SIGNAL(clicked()), SLOT(addTagClicked()));
       connect(deleteTagButton, SIGNAL(clicked()), SLOT(deleteTagClicked()));
+
+      MuseScore::restoreGeometry(this);
       }
 
 //---------------------------------------------------------
@@ -127,7 +132,7 @@ void LayerManager::addTagClicked()
             return;
             }
       bool ok;
-      QString item = QInputDialog::getItem(this, tr("MuseScore: select layer tag"), tr("layer tag"),
+      QString item = QInputDialog::getItem(this, tr("Select layer tag"), tr("layer tag"),
          items, 0, false, &ok);
       if (ok && !item.isEmpty()) {
 //            uint tagBits = 0;
@@ -160,7 +165,7 @@ void LayerManager::deleteTagClicked()
       QString s = item->text();
       QStringList items = s.split(",");
       bool ok;
-      QString tag = QInputDialog::getItem(this, tr("MuseScore: select layer tag"), tr("layer tag"),
+      QString tag = QInputDialog::getItem(this, tr("Select layer tag"), tr("layer tag"),
          items, 0, false, &ok);
       if (ok && !tag.isEmpty()) {
             items.removeOne(tag);
@@ -169,7 +174,7 @@ void LayerManager::deleteTagClicked()
       }
 
 //---------------------------------------------------------
-//   closeEvent
+//   accept
 //---------------------------------------------------------
 
 void LayerManager:: accept()
@@ -207,11 +212,21 @@ void LayerManager:: accept()
                   l.tags |= 1;
             layer.append(l);
             }
-      score->setLayoutAll(true);
+      score->setLayoutAll();
       score->endCmd();
       if (enableExperimental)
       	mscore->updateLayer();
       QDialog::accept();
+      }
+
+//---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void LayerManager::hideEvent(QHideEvent* event)
+      {
+      MuseScore::saveGeometry(this);
+      QWidget::hideEvent(event);
       }
 
 }

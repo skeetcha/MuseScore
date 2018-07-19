@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import xml.etree.ElementTree as ET
 
 
@@ -5,9 +7,10 @@ import xml.etree.ElementTree as ET
 
 def addMessage(f, text, comment=''):
     if (comment):
-        f.write("//: " + comment.encode('utf8') + "\n")
-    f.write('QT_TRANSLATE_NOOP("InstrumentsXML", "' + text.encode('utf8') + '"),\n')
-    
+        f.write('QT_TRANSLATE_NOOP3("InstrumentsXML", "' + text.encode('utf8') + '", "' + comment.encode('utf8') + '"),\n')
+    else:
+        f.write('QT_TRANSLATE_NOOP("InstrumentsXML", "' + text.encode('utf8') + '"),\n')
+
 
 
 f = open('instrumentsxml.h','w')
@@ -29,19 +32,19 @@ for child in root:
         for instrument in instruments:
             longName = instrument.find("longName")
             if longName is not None:
-                print "longName " + longName.text
+                print "longName " + longName.text.encode('utf8')
                 addMessage(f, longName.text)
                 previousLongName = longName.text
-            
+
             shortName = instrument.find("shortName")
             if shortName is not None:
-                print "shortName " + shortName.text
+                print "shortName " + shortName.text.encode('utf8')
                 addMessage(f, shortName.text, previousLongName)
                 previousLongName = ""
-            
+
             trackName = instrument.find("trackName")
             if trackName is not None:
-                print "trackName " + trackName.text
+                print "trackName " + trackName.text.encode('utf8')
                 addMessage(f, trackName.text)
                 previousLongName = ""
 
@@ -65,4 +68,4 @@ for child in root:
                     print "Instrument, MidiAction name :" + imaName
                     addMessage(f, ima)
 
-f.close() 
+f.close()

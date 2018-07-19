@@ -15,9 +15,11 @@
 
 namespace Ms {
 
+class MasterScore;
 class Score;
 class Part;
-class Xml;
+class Measure;
+class XmlWriter;
 class Staff;
 class XmlReader;
 
@@ -27,24 +29,30 @@ class XmlReader;
 //   @P title      string     the title of this part
 //---------------------------------------------------------
 
-class Excerpt : public QObject {
-      Q_OBJECT
-      Q_PROPERTY(Ms::Score*  partScore  READ partScore)
-      Q_PROPERTY(QString     title      READ title)
+#include <QMultiMap>
 
-      Score* _oscore;               // main score
-      Score* _partScore  { 0 };
+class Excerpt : public QObject {
+      MasterScore* _oscore;
+
+      Score* _partScore           { 0 };
       QString _title;
       QList<Part*> _parts;
+      QMultiMap<int, int> _tracks;
 
    public:
-      Excerpt(Score* s = 0)                { _oscore = s;       }
+      Excerpt(MasterScore* s = 0)          { _oscore = s;       }
+      ~Excerpt();
 
       QList<Part*>& parts()                { return _parts;     }
       void setParts(const QList<Part*>& p) { _parts = p;        }
-      Score* oscore() const                { return _oscore;    }
-      void setPartScore(Score* s)          { _partScore = s;    }
+
+
+      QMultiMap<int, int>& tracks()                  { return _tracks;    }
+      void setTracks(const QMultiMap<int, int>& t)   { _tracks = t;       }
+
+      MasterScore* oscore() const          { return _oscore;    }
       Score* partScore() const             { return _partScore; }
+      void setPartScore(Score* s);
 
       void read(XmlReader&);
 
@@ -53,17 +61,14 @@ class Excerpt : public QObject {
 
       QString title() const           { return _title; }
       void setTitle(const QString& s) { _title = s;    }
-      
-      static QList<Excerpt*> createAllExcerpt(Score* score);
-      static QString createName(const QString& partName, QList<Excerpt*>);
+
+      static QList<Excerpt*> createAllExcerpt(MasterScore* score);
+      static QString createName(const QString& partName, QList<Excerpt*>&);
+      static void createExcerpt(Excerpt*);
+      static void cloneStaves(Score* oscore, Score* score, const QList<int>& map, QMultiMap<int, int>& allTracks);
+      static void cloneStaff(Staff* ostaff, Staff* nstaff);
+      static void cloneStaff2(Staff* ostaff, Staff* nstaff, int stick, int etick);
       };
-
-extern void createExcerpt(Excerpt*);
-extern void deleteExcerpt(Excerpt*);
-extern void cloneStaves(Score* oscore, Score* score, const QList<int>& map);
-extern void cloneStaff(Staff* ostaff, Staff* nstaff);
-extern void cloneStaff2(Staff* ostaff, Staff* nstaff, int stick, int etick);
-
 
 }     // namespace Ms
 #endif

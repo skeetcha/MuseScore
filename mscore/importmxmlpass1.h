@@ -27,6 +27,22 @@
 
 namespace Ms {
 
+//---------------------------------------------------------
+//   PageFormat
+//---------------------------------------------------------
+
+struct PageFormat {
+      QSizeF size;
+      qreal printableWidth;        // _width - left margin - right margin
+      qreal evenLeftMargin;        // values in inch
+      qreal oddLeftMargin;
+      qreal evenTopMargin;
+      qreal evenBottomMargin;
+      qreal oddTopMargin;
+      qreal oddBottomMargin;
+      bool twosided;
+      };
+
 typedef QMap<QString, Part*> PartMap;
 typedef std::map<int,MusicXmlPartGroup*> MusicXmlPartGroupMap;
 
@@ -44,9 +60,15 @@ struct MxmlOctaveShiftDesc {
       MxmlOctaveShiftDesc(Type _tp, short _size, Fraction _tm) : tp(_tp), size(_size), time(_tm), num(-1) {}
       };
 
+//---------------------------------------------------------
+//   MusicXMLParserPass1
+//---------------------------------------------------------
+
+class MxmlLogger;
+
 class MusicXMLParserPass1 {
 public:
-      MusicXMLParserPass1(Score* score);
+      MusicXMLParserPass1(Score* score, MxmlLogger* logger);
       void initPartState(const QString& partId);
       Score::FileError parse(QIODevice* device);
       Score::FileError parse();
@@ -61,13 +83,11 @@ public:
       void scoreInstrument(const QString& partId);
       void midiInstrument(const QString& partId);
       void part();
-      void measure(const QString& partId, const Fraction time, Fraction& mdur, VoiceOverlapDetector& vod);
-      void attributes(const QString& partId);
+      void measure(const QString& partId, const Fraction cTime, Fraction& mdur, VoiceOverlapDetector& vod);
+      void attributes(const QString& partId, const Fraction cTime);
       void clef(const QString& partId);
-      void time();
+      void time(const Fraction cTime);
       void divisions();
-      void staffDetails(const QString& partId);
-      void staffTuning(StringData* t);
       void staves(const QString& partId);
       void direction(const QString& partId, const Fraction cTime);
       void directionType(const Fraction cTime, QList<MxmlOctaveShiftDesc>& starts, QList<MxmlOctaveShiftDesc>& stops);
@@ -80,10 +100,6 @@ public:
       void timeModification(Fraction& timeMod);
       void pitch(int& step, float& alter, int& oct);
       void rest();
-      QString getParseStatus() const { return _parseStatus; }
-      void logDebugTrace(const QString& info);
-      void logDebugInfo(const QString& info);
-      void logError(const QString& error);
       void skipLogCurrElem();
       bool determineMeasureLength(QVector<Fraction>& ml) const;
       VoiceList getVoiceList(const QString id) const;
@@ -92,8 +108,9 @@ public:
       int trackForPart(const QString& id) const;
       bool hasPart(const QString& id) const;
       Part* getPart(const QString& id) const { return _partMap.value(id); }
+      MusicXmlPart getMusicXmlPart(const QString& id) const { return _parts.value(id); }
       MusicXMLDrumset getDrumset(const QString& id) const { return _drumsets.value(id); }
-      void setDrumsetDefault(const QString& id, const QString& instrId, const NoteHead::Group hg, const int line, const MScore::Direction sd);
+      void setDrumsetDefault(const QString& id, const QString& instrId, const NoteHead::Group hg, const int line, const Direction sd);
       MusicXmlInstrList getInstrList(const QString id) const;
       Fraction getMeasureStart(const int i) const;
       int octaveShift(const QString& id, const int staff, const Fraction f) const;
@@ -110,8 +127,8 @@ private:
       QVector<Fraction> _measureStart;          ///< Start time of each measure
       PartMap _partMap;                         ///< TODO merge into MusicXmlPart ??
       QMap<QString, MusicXMLDrumset> _drumsets; ///< Drumset for each part, mapped on part id
-      QString _parseStatus;                     ///< Parse status (typicallay a short error message)
       Score* _score;                            ///< MuseScore score
+      MxmlLogger* _logger;                      ///< Error logger
 
       // part specific data (TODO: move to part-specific class)
       Fraction _timeSigDura;                    ///< Measure duration according to last timesig read

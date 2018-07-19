@@ -19,7 +19,7 @@
 
 namespace Ms {
 
-class Xml;
+class XmlWriter;
 class Staff;
 class Score;
 class InstrumentTemplate;
@@ -44,27 +44,8 @@ class InstrumentTemplate;
 //   @P volume          int
 //---------------------------------------------------------
 
-class Part : public QObject, public ScoreElement {
-      Q_OBJECT
-
-      Q_PROPERTY(int          endTrack          READ endTrack)
-      Q_PROPERTY(int          harmonyCount      READ harmonyCount)
-      Q_PROPERTY(bool         hasDrumStaff      READ hasDrumStaff)
-      Q_PROPERTY(bool         hasPitchedStaff   READ hasPitchedStaff)
-      Q_PROPERTY(bool         hasTabStaff       READ hasTabStaff)
-      Q_PROPERTY(QString      instrumentId      READ instrumentId)
-      Q_PROPERTY(QString      longName          READ longName     WRITE setLongName)
-      Q_PROPERTY(int          lyricCount        READ lyricCount)
-      Q_PROPERTY(int          midiChannel       READ midiChannel)
-      Q_PROPERTY(int          midiProgram       READ midiProgram)
-      Q_PROPERTY(bool         mute              READ mute         WRITE setMute)
-      Q_PROPERTY(QString      partName          READ partName     WRITE setPartName)
-      Q_PROPERTY(QString      shortName         READ shortName    WRITE setShortName)
-      Q_PROPERTY(bool         show              READ show         WRITE setShow)
-      Q_PROPERTY(int          startTrack        READ startTrack)
-      Q_PROPERTY(int          volume            READ volume       WRITE setVolume)
-
-      QString _partName;           ///< used in tracklist (mixer)
+class Part final : public ScoreElement {
+      QString _partName;            ///< used in tracklist (mixer)
       InstrumentList _instruments;
       QList<Staff*> _staves;
       QString _id;                  ///< used for MusicXml import
@@ -73,10 +54,11 @@ class Part : public QObject, public ScoreElement {
    public:
       Part(Score* = 0);
       void initFromInstrTemplate(const InstrumentTemplate*);
+      virtual ElementType type() const override { return ElementType::PART; }
 
       void read(XmlReader&);
-      void read114(XmlReader&);
-      void write(Xml& xml) const;
+      bool readProperties(XmlReader&);
+      void write(XmlWriter& xml) const;
 
       int nstaves() const                       { return _staves.size(); }
       QList<Staff*>* staves()                   { return &_staves; }
@@ -143,8 +125,8 @@ class Part : public QObject, public ScoreElement {
       QString partName() const                 { return _partName; }
       void setPartName(const QString& s)       { _partName = s; }
 
-      QVariant getProperty(P_ID) const override;
-      bool setProperty(P_ID, const QVariant&) override;
+      QVariant getProperty(Pid) const override;
+      bool setProperty(Pid, const QVariant&) override;
 
       int lyricCount();
       int harmonyCount();

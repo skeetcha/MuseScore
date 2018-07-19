@@ -51,18 +51,17 @@ void TestEarlymusic::initTestCase()
 
 void TestEarlymusic::earlymusic01()
       {
-
-      Score* score = readScore(DIR + "mensurstrich01.mscx");
+      MasterScore* score = readScore(DIR + "mensurstrich01.mscx");
       QVERIFY(score);
       score->doLayout();
 
       // go to first chord and verify crossMeasure values
       Measure*    msr   = score->firstMeasure();
       QVERIFY(msr);
-      Segment*    seg   = msr->findSegment(Segment::Type::ChordRest, 0);
+      Segment*    seg   = msr->findSegment(SegmentType::ChordRest, 0);
       QVERIFY(seg);
       Ms::Chord*      chord = static_cast<Ms::Chord*>(seg->element(0));
-      QVERIFY(chord && chord->type() == Element::Type::CHORD);
+      QVERIFY(chord && chord->type() == ElementType::CHORD);
       QVERIFY(chord->crossMeasure() == CrossMeasure::UNKNOWN);
       TDuration cmDur   = chord->crossMeasureDurationType();
 //      QVERIFY(cmDur.type() == TDuration::DurationType::V_INVALID);    // irrelevant if crossMeasure() == UNKNOWN
@@ -72,8 +71,8 @@ void TestEarlymusic::earlymusic01()
       QVERIFY(dur.type() == TDuration::DurationType::V_BREVE);
 
       // set crossMeasureValue flag ON: score should not change
-      MStyle newStyle = *score->style();
-      newStyle.set(StyleIdx::crossMeasureValues, true);
+      MStyle newStyle = score->style();
+      newStyle.set(Sid::crossMeasureValues, true);
       score->startCmd();
       score->deselectAll();
       score->undo(new ChangeStyle(score, newStyle));
@@ -91,7 +90,7 @@ void TestEarlymusic::earlymusic01()
       QVERIFY(saveCompareScore(score, "mensurstrich01.mscx", DIR + "mensurstrich01-ref.mscx"));
 
       // UNDO AND VERIFY
-      score->undo()->undo();
+      score->undoStack()->undo(&ed);
       score->doLayout();
       QVERIFY(chord->crossMeasure() == CrossMeasure::UNKNOWN);
       cmDur = chord->crossMeasureDurationType();

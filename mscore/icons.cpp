@@ -56,12 +56,15 @@ static const char* iconNames[] = {
       "rest.svg",
       "note-dot.svg",
       "note-double-dot.svg",
+      "note-dot3.svg",
+      "note-dot4.svg",
       "stem-flip.svg",
       "edit-undo.svg",
       "edit-redo.svg",
       "edit-cut.svg",
       "edit-copy.svg",
       "edit-paste.svg",
+      "edit-swap.svg",
       "document-print.svg",
       "clef.svg",
       "midi-input.svg",
@@ -93,6 +96,11 @@ static const char* iconNames[] = {
       "grace16after.svg",
       "grace32after.svg",
       "mode-notes.svg",
+      // "mode-notes-steptime.svg", (using normal icon for the time being.)
+      "mode-notes-repitch.svg",
+      "mode-notes-rhythm.svg",
+      "mode-notes-realtime-auto.svg",
+      "mode-notes-realtime-manual.svg",
       "insert-symbol.svg",
       "note-tie.svg",
       "format-text-bold.svg",
@@ -110,7 +118,6 @@ static const char* iconNames[] = {
       "mode-photo.svg",
       "raster-horizontal.svg",
       "raster-vertical.svg",
-      "mode-repitch.svg",
       "list-unordered.svg",
       "list-ordered.svg",
       "format-indent-more.svg",
@@ -131,6 +138,7 @@ static const char* iconNames[] = {
       "go-previous.svg",
       "go-next.svg",
       "view-refresh.svg",
+      "parentheses.svg",
       "brackets.svg",
       "timesig_allabreve.svg",
       "timesig_common.svg",
@@ -150,20 +158,24 @@ static const char* iconNames[] = {
       "arrow_down.svg"
       };
 
+//---------------------------------------------------------
+//   genIcons
+//---------------------------------------------------------
+
 void genIcons()
       {
       for (int i = 0; i < int(Icons::voice1_ICON); ++i) {
             QIcon* icon = new QIcon(new MIconEngine);
             icon->addFile(iconPath + iconNames[i]);
             icons[i] = icon;
-            if (icons[i]->isNull() || icons[i]->pixmap(12).isNull()) {
+            if (icon->isNull() || icon->pixmap(12).isNull()) {
                   qDebug("cannot load Icon <%s>", qPrintable(iconPath + iconNames[i]));
                   }
             }
 
       static const char* vtext[VOICES] = { "1","2","3","4" };
-      int iw = preferences.iconHeight * 2 / 3; // 16;
-      int ih = preferences.iconHeight;   // 24;
+      int iw = preferences.getInt(PREF_UI_THEME_ICONHEIGHT) * 2 / 3; // 16;
+      int ih = preferences.getInt(PREF_UI_THEME_ICONHEIGHT);   // 24;
       for (int i = 0; i < VOICES; ++i) {
             icons[int(Icons::voice1_ICON) + i] = new QIcon;
             QPixmap image(iw, ih);

@@ -533,60 +533,6 @@ static const int ASIZE        = 1024;   // 2 ** WINDOW
 #endif
 
 //---------------------------------------------------------
-//   computeWindow
-//---------------------------------------------------------
-
-static int computeWindow(const QList<Event>& notes, int start, int end, int keyIdx)
-      {
-      int p   = 10000;
-      int idx = -1;
-      int pitch[10];
-
-      Q_ASSERT((end-start) < 10 && start != end);
-
-      int i = start;
-      int k = 0;
-      while (i < end)
-            pitch[k++] = notes[i++].dataA() % 12;
-
-      for (; k < 10; ++k)
-            pitch[k] = pitch[k-1];
-
-      for (int i = 0; i < 512; ++i) {
-            int pa    = 0;
-            int pb    = 0;
-            int l     = pitch[0] * 2 + (i & 1);
-            Q_ASSERT((l >= 0) && (l < int(sizeof(tab1)/sizeof(*tab1))));
-            int lof1a = tab1[l];
-            int lof1b = tab2[l];
-
-            for (int k = 1; k < 10; ++k) {
-                  int l = pitch[k] * 2 + ((i & (1 << k)) >> k);
-                  Q_ASSERT((l >= 0) && (l < int(sizeof(tab1)/sizeof(*tab1))));
-                  int lof2a = tab1[l];
-                  int lof2b = tab2[l];
-                  pa += penalty(lof1a, lof2a, keyIdx);
-                  pb += penalty(lof1b, lof2b, keyIdx);
-                  lof1a = lof2a;
-                  lof1b = lof2b;
-                  }
-            if (pa < pb) {
-                  if (pa < p) {
-                        p   = pa;
-                        idx = i;
-                        }
-                  }
-            else {
-                  if (pb < p) {
-                        p   = pb;
-                        idx = i * -1;
-                        }
-                  }
-            }
-      return idx;
-      }
-
-//---------------------------------------------------------
 //   tpc
 //---------------------------------------------------------
 
@@ -608,7 +554,7 @@ int tpc(int idx, int pitch, int opt)
 //   computeWindow
 //---------------------------------------------------------
 
-int computeWindow(const QList<Note*>& notes, int start, int end)
+int computeWindow(const std::vector<Note*>& notes, int start, int end)
       {
       int p   = 10000;
       int idx = -1;
@@ -681,65 +627,6 @@ int computeWindow(const QList<Note*>& notes, int start, int end)
       }
 
 //---------------------------------------------------------
-//   spell
-//---------------------------------------------------------
-
-void spell(QList<Event>& notes, int key)
-      {
-      key += 7;
-
-      int n = notes.size();
-      if (n == 0)
-            return;
-
-      int start = 0;
-      while (start < n) {
-            int end = start + WINDOW;
-            if (end > n)
-                  end = n;
-            int opt = computeWindow(notes, start, end, key);
-            const int* tab;
-            if (opt < 0) {
-                  tab = tab2;
-                  opt *= -1;
-                  }
-            else
-                  tab = tab1;
-
-            if (start == 0) {
-                  notes[0].setTpc(tab[(notes[0].dataA() % 12) * 2 + (opt & 1)]);
-                  if (n > 1)
-                        notes[1].setTpc(tab[(notes[1].dataA() % 12) * 2 + ((opt & 2)>>1)]);
-                  if (n > 2)
-                        notes[2].setTpc(tab[(notes[2].dataA() % 12) * 2 + ((opt & 4)>>2)]);
-                  }
-            if ((end - start) >= 6) {
-                  notes[start+3].setTpc(tab[(notes[start+3].dataA() % 12) * 2 + ((opt &  8) >> 3)]);
-                  notes[start+4].setTpc(tab[(notes[start+4].dataA() % 12) * 2 + ((opt & 16) >> 4)]);
-                  notes[start+5].setTpc(tab[(notes[start+5].dataA() % 12) * 2 + ((opt & 32) >> 5)]);
-                  }
-            if (end == n) {
-                  int n = end - start;
-                  int k;
-                  switch(n - 6) {
-                        case 3:
-                              k = end - start - 3;
-                              notes[end-3].setTpc(tab[(notes[end-3].dataA() % 12) * 2 + ((opt & (1<<k)) >> k)]);
-                        case 2:
-                              k = end - start - 2;
-                              notes[end-2].setTpc(tab[(notes[end-2].dataA() % 12) * 2 + ((opt & (1<<k)) >> k)]);
-                        case 1:
-                              k = end - start - 1;
-                              notes[end-1].setTpc(tab[(notes[end-1].dataA() % 12) * 2 + ((opt & (1<<k)) >> k)]);
-                        }
-                  break;
-                  }
-            // advance to next window
-            start += 3;
-            }
-      }
-
-//---------------------------------------------------------
 //   changeAllTpcs
 //---------------------------------------------------------
 
@@ -752,15 +639,15 @@ void changeAllTpcs(Note* n, int tpc1)
             v.flip();
             }
       int tpc2 = Ms::transposeTpc(tpc1, v, true);
-      n->undoChangeProperty(P_ID::TPC1, tpc1);
-      n->undoChangeProperty(P_ID::TPC2, tpc2);
+      n->undoChangeProperty(Pid::TPC1, tpc1);
+      n->undoChangeProperty(Pid::TPC2, tpc2);
       }
 
 //---------------------------------------------------------
 //   spell
 //---------------------------------------------------------
 
-void Score::spellNotelist(QList<Note*>& notes)
+void Score::spellNotelist(std::vector<Note*>& notes)
       {
       int n = notes.size();
 
@@ -900,6 +787,20 @@ int absStep2pitchByKey(int step, Key key)
       int octave = step / STEP_DELTA_OCTAVE;
       int deltaPitch = step2deltaPitchByKey(step % STEP_DELTA_OCTAVE, key);
       return octave * PITCH_DELTA_OCTAVE + deltaPitch;
+      }
+
+//---------------------------------------------------------
+//   tpc2degree
+//    the scale degree of a TPC for a given Key
+//---------------------------------------------------------
+
+int tpc2degree(int tpc, Key key)
+      {
+      const QString names("CDEFGAB");
+      const QString scales("CGDAEBFCGDAEBFC");
+      QString scale = scales[int(key)+7];
+      QString stepName = tpc2stepName(tpc);
+      return (names.indexOf(stepName) - names.indexOf(scale) +28) % 7;
       }
 
 }

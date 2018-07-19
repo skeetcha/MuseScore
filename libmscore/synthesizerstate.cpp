@@ -19,7 +19,7 @@ namespace Ms {
 //   write
 //---------------------------------------------------------
 
-void SynthesizerState::write(Xml& xml) const
+void SynthesizerState::write(XmlWriter& xml) const
       {
       xml.stag("Synthesizer");
       for (const SynthesizerGroup& g : *this) {
@@ -55,6 +55,37 @@ void SynthesizerState::read(XmlReader& e)
             }
       }
 
+//---------------------------------------------------------
+//   group
+///  Get SynthesizerGroup by name
+//---------------------------------------------------------
+
+SynthesizerGroup SynthesizerState::group(const QString& name) const
+      {
+      for (const SynthesizerGroup& g : *this) {
+            if (g.name() == name)
+                  return g;
+            }
+      SynthesizerGroup sg;
+      return sg;
+      }
+
+//---------------------------------------------------------
+//   isDefaultSynthSoundfont
+///  check if synthesizer state uses default synth and
+///  default font only
+//---------------------------------------------------------
+
+bool SynthesizerState::isDefaultSynthSoundfont()
+      {
+      SynthesizerGroup fluid = group("Fluid");
+      SynthesizerGroup zerberus = group("Zerberus");
+      if (zerberus.size() == 0 && fluid.size() == 1) {
+            if (fluid.front().data == "MuseScore_General.sf3")
+                  return true;
+            }
+      return false;
+      }
 
 }
 

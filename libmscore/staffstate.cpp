@@ -47,7 +47,7 @@ StaffState::~StaffState()
 //   write
 //---------------------------------------------------------
 
-void StaffState::write(Xml& xml) const
+void StaffState::write(XmlWriter& xml) const
       {
       xml.stag(name());
       xml.tag("subtype", int(_staffStateType));
@@ -185,7 +185,7 @@ QString StaffState::staffStateTypeName() const
 //   acceptDrop
 //---------------------------------------------------------
 
-bool StaffState::acceptDrop(const DropData&) const
+bool StaffState::acceptDrop(EditData&) const
       {
       return false;
       }
@@ -194,7 +194,7 @@ bool StaffState::acceptDrop(const DropData&) const
 //   drop
 //---------------------------------------------------------
 
-Element* StaffState::drop(const DropData& data)
+Element* StaffState::drop(EditData& data)
       {
       Element* e = data.element;
       score()->undoChangeElement(this, e);

@@ -46,7 +46,7 @@ struct TabScoreView {
 
 class ScoreTab : public QWidget {
       Q_OBJECT
-      QList<Score*>* scoreList;
+      QList<MasterScore*>* scoreList;
       QTabBar* tab;                 // list of scores
       QTabBar* tab2;                // list of excerpts for current score
       QStackedLayout* stack;
@@ -62,12 +62,15 @@ class ScoreTab : public QWidget {
       void updateExcerpts();
       void setExcerpt(int);
       void setCurrent(int);
+      void tabMoved(int, int);
 
    public:
-      ScoreTab(QList<Score*>*, QWidget* parent = 0);
+      ScoreTab(QList<MasterScore*>*, QWidget* parent = 0);
       ~ScoreTab();
 
-      void insertTab(Score*);
+      QTabBar* getTab() const { return tab; }
+
+      void insertTab(MasterScore*);
       void setTabText(int, const QString&);
       int currentIndex() const;
       void setCurrentIndex(int);

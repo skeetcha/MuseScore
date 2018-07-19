@@ -1,26 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
+      <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,14 +23,6 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -53,23 +30,26 @@
         </Staff>
       <trackName>N-Gt</trackName>
       <Instrument>
-        <longName>Classical Guitar</longName>
+        <longName>Guitar</longName>
         <shortName>Guit.</shortName>
-        <trackName>Classical Guitar</trackName>
+        <trackName>Guitar (Treble Clef)</trackName>
         <minPitchP>40</minPitchP>
         <maxPitchP>83</maxPitchP>
         <minPitchA>40</minPitchA>
         <maxPitchA>83</maxPitchA>
+        <transposeDiatonic>-7</transposeDiatonic>
+        <transposeChromatic>-12</transposeChromatic>
         <instrumentId>pluck.guitar.nylon-string</instrumentId>
-        <clef>G8vb</clef>
+        <concertClef>G8vb</concertClef>
+        <transposingClef>G</transposingClef>
         <StringData>
-          <frets>21</frets>
-          <string>40</string>
-          <string>45</string>
-          <string>50</string>
-          <string>55</string>
-          <string>59</string>
-          <string>64</string>
+          <frets>24</frets>
+          <string>52</string>
+          <string>57</string>
+          <string>62</string>
+          <string>67</string>
+          <string>71</string>
+          <string>76</string>
           </StringData>
         <Articulation>
           <velocity>100</velocity>
@@ -111,8 +91,8 @@
         </VBox>
       <Measure number="1">
         <Clef>
-          <concertClefType>G8vb</concertClefType>
-          <transposingClefType>G8vb</transposingClefType>
+          <concertClefType>G</concertClefType>
+          <transposingClefType>G</transposingClefType>
           <lid>1</lid>
           </Clef>
         <KeySig>
@@ -123,7 +103,6 @@
           <lid>3</lid>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Dynamic>
           <subtype>mf</subtype>
@@ -226,19 +205,13 @@
             <string>1</string>
             </Note>
           </Chord>
-        <tick>0</tick>
-        <Dynamic>
-          <subtype>mf</subtype>
-          <velocity>80</velocity>
+        <move>0/1</move>
+        <Chord>
           <lid>20</lid>
           <track>1</track>
-          </Dynamic>
-        <Chord>
-          <lid>21</lid>
-          <track>1</track>
           <durationType>half</durationType>
           <Note>
-            <lid>22</lid>
+            <lid>21</lid>
             <track>1</track>
             <pitch>55</pitch>
             <tpc>15</tpc>
@@ -247,11 +220,11 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>23</lid>
+          <lid>22</lid>
           <track>1</track>
           <durationType>half</durationType>
           <Note>
-            <lid>24</lid>
+            <lid>23</lid>
             <track>1</track>
             <pitch>55</pitch>
             <tpc>15</tpc>
@@ -259,19 +232,13 @@
             <string>2</string>
             </Note>
           </Chord>
-        <tick>0</tick>
-        <Dynamic>
-          <subtype>mf</subtype>
-          <velocity>80</velocity>
-          <lid>25</lid>
-          <track>2</track>
-          </Dynamic>
+        <move>0/1</move>
         <Chord>
-          <lid>26</lid>
+          <lid>24</lid>
           <track>2</track>
           <durationType>half</durationType>
           <Note>
-            <lid>27</lid>
+            <lid>25</lid>
             <track>2</track>
             <pitch>52</pitch>
             <tpc>18</tpc>
@@ -280,11 +247,11 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>28</lid>
+          <lid>26</lid>
           <track>2</track>
           <durationType>half</durationType>
           <Note>
-            <lid>29</lid>
+            <lid>27</lid>
             <track>2</track>
             <pitch>50</pitch>
             <tpc>16</tpc>
@@ -292,19 +259,13 @@
             <string>3</string>
             </Note>
           </Chord>
-        <tick>0</tick>
-        <Dynamic>
-          <subtype>mf</subtype>
-          <velocity>80</velocity>
-          <lid>30</lid>
-          <track>3</track>
-          </Dynamic>
+        <move>0/1</move>
         <Chord>
-          <lid>31</lid>
+          <lid>28</lid>
           <track>3</track>
           <durationType>half</durationType>
           <Note>
-            <lid>32</lid>
+            <lid>29</lid>
             <track>3</track>
             <pitch>48</pitch>
             <tpc>14</tpc>
@@ -313,11 +274,11 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>33</lid>
+          <lid>30</lid>
           <track>3</track>
           <durationType>half</durationType>
           <Note>
-            <lid>34</lid>
+            <lid>31</lid>
             <track>3</track>
             <pitch>43</pitch>
             <tpc>15</tpc>
@@ -328,23 +289,23 @@
         </Measure>
       <Measure number="2">
         <Chord>
-          <lid>36</lid>
+          <lid>33</lid>
           <durationType>whole</durationType>
           <Note>
-            <lid>37</lid>
+            <lid>34</lid>
             <pitch>60</pitch>
             <tpc>14</tpc>
             <fret>1</fret>
             <string>1</string>
             </Note>
           </Chord>
-        <tick>1920</tick>
+        <move>0/1</move>
         <Chord>
-          <lid>38</lid>
+          <lid>35</lid>
           <track>1</track>
           <durationType>whole</durationType>
           <Note>
-            <lid>39</lid>
+            <lid>36</lid>
             <track>1</track>
             <pitch>55</pitch>
             <tpc>15</tpc>
@@ -352,13 +313,13 @@
             <string>2</string>
             </Note>
           </Chord>
-        <tick>1920</tick>
+        <move>0/1</move>
         <Chord>
-          <lid>40</lid>
+          <lid>37</lid>
           <track>2</track>
           <durationType>whole</durationType>
           <Note>
-            <lid>41</lid>
+            <lid>38</lid>
             <track>2</track>
             <pitch>52</pitch>
             <tpc>18</tpc>
@@ -366,13 +327,13 @@
             <string>3</string>
             </Note>
           </Chord>
-        <tick>1920</tick>
+        <move>0/1</move>
         <Chord>
-          <lid>42</lid>
+          <lid>39</lid>
           <track>3</track>
           <durationType>whole</durationType>
           <Note>
-            <lid>43</lid>
+            <lid>40</lid>
             <track>3</track>
             <pitch>48</pitch>
             <tpc>14</tpc>
@@ -383,14 +344,10 @@
         </Measure>
       <Measure number="3">
         <Rest>
-          <lid>45</lid>
+          <lid>42</lid>
           <durationType>measure</durationType>
-          <duration z="4" n="4"/>
+          <duration>4/4</duration>
           </Rest>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Score>
@@ -398,43 +355,19 @@
       <currentLayer>0</currentLayer>
       <Division>480</Division>
       <Style>
-        <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
+        <ArpeggioHiddenInStdIfTab>1</ArpeggioHiddenInStdIfTab>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>1</linkedTo>
           <StaffType group="pitched">
             </StaffType>
-          <bracket type="0" span="2"/>
+          <bracket type="0" span="2" col="0"/>
           </Staff>
         <Staff id="2">
           <linkedTo>1</linkedTo>
@@ -459,27 +392,29 @@
             <upsideDown>0</upsideDown>
             <useNumbers>1</useNumbers>
             </StaffType>
-          <bracket type="-1" span="0"/>
           </Staff>
         <trackName></trackName>
         <Instrument>
-          <longName>Classical Guitar</longName>
+          <longName>Guitar</longName>
           <shortName>Guit.</shortName>
-          <trackName>Classical Guitar</trackName>
+          <trackName>Guitar (Treble Clef)</trackName>
           <minPitchP>40</minPitchP>
           <maxPitchP>83</maxPitchP>
           <minPitchA>40</minPitchA>
           <maxPitchA>83</maxPitchA>
+          <transposeDiatonic>-7</transposeDiatonic>
+          <transposeChromatic>-12</transposeChromatic>
           <instrumentId>pluck.guitar.nylon-string</instrumentId>
-          <clef>G8vb</clef>
+          <concertClef>G8vb</concertClef>
+          <transposingClef>G</transposingClef>
           <StringData>
-            <frets>21</frets>
-            <string>40</string>
-            <string>45</string>
-            <string>50</string>
-            <string>55</string>
-            <string>59</string>
-            <string>64</string>
+            <frets>24</frets>
+            <string>52</string>
+            <string>57</string>
+            <string>62</string>
+            <string>67</string>
+            <string>71</string>
+            <string>76</string>
             </StringData>
           <Articulation>
             <velocity>100</velocity>
@@ -520,13 +455,13 @@
           <lid>0</lid>
           <Text>
             <style>Instrument Name (Part)</style>
-            <text>Classical Guitar</text>
+            <text>Guitar</text>
             </Text>
           </VBox>
         <Measure number="1">
           <Clef>
-            <concertClefType>G8vb</concertClefType>
-            <transposingClefType>G8vb</transposingClefType>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
             <lid>1</lid>
             </Clef>
           <KeySig>
@@ -537,7 +472,6 @@
             <lid>3</lid>
             <sigN>4</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Dynamic>
             <subtype>mf</subtype>
@@ -640,19 +574,13 @@
               <string>1</string>
               </Note>
             </Chord>
-          <tick>0</tick>
-          <Dynamic>
-            <subtype>mf</subtype>
-            <velocity>80</velocity>
+          <move>0/1</move>
+          <Chord>
             <lid>20</lid>
             <track>1</track>
-            </Dynamic>
-          <Chord>
-            <lid>21</lid>
-            <track>1</track>
             <durationType>half</durationType>
             <Note>
-              <lid>22</lid>
+              <lid>21</lid>
               <track>1</track>
               <pitch>55</pitch>
               <tpc>15</tpc>
@@ -661,11 +589,11 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>23</lid>
+            <lid>22</lid>
             <track>1</track>
             <durationType>half</durationType>
             <Note>
-              <lid>24</lid>
+              <lid>23</lid>
               <track>1</track>
               <pitch>55</pitch>
               <tpc>15</tpc>
@@ -673,19 +601,13 @@
               <string>2</string>
               </Note>
             </Chord>
-          <tick>0</tick>
-          <Dynamic>
-            <subtype>mf</subtype>
-            <velocity>80</velocity>
-            <lid>25</lid>
-            <track>2</track>
-            </Dynamic>
+          <move>0/1</move>
           <Chord>
-            <lid>26</lid>
+            <lid>24</lid>
             <track>2</track>
             <durationType>half</durationType>
             <Note>
-              <lid>27</lid>
+              <lid>25</lid>
               <track>2</track>
               <pitch>52</pitch>
               <tpc>18</tpc>
@@ -694,11 +616,11 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>28</lid>
+            <lid>26</lid>
             <track>2</track>
             <durationType>half</durationType>
             <Note>
-              <lid>29</lid>
+              <lid>27</lid>
               <track>2</track>
               <pitch>50</pitch>
               <tpc>16</tpc>
@@ -706,19 +628,13 @@
               <string>3</string>
               </Note>
             </Chord>
-          <tick>0</tick>
-          <Dynamic>
-            <subtype>mf</subtype>
-            <velocity>80</velocity>
-            <lid>30</lid>
-            <track>3</track>
-            </Dynamic>
+          <move>0/1</move>
           <Chord>
-            <lid>31</lid>
+            <lid>28</lid>
             <track>3</track>
             <durationType>half</durationType>
             <Note>
-              <lid>32</lid>
+              <lid>29</lid>
               <track>3</track>
               <pitch>48</pitch>
               <tpc>14</tpc>
@@ -727,11 +643,11 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>33</lid>
+            <lid>30</lid>
             <track>3</track>
             <durationType>half</durationType>
             <Note>
-              <lid>34</lid>
+              <lid>31</lid>
               <track>3</track>
               <pitch>43</pitch>
               <tpc>15</tpc>
@@ -742,23 +658,23 @@
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>36</lid>
+            <lid>33</lid>
             <durationType>whole</durationType>
             <Note>
-              <lid>37</lid>
+              <lid>34</lid>
               <pitch>60</pitch>
               <tpc>14</tpc>
               <fret>1</fret>
               <string>1</string>
               </Note>
             </Chord>
-          <tick>1920</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>38</lid>
+            <lid>35</lid>
             <track>1</track>
             <durationType>whole</durationType>
             <Note>
-              <lid>39</lid>
+              <lid>36</lid>
               <track>1</track>
               <pitch>55</pitch>
               <tpc>15</tpc>
@@ -766,13 +682,13 @@
               <string>2</string>
               </Note>
             </Chord>
-          <tick>1920</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>40</lid>
+            <lid>37</lid>
             <track>2</track>
             <durationType>whole</durationType>
             <Note>
-              <lid>41</lid>
+              <lid>38</lid>
               <track>2</track>
               <pitch>52</pitch>
               <tpc>18</tpc>
@@ -780,13 +696,13 @@
               <string>3</string>
               </Note>
             </Chord>
-          <tick>1920</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>42</lid>
+            <lid>39</lid>
             <track>3</track>
             <durationType>whole</durationType>
             <Note>
-              <lid>43</lid>
+              <lid>40</lid>
               <track>3</track>
               <pitch>48</pitch>
               <tpc>14</tpc>
@@ -797,14 +713,10 @@
           </Measure>
         <Measure number="3">
           <Rest>
-            <lid>45</lid>
+            <lid>42</lid>
             <durationType>measure</durationType>
-            <duration z="4" n="4"/>
+            <duration>4/4</duration>
             </Rest>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <Staff id="2">
@@ -904,13 +816,13 @@
               <string>1</string>
               </Note>
             </Chord>
-          <tick>0</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>21</lid>
+            <lid>20</lid>
             <track>5</track>
             <durationType>half</durationType>
             <Note>
-              <lid>22</lid>
+              <lid>21</lid>
               <track>5</track>
               <pitch>55</pitch>
               <tpc>15</tpc>
@@ -919,11 +831,11 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>23</lid>
+            <lid>22</lid>
             <track>5</track>
             <durationType>half</durationType>
             <Note>
-              <lid>24</lid>
+              <lid>23</lid>
               <track>5</track>
               <pitch>55</pitch>
               <tpc>15</tpc>
@@ -931,13 +843,13 @@
               <string>2</string>
               </Note>
             </Chord>
-          <tick>0</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>26</lid>
+            <lid>24</lid>
             <track>6</track>
             <durationType>half</durationType>
             <Note>
-              <lid>27</lid>
+              <lid>25</lid>
               <track>6</track>
               <pitch>52</pitch>
               <tpc>18</tpc>
@@ -946,11 +858,11 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>28</lid>
+            <lid>26</lid>
             <track>6</track>
             <durationType>half</durationType>
             <Note>
-              <lid>29</lid>
+              <lid>27</lid>
               <track>6</track>
               <pitch>50</pitch>
               <tpc>16</tpc>
@@ -958,13 +870,13 @@
               <string>3</string>
               </Note>
             </Chord>
-          <tick>0</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>31</lid>
+            <lid>28</lid>
             <track>7</track>
             <durationType>half</durationType>
             <Note>
-              <lid>32</lid>
+              <lid>29</lid>
               <track>7</track>
               <pitch>48</pitch>
               <tpc>14</tpc>
@@ -973,11 +885,11 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>33</lid>
+            <lid>30</lid>
             <track>7</track>
             <durationType>half</durationType>
             <Note>
-              <lid>34</lid>
+              <lid>31</lid>
               <track>7</track>
               <pitch>43</pitch>
               <tpc>15</tpc>
@@ -988,23 +900,23 @@
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>36</lid>
+            <lid>33</lid>
             <durationType>whole</durationType>
             <Note>
-              <lid>37</lid>
+              <lid>34</lid>
               <pitch>60</pitch>
               <tpc>14</tpc>
               <fret>1</fret>
               <string>1</string>
               </Note>
             </Chord>
-          <tick>1920</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>38</lid>
+            <lid>35</lid>
             <track>5</track>
             <durationType>whole</durationType>
             <Note>
-              <lid>39</lid>
+              <lid>36</lid>
               <track>5</track>
               <pitch>55</pitch>
               <tpc>15</tpc>
@@ -1012,13 +924,13 @@
               <string>2</string>
               </Note>
             </Chord>
-          <tick>1920</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>40</lid>
+            <lid>37</lid>
             <track>6</track>
             <durationType>whole</durationType>
             <Note>
-              <lid>41</lid>
+              <lid>38</lid>
               <track>6</track>
               <pitch>52</pitch>
               <tpc>18</tpc>
@@ -1026,13 +938,13 @@
               <string>3</string>
               </Note>
             </Chord>
-          <tick>1920</tick>
+          <move>0/1</move>
           <Chord>
-            <lid>42</lid>
+            <lid>39</lid>
             <track>7</track>
             <durationType>whole</durationType>
             <Note>
-              <lid>43</lid>
+              <lid>40</lid>
               <track>7</track>
               <pitch>48</pitch>
               <tpc>14</tpc>
@@ -1043,14 +955,10 @@
           </Measure>
         <Measure number="3">
           <Rest>
-            <lid>45</lid>
+            <lid>42</lid>
             <durationType>measure</durationType>
-            <duration z="4" n="4"/>
+            <duration>4/4</duration>
             </Rest>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <name>N-Gt</name>

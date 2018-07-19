@@ -54,15 +54,15 @@ public:
       void        fretChords(Chord * chord) const;
       int         getPitch(int string, int fret, Staff* staff, int tick) const;
       static int  pitchOffsetAt(Staff* staff, int tick);
-      int         strings() const               { return stringTable.size(); }
-      QList<instrString>  stringList() const    { return stringTable; }
+      int         strings() const                   { return stringTable.size(); }
+      int         frettedStrings() const;
+      const QList<instrString>&  stringList() const { return stringTable; }
       QList<instrString>&  stringList()         { return stringTable; }
       int         frets() const                 { return _frets; }
       void        setFrets(int val)             { _frets = val; }
       void        read(XmlReader&);
-      void        write(Xml&) const;
-//      void        readMusicXML(XmlReader& de);
-      void        writeMusicXML(Xml& xml) const;
+      void        write(XmlWriter&) const;
+      void        writeMusicXML(XmlWriter& xml) const;
       bool operator==(const StringData& d) const { return d._frets == _frets && d.stringTable == stringTable; }
       };
 

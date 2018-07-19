@@ -1,23 +1,29 @@
-# MuseScore: Music notation and composition software
+![MuseScore](mscore/data/musescore_logo_full.png)  
+ Music notation and composition software
+
+[![Travis CI](https://secure.travis-ci.org/musescore/MuseScore.svg)](https://travis-ci.org/musescore/MuseScore)
+[![Appveyor](https://ci.appveyor.com/api/projects/status/bp3ww6v985i64ece/branch/master?svg=true)](https://ci.appveyor.com/project/MuseScore/musescore/branch/master)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
+
+MuseScore is an open source and free music notation software. For support, contribution, and bug reports visit MuseScore.org. Fork and make pull requests!
 
 ## Features
 
 * WYSIWYG design, notes are entered on a "virtual notepaper"
 * TrueType font(s) for printing & display allows for high quality scaling to all sizes
-* easy & fast note entry
-* many editing functions
+* Easy & fast note entry
+* Many editing functions
 * MusicXML import/export
-* Midi (SMF) import/export
+* MIDI (SMF) import/export
 * MuseData import
-* Midi input for note entry
-* integrated sequencer and software synthesizer to play the score
-* print or create pdf files
+* MIDI input for note entry
+* Integrated sequencer and software synthesizer to play the score
+* Print or create pdf files
 
 ## More info
-* [MuseScore Homepage](http://musescore.org)
-* [MuseScore Git workflow instructions](http://musescore.org/en/developers-handbook/git-workflow).
-* [How to compile MuseScore?](http://musescore.org/en/developers-handbook/compilation)
-* Build status: [![Build Status](https://secure.travis-ci.org/musescore/MuseScore.png)](http://travis-ci.org/musescore/MuseScore)
+* [MuseScore Homepage](https://musescore.org)
+* [MuseScore Git workflow instructions](https://musescore.org/en/developers-handbook/git-workflow).
+* [How to compile MuseScore?](https://musescore.org/en/developers-handbook/compilation)
 
 ## License
 MuseScore is licensed under GPL version 2.0. See LICENSE.GPL in the same directory.
@@ -27,7 +33,7 @@ MuseScore is licensed under GPL version 2.0. See LICENSE.GPL in the same directo
 Disabled by default in the stable releases. See http://dev-list.musescore.org/Aeolus-Organ-Synth-td7578364.html
 Kept as an example of how to integrate with a complex synthesizer.
 
-* **assets** Graphical assets, use them if you need a MuseScore icon. For logo, color etc... see http://musescore.org/en/about/logos-and-graphics 
+* **assets** Graphical assets, use them if you need a MuseScore icon. For logo, color etc... see https://musescore.org/en/about/logos-and-graphics
 
 * **awl** Audio Widget Library, from the MusE project
 
@@ -37,15 +43,13 @@ Kept as an example of how to integrate with a complex synthesizer.
 
 * **demos** A few MuseScore files to demonstrate what can be done
 
-* **fluid** Clone of [FluidSynth](http://sourceforge.net/apps/trac/fluidsynth/), ported to C++ and customized
+* **fluid** Clone of [FluidSynth](https://sourceforge.net/projects/fluidsynth/), ported to C++ and customized
 
 * **fonts** Contains fontforge source (sfd) + ttf/otf fonts. MuseScore includes the "Emmentaler" font from the Lilypond project.
 
 * **libmscore** Data model of MuseScore
 
 * **mscore** Main code for the MuseScore UI
-
-* **mstyle** Clone of KDE4 style Oxygen
 
 * **msynth** Abstract interface to Fluid + Aeolus
 
@@ -65,24 +69,24 @@ Kept as an example of how to integrate with a complex synthesizer.
     Used for capella import
 
     * **thirdparty/diff**
-    Not used currently. [Diff, Match and Patch Library](http://code.google.com/p/google-diff-match-patch/)
+    Not used currently. [Diff, Match and Patch Library](https://code.google.com/p/google-diff-match-patch/)
 
     * **thirdparty/ofqf**
-    OSC server interface. Based on [OSC for Qt4](http://www.arnoldarts.de/ofqf.html)
+    OSC server interface. Based on [OSC for Qt4](http://www.arnoldarts.de/projects/ofqf/)
 
     * **thirdparty/singleapp**
-    Clone from [Qt Single Application](http://qt.gitorious.org/qt-solutions/qt-solutions/trees/master/qtsingleapplication)
+    Clone from [Qt Single Application](https://github.com/qtproject/qt-solutions/tree/master/qtsingleapplication)
 
     * **thirdparty/portmidi**
-    Clone from [PortMidi](http://portmedia.sourceforge.net/)
-   
+    Clone from [PortMidi](https://sourceforge.net/projects/portmedia/)
+
     * **thirdparty/beatroot**
-    It's a core part of BeatRoot Vamp Plugin by Simon Dixon and Chris Cannam, 
-    used in MIDI import for beat detection. (http://code.soundsoftware.ac.uk/projects/beatroot-vamp/repository)
+    It's a core part of BeatRoot Vamp Plugin by Simon Dixon and Chris Cannam,
+    used in MIDI import for beat detection. (https://code.soundsoftware.ac.uk/projects/beatroot-vamp/repository)
 
 
 ## Building
-**Read the developer handbook for a [complete build walkthrough](http://musescore.org/en/developers-handbook/compilation) and a list of dependencies.**
+**Read the developer handbook for a [complete build walkthrough](https://musescore.org/en/developers-handbook/compilation) and a list of dependencies.**
 
 ### Getting sources
 If using git to download repo of entire code history, type:
@@ -90,7 +94,7 @@ If using git to download repo of entire code history, type:
     git clone https://github.com/musescore/MuseScore.git
     cd MuseScore
 
-Else can just download the latest source release tarball from https://github.com/musescore/MuseScore/releases, and then from your download directory type:
+Otherwise, you can just download the latest source release tarball from https://github.com/musescore/MuseScore/releases, and then from your download directory type:
 
     tar xzf MuseScore-x.x.x.tar.gz
     cd MuseScore-x.x.x
@@ -107,9 +111,9 @@ To start MuseScore, type:
 
     ./build.release/mscore/mscore
 
-The Start Center window will appear on every invocation, until you disable that setting via the "Preferences" dialog.
+The Start Center window will appear on every invocation until you disable that setting via the "Preferences" dialog.
 
-### Installing 
+### Installing
 To install to default prefix using root user, type:
 
     sudo make install
@@ -122,11 +126,4 @@ To run the debug version, type:
     ./build.debug/mscore/mscore
 
 ### Testing
-See mtest/README.md or https://musescore.org/en/developers-handbook/testing for instructions on how to run the test suite.
-
-### Program Documentation
-To generate program documentation using DoxyGen, first do `make debug`, then type:
-
-    make doxy
-
-Browse the documentation in subdirectory Doc/html/index.html using any html browser.
+See [mtest/README.md](/mtest/README.md) or https://musescore.org/en/developers-handbook/testing for instructions on how to run the test suite.

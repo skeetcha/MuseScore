@@ -37,6 +37,7 @@
 #include "libmscore/bracket.h"
 #include "libmscore/drumset.h"
 #include "libmscore/box.h"
+#include "libmscore/sym.h"
 #include "libmscore/pitchspelling.h"
 #include "importmidi_meter.h"
 #include "importmidi_chord.h"
@@ -67,7 +68,6 @@
 
 namespace Ms {
 
-extern Preferences preferences;
 extern void updateNoteLines(Segment*, int track);
 
 
@@ -208,7 +208,7 @@ void quantizeAllTracks(std::multimap<int, MTrack> &tracks,
                        TimeSigMap *sigmap,
                        const ReducedFraction &lastTick)
       {
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
 
       for (auto &track: tracks) {
             MTrack &mtrack = track.second;
@@ -276,7 +276,7 @@ void MTrack::processMeta(int tick, const MidiEvent& mm)
                   {
                   const std::string text = MidiCharset::fromUchar(data);
 
-                  auto &opers = preferences.midiImportOperations;
+                  auto &opers = midiImportOperations;
                   if (opers.data()->processingsOfOpenedFile == 0) {
                         const int currentTrack = indexOfOperation;
                         opers.data()->trackOpers.staffName.setValue(currentTrack, text);
@@ -307,29 +307,30 @@ void MTrack::processMeta(int tick, const MidiEvent& mm)
             case META_SUBTITLE:
             case META_TITLE:
                   {
-                  Text* text = new Text(cs);
+                  SubStyleId ssid = SubStyleId::DEFAULT;
                   switch(mm.metaType()) {
                         case META_COMPOSER:
-                              text->setTextStyleType(TextStyleType::COMPOSER);
+                              ssid = SubStyleId::COMPOSER;
                               break;
                         case META_TRANSLATOR:
-                              text->setTextStyleType(TextStyleType::TRANSLATOR);
+                              ssid = SubStyleId::TRANSLATOR;
                               break;
                         case META_POET:
-                              text->setTextStyleType(TextStyleType::POET);
+                              ssid = SubStyleId::POET;
                               break;
                         case META_SUBTITLE:
-                              text->setTextStyleType(TextStyleType::SUBTITLE);
+                              ssid = SubStyleId::SUBTITLE;
                               break;
                         case META_TITLE:
-                              text->setTextStyleType(TextStyleType::TITLE);
+                              ssid = SubStyleId::TITLE;
                               break;
                         }
+                  Text* text = new Text(ssid, cs);
 
                   text->setPlainText((const char*)(mm.edata()));
 
                   MeasureBase* measure = cs->first();
-                  if (measure->type() != Element::Type::VBOX) {
+                  if (!measure->isVBox()) {
                         measure = new VBox(cs);
                         measure->setTick(0);
                         measure->setNext(cs->first());
@@ -377,7 +378,7 @@ MTrack::toDurationList(const Measure *measure,
       const ReducedFraction startTickInBar = startTick - barTick;
       const ReducedFraction endTickInBar = startTickInBar + len;
 
-      const auto &opers = preferences.midiImportOperations;
+      const auto &opers = midiImportOperations;
       const bool useDots = opers.data()->trackOpers.useDots.value(indexOfOperation);
       return Meter::toDurationList(startTickInBar, endTickInBar,
                                    ReducedFraction(measure->timesig()), tupletsData,
@@ -423,7 +424,7 @@ void MTrack::fillGapWithRests(Score* score,
                         Rest* rest = new Rest(score, duration);
                         rest->setDuration(measure->len());
                         rest->setTrack(track);
-                        Segment* s = measure->getSegment(rest, startChordTick.ticks());
+                        Segment* s = measure->getSegment(SegmentType::ChordRest, startChordTick.ticks());
                         s->add(rest);
                         }
                   restLen -= len;
@@ -444,7 +445,7 @@ void MTrack::fillGapWithRests(Score* score,
                         Rest* rest = new Rest(score, duration);
                         rest->setDuration(duration.fraction());
                         rest->setTrack(track);
-                        Segment* s = measure->getSegment(Segment::Type::ChordRest,
+                        Segment* s = measure->getSegment(SegmentType::ChordRest,
                                                          startChordTick.ticks());
                         s->add(rest);
                         MidiTuplet::addElementToTuplet(voice, startChordTick, len, rest, tuplets);
@@ -481,7 +482,7 @@ void setMusicNotesFromMidi(Score *score,
                   if (!drumset->isValid(mn.pitch))
                         qDebug("unmapped drum note 0x%02x %d", mn.pitch, mn.pitch);
                   else {
-                        MScore::Direction sd = drumset->stemDirection(mn.pitch);
+                        Direction sd = drumset->stemDirection(mn.pitch);
                         chord->setStemDirection(sd);
                         }
                   }
@@ -521,7 +522,7 @@ void MTrack::processPendingNotes(QList<MidiChord> &midiChords,
       const Drumset* drumset = staff->part()->instrument()->drumset();
       const bool useDrumset  = staff->part()->instrument()->useDrumset();
 
-      const auto& opers = preferences.midiImportOperations.data()->trackOpers;
+      const auto& opers = midiImportOperations.data()->trackOpers;
       const int currentTrack = indexOfOperation;
 
                   // all midiChords here should have the same onTime value
@@ -552,11 +553,11 @@ void MTrack::processPendingNotes(QList<MidiChord> &midiChords,
                         && startChordTick == startChordTickFrac   // first chord in tied chord sequence
                         && midiChords.begin()->isStaccato()) {
                   Articulation* a = new Articulation(chord->score());
-                  a->setArticulationType(ArticulationType::Staccato);
+                  a->setSymId(SymId::articStaccatoAbove);
                   chord->add(a);
                   }
 
-            Segment* s = measure->getSegment(chord, tick.ticks());
+            Segment* s = measure->getSegment(SegmentType::ChordRest, tick.ticks());
             s->add(chord);
             MidiTuplet::addElementToTuplet(voice, tick, len, chord, tuplets);
 
@@ -702,11 +703,14 @@ std::multimap<int, MTrack> createMTrackList(TimeSigMap *sigmap, const MidiFile *
                         }
                   else if (e.type() == ME_PROGRAM)
                         track.program = e.dataB();
+                  else if (e.type() == ME_CONTROLLER && e.controller() == CTRL_VOLUME) {
+                        track.volumes.insert({tick, e.value()});
+                        }
                   }
             if (hasNotes) {
                   ++trackIndex;
                   track.hadInitialNotes = true;
-                  const auto *data = preferences.midiImportOperations.data();
+                  const auto *data = midiImportOperations.data();
                   if (data->processingsOfOpenedFile > 0) {
                         if (data->trackOpers.doImport.value(trackIndex)) {
                               track.indexOfOperation = trackIndex;
@@ -820,7 +824,7 @@ void createMeasures(const ReducedFraction &firstTick, ReducedFraction &lastTick,
       if (beat > 0 || tick > 0)
             ++barCount;           // convert bar index to number of bars
 
-      auto &data = *preferences.midiImportOperations.data();
+      auto &data = *midiImportOperations.data();
       if (data.processingsOfOpenedFile == 0) {
             if (!areNextBarsEqual(score, barCount))
                   data.trackOpers.searchPickupMeasure.setValue(false);
@@ -852,7 +856,7 @@ void createMeasures(const ReducedFraction &firstTick, ReducedFraction &lastTick,
 
 void setTrackInfo(MidiType midiType, MTrack &mt)
       {
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
 
       const int currentTrack = mt.indexOfOperation;
       const QString instrName = MidiInstr::instrumentName(midiType, mt.program,
@@ -868,7 +872,7 @@ void setTrackInfo(MidiType midiType, MTrack &mt)
 
       if (mt.staff->isTop()) {
             Part *part  = mt.staff->part();
-            part->setLongName(Xml::xmlString(MidiInstr::concatenateWithComma(trackInstrName, mt.name)));
+            part->setLongName(XmlWriter::xmlString(MidiInstr::concatenateWithComma(trackInstrName, mt.name)));
             part->setPartName(part->longName());
             part->setMidiChannel(mt.mtrack->outChannel());
             int bank = 0;
@@ -891,7 +895,7 @@ void createTimeSignatures(Score *score)
                   continue;
             Fraction newTimeSig = se.timesig();
 
-            const auto& opers = preferences.midiImportOperations;
+            const auto& opers = midiImportOperations;
             const bool pickupMeasure = opers.data()->trackOpers.searchPickupMeasure.value();
 
             if (pickupMeasure && is == score->sigmap()->begin()) {
@@ -910,7 +914,7 @@ void createTimeSignatures(Score *score)
                   TimeSig* ts = new TimeSig(score);
                   ts->setSig(newTimeSig);
                   ts->setTrack(staffIdx * VOICES);
-                  Segment* seg = m->getSegment(ts, tick);
+                  Segment* seg = m->getSegment(SegmentType::TimeSig, tick);
                   seg->add(ts);
                   }
             if (newTimeSig != se.timesig())   // was a pickup measure - skip next timesig
@@ -993,7 +997,7 @@ void applySwing(QList<MTrack> &tracks)
       for (int i = 0; i < tracks.size(); ++i) {
             MTrack &mt = tracks[i];
 
-            const auto& opers = preferences.midiImportOperations.data()->trackOpers;
+            const auto& opers = midiImportOperations.data()->trackOpers;
             const auto swingType = opers.swing.value(mt.indexOfOperation);
             Swing::detectSwing(mt.staff, swingType);
 
@@ -1032,7 +1036,7 @@ void setLeftRightHandSplit(const std::multimap<int, MTrack> &tracks)
                   }
 
             if (LRHand::needToSplit(mtrack.chords, mtrack.program, mtrack.mtrack->drumTrack())) {
-                  preferences.midiImportOperations.data()->trackOpers.doStaffSplit.setValue(
+                  midiImportOperations.data()->trackOpers.doStaffSplit.setValue(
                                                                               trackIndex, true);
                   }
             }
@@ -1073,7 +1077,7 @@ void convertMidi(Score *score, const MidiFile *mf)
 
       auto tracks = createMTrackList(sigmap, mf);
 
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
       if (opers.data()->processingsOfOpenedFile == 0)         // for newly opened MIDI file
             MidiChordName::findChordNames(tracks);
 
@@ -1168,12 +1172,12 @@ void loadMidiData(MidiFile &mf)
       mf.setMidiType(mt);
       }
 
-Score::FileError importMidi(Score *score, const QString &name)
+Score::FileError importMidi(MasterScore *score, const QString &name)
       {
       if (name.isEmpty())
             return Score::FileError::FILE_NOT_FOUND;
 
-      auto &opers = preferences.midiImportOperations;
+      auto &opers = midiImportOperations;
 
       MidiOperations::CurrentMidiFileSetter setCurrentMidiFile(opers, name);
       if (!opers.hasMidiFile(name))
@@ -1193,8 +1197,8 @@ Score::FileError importMidi(Score *score, const QString &name)
             catch (QString errorText) {
                   if (!MScore::noGui) {
                         QMessageBox::warning(0,
-                           QWidget::tr("MuseScore: Load MIDI"),
-                           QWidget::tr("Load failed: ") + errorText,
+                           QWidget::tr("Load MIDI"),
+                           QWidget::tr("Load failed: %1").arg(errorText),
                            QString::null, QWidget::tr("Quit"), QString::null, 0, 1);
                         }
                   fp.close();

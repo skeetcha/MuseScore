@@ -17,6 +17,7 @@
 #include "score.h"
 #include "staff.h"
 #include "undo.h"
+#include "segment.h"
 
 namespace Ms {
 
@@ -72,7 +73,7 @@ void StringData::read(XmlReader& e)
 //   write
 //---------------------------------------------------------
 
-void StringData::write(Xml& xml) const
+void StringData::write(XmlWriter& xml) const
       {
       xml.stag("StringData");
       xml.tag("frets", _frets);
@@ -161,7 +162,7 @@ void StringData::fretChords(Chord * chord) const
       int pitchOffset = /*chord->staff()->pitchOffset(chord->segment()->tick())*/ - transp;
       // if chord parent is not a segment, the chord is special (usually a grace chord):
       // fret it by itself, ignoring the segment
-      if (chord->parent()->type() != Element::Type::SEGMENT)
+      if (chord->parent()->type() != ElementType::SEGMENT)
             sortChordNotes(sortedNotes, chord, pitchOffset, &count);
       else {
             // scan each chord of seg from same staff as 'chord', inserting each of its notes in sortedNotes
@@ -171,8 +172,8 @@ void StringData::fretChords(Chord * chord) const
             int trkTo   = trkFrom + VOICES;
             for(trk = trkFrom; trk < trkTo; ++trk) {
                   Element* ch = seg->elist().at(trk);
-                  if (ch && ch->type() == Element::Type::CHORD)
-                        sortChordNotes(sortedNotes, static_cast<Chord*>(ch), pitchOffset, &count);
+                  if (ch && ch->type() == ElementType::CHORD)
+                        sortChordNotes(sortedNotes, toChord(ch), pitchOffset, &count);
                   }
             }
       // determine used range of frets
@@ -201,9 +202,9 @@ void StringData::fretChords(Chord * chord) const
                         note->setFretConflict(true);
                         // store fretting change without affecting chord context
                         if (nFret != nNewFret)
-                              note->score()->undoChangeProperty(note, P_ID::FRET, nNewFret);
+                              note->undoChangeProperty(Pid::FRET, nNewFret);
                         if (nString != nNewString)
-                              note->score()->undoChangeProperty(note, P_ID::STRING, nNewString);
+                              note->undoChangeProperty(Pid::STRING, nNewString);
                         continue;
                         }
                   // note can be fretted: use string
@@ -231,9 +232,9 @@ void StringData::fretChords(Chord * chord) const
 
             // if fretting did change, store as a fret change
             if (nFret != nNewFret)
-                  note->score()->undoChangeProperty(note, P_ID::FRET, nNewFret);
+                  note->undoChangeProperty(Pid::FRET, nNewFret);
             if (nString != nNewString)
-                  note->score()->undoChangeProperty(note, P_ID::STRING, nNewString);
+                  note->undoChangeProperty(Pid::STRING, nNewString);
             }
 
       // check for any remaining fret conflict
@@ -243,6 +244,22 @@ void StringData::fretChords(Chord * chord) const
 
       bFretting = false;
       }
+
+
+//---------------------------------------------------------
+//   frettedStrings
+//    Returns the number of fretted strings.
+//---------------------------------------------------------
+
+int StringData::frettedStrings() const
+      {
+      int num = 0;
+      for (auto s : stringTable)
+            if (!s.open)
+                  num++;
+      return num;
+      }
+
 
 //********************
 // STATIC METHODS
@@ -474,7 +491,7 @@ void StringData::readMusicXML(XmlReader& e)
 //   Write MusicXML
 //---------------------------------------------------------
 
-void StringData::writeMusicXML(Xml& /*xml*/) const
+void StringData::writeMusicXML(XmlWriter& /*xml*/) const
       {
       }
 

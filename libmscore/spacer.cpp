@@ -31,8 +31,8 @@ Spacer::Spacer(Score* score)
 Spacer::Spacer(const Spacer& s)
    : Element(s)
       {
-      _gap    = s._gap;
-      path    = s.path;
+      _gap        = s._gap;
+      path        = s.path;
       _spacerType = s._spacerType;
       }
 
@@ -64,23 +64,32 @@ void Spacer::layout0()
       qreal b = w * .5;
       qreal h = _gap;
 
-      if (spacerType() == SpacerType::DOWN) {
-            path.lineTo(w, 0.0);
-            path.moveTo(b, 0.0);
-            path.lineTo(b, h);
-            path.lineTo(0.0, h-b);
-            path.moveTo(b, h);
-            path.lineTo(w, h-b);
-            }
-      else if (spacerType() == SpacerType::UP) {
-            path.moveTo(b, 0.0);
-            path.lineTo(0.0, b);
-            path.moveTo(b, 0.0);
-            path.lineTo(w, b);
-            path.moveTo(b, 0.0);
-            path.lineTo(b, h);
-            path.moveTo(0.0, h);
-            path.lineTo(w, h);
+      switch (spacerType()) {
+            case SpacerType::DOWN:
+                  path.lineTo(w, 0.0);
+                  path.moveTo(b, 0.0);
+                  path.lineTo(b, h);
+                  path.lineTo(0.0, h-b);
+                  path.moveTo(b, h);
+                  path.lineTo(w, h-b);
+                  break;
+            case SpacerType::UP:
+                  path.moveTo(b, 0.0);
+                  path.lineTo(0.0, b);
+                  path.moveTo(b, 0.0);
+                  path.lineTo(w, b);
+                  path.moveTo(b, 0.0);
+                  path.lineTo(b, h);
+                  path.moveTo(0.0, h);
+                  path.lineTo(w, h);
+                  break;
+            case SpacerType::FIXED:
+                  path.lineTo(w, 0.0);
+                  path.moveTo(b, 0.0);
+                  path.lineTo(b, h);
+                  path.moveTo(0.0, h);
+                  path.lineTo(w, h);
+                  break;
             }
       qreal lw = _spatium * 0.4;
       QRectF bb(0, 0, w, h);
@@ -107,45 +116,65 @@ void Spacer::spatiumChanged(qreal ov, qreal nv)
       _gap = (_gap / ov) * nv;
       layout0();
       }
+//---------------------------------------------------------
+//   startEdit
+//---------------------------------------------------------
+
+void Spacer::startEdit(EditData& ed)
+      {
+      Element::startEdit(ed);
+      ed.grips   = 1;
+      ed.curGrip = Grip::START;
+      }
 
 //---------------------------------------------------------
 //   editDrag
 //---------------------------------------------------------
 
-void Spacer::editDrag(const EditData& ed)
+void Spacer::editDrag(EditData& ed)
       {
       qreal s = ed.delta.y();
-      if (spacerType() == SpacerType::DOWN)
-            _gap += s;
-      else if (spacerType() == SpacerType::UP)
-            _gap -= s;
+
+      switch (spacerType()) {
+            case SpacerType::DOWN:
+            case SpacerType::FIXED:
+                  _gap += s;
+                  break;
+            case SpacerType::UP:
+                  _gap -= s;
+                  break;
+            }
       if (_gap < spatium() * 2.0)
             _gap = spatium() * 2;
       layout0();
-      score()->setLayoutAll(true);
+      score()->setLayoutAll();
       }
 
 //---------------------------------------------------------
 //   updateGrips
 //---------------------------------------------------------
 
-void Spacer::updateGrips(Grip* defaultGrip, QVector<QRectF>& grip) const
+void Spacer::updateGrips(EditData& ed) const
       {
-      *defaultGrip   = Grip::START;
       qreal _spatium = spatium();
       QPointF p;
-      if (spacerType() == SpacerType::DOWN)
-            p = QPointF(_spatium * .5, _gap);
-      else if (spacerType() == SpacerType::UP)
-            p = QPointF(_spatium * .5, 0.0);
-      grip[0].translate(pagePos() + p);
+      switch (spacerType()) {
+            case SpacerType::DOWN:
+            case SpacerType::FIXED:
+                  p = QPointF(_spatium * .5, _gap);
+                  break;
+            case SpacerType::UP:
+                  p = QPointF(_spatium * .5, 0.0);
+                  break;
+            }
+      ed.grip[0].translate(pagePos() + p);
       }
 
 //---------------------------------------------------------
 //   write
 //---------------------------------------------------------
 
-void Spacer::write(Xml& xml) const
+void Spacer::write(XmlWriter& xml) const
       {
       xml.stag(name());
       xml.tag("subtype", int(_spacerType));
@@ -176,10 +205,11 @@ void Spacer::read(XmlReader& e)
 //   getProperty
 //---------------------------------------------------------
 
-QVariant Spacer::getProperty(P_ID propertyId) const
+QVariant Spacer::getProperty(Pid propertyId) const
       {
-      switch(propertyId) {
-            case P_ID::SPACE: return gap();
+      switch (propertyId) {
+            case Pid::SPACE:
+                  return gap();
             default:
                   return Element::getProperty(propertyId);
             }
@@ -189,10 +219,10 @@ QVariant Spacer::getProperty(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Spacer::setProperty(P_ID propertyId, const QVariant& v)
+bool Spacer::setProperty(Pid propertyId, const QVariant& v)
       {
-      switch(propertyId) {
-            case P_ID::SPACE:
+      switch (propertyId) {
+            case Pid::SPACE:
                   setGap(v.toDouble());
                   break;
             default:
@@ -201,7 +231,7 @@ bool Spacer::setProperty(P_ID propertyId, const QVariant& v)
                   break;
             }
       layout0();
-      score()->setLayoutAll(true);
+      score()->setLayoutAll();
       setGenerated(false);
       return true;
       }
@@ -210,10 +240,11 @@ bool Spacer::setProperty(P_ID propertyId, const QVariant& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-QVariant Spacer::propertyDefault(P_ID id) const
+QVariant Spacer::propertyDefault(Pid id) const
       {
-      switch(id) {
-            case P_ID::SPACE: return QVariant(0.0);
+      switch (id) {
+            case Pid::SPACE:
+                  return QVariant(0.0);
             default:
                   return Element::propertyDefault(id);
             }

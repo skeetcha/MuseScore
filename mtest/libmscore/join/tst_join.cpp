@@ -62,8 +62,7 @@ void TestJoin::initTestCase()
 
 void TestJoin::join(const char* p1, const char* p2)
       {
-      Score* score = readScore(DIR + p1);
-      score->doLayout();
+      MasterScore* score = readScore(DIR + p1);
       Measure* m1 = score->firstMeasure();
       Measure* m2 = m1->nextMeasure();
 
@@ -79,8 +78,7 @@ void TestJoin::join(const char* p1, const char* p2)
 
 void TestJoin::join(const char* p1, const char* p2, int index)
       {
-      Score* score = readScore(DIR + p1);
-      score->doLayout();
+      MasterScore* score = readScore(DIR + p1);
       Measure* m1 = score->firstMeasure();
       for (int i = 0; i < index; ++i)
             m1 = m1->nextMeasure();
@@ -98,8 +96,7 @@ void TestJoin::join(const char* p1, const char* p2, int index)
 
 void TestJoin::join1(const char* p1)
       {
-      Score* score = readScore(DIR + p1);
-      score->doLayout();
+      MasterScore* score = readScore(DIR + p1);
       Measure* m1 = score->firstMeasure();
       Measure* m2 = m1->nextMeasure();
 
@@ -110,12 +107,12 @@ void TestJoin::join1(const char* p1)
       score->cmdJoinMeasure(m1, m2);
 
       // check if notes are still on line 6
-      Segment* s = score->firstSegment(Segment::Type::ChordRest);
+      Segment* s = score->firstSegment(SegmentType::ChordRest);
 
       for (int i = 0; i < 8; ++i) {
             Note* note = static_cast<Ms::Chord*>(s->element(0))->upNote();
             QVERIFY(note->line() == 6);
-            s = s->next1(Segment::Type::ChordRest);
+            s = s->next1(SegmentType::ChordRest);
             }
 
       delete score;

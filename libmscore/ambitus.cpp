@@ -28,31 +28,47 @@ static const NoteHead::Group  NOTEHEADGROUP_DEFAULT = NoteHead::Group::HEAD_NORM
 static const NoteHead::Type   NOTEHEADTYPE_DEFAULT  = NoteHead::Type::HEAD_AUTO;
 static const MScore::DirectionH     DIR_DEFAULT     = MScore::DirectionH::AUTO;
 static const bool           HASLINE_DEFAULT         = true;
-static const qreal          LINEWIDTH_DEFAULT       = 0.12;
+static const Spatium          LINEWIDTH_DEFAULT(0.12);
 #if 0 // yet(?) unused
 static const qreal          LEDGEROFFSET_DEFAULT    = 0.25;
 #endif
-static const qreal          LINEOFFSET_DEFAULT      = 0.8;      // the distance between note head and line
+static const qreal          LINEOFFSET_DEFAULT      = 0.8;      // the distance between notehead and line
 
 //---------------------------------------------------------
 //   Ambitus
 //---------------------------------------------------------
 
 Ambitus::Ambitus(Score* s)
-: Element(s), _topAccid(s), _bottomAccid(s)
+   : Element(s, ElementFlag::MOVABLE), _topAccid(s), _bottomAccid(s)
       {
       _noteHeadGroup    = NOTEHEADGROUP_DEFAULT;
       _noteHeadType     = NOTEHEADTYPE_DEFAULT;
       _dir              = DIR_DEFAULT;
       _hasLine          = HASLINE_DEFAULT;
       _lineWidth        = LINEWIDTH_DEFAULT;
-      _topPitch = _bottomPitch = INVALID_PITCH;
-      _topTpc = _bottomTpc = Tpc::TPC_INVALID;
+      _topPitch         = INVALID_PITCH;
+      _bottomPitch      = INVALID_PITCH;
+      _topTpc           = Tpc::TPC_INVALID;
+      _bottomTpc        = Tpc::TPC_INVALID;
       _topAccid.setParent(this);
       _bottomAccid.setParent(this);
-//      _topAccid.setFlags(0);
-//      _bottomAccid.setFlags(0);
-      setFlags(ElementFlag::MOVABLE | ElementFlag::SELECTABLE);
+      }
+
+//---------------------------------------------------------
+//   initFrom
+//---------------------------------------------------------
+
+void Ambitus::initFrom(Ambitus* a)
+      {
+      _noteHeadGroup   = a->_noteHeadGroup;
+      _noteHeadType    = a->_noteHeadType;
+      _dir             = a->_dir;
+      _hasLine         = a->_hasLine;
+      _lineWidth       = a->_lineWidth;
+      _topPitch        = a->_topPitch;
+      _bottomPitch     = a->_bottomPitch;
+      _topTpc          = a->_topTpc;
+      _bottomTpc       = a->_bottomTpc;
       }
 
 //---------------------------------------------------------
@@ -163,14 +179,14 @@ void Ambitus::setBottomTpc(int val)
 //   write
 //---------------------------------------------------------
 
-void Ambitus::write(Xml& xml) const
+void Ambitus::write(XmlWriter& xml) const
       {
       xml.stag("Ambitus");
-      xml.tag(P_ID::HEAD_GROUP, int(_noteHeadGroup), int(NOTEHEADGROUP_DEFAULT));
-      xml.tag(P_ID::HEAD_TYPE,  int(_noteHeadType),  int(NOTEHEADTYPE_DEFAULT));
-      xml.tag(P_ID::MIRROR_HEAD,int(_dir),           int(DIR_DEFAULT));
+      xml.tag(Pid::HEAD_GROUP, int(_noteHeadGroup), int(NOTEHEADGROUP_DEFAULT));
+      xml.tag(Pid::HEAD_TYPE,  int(_noteHeadType),  int(NOTEHEADTYPE_DEFAULT));
+      xml.tag(Pid::MIRROR_HEAD,int(_dir),           int(DIR_DEFAULT));
       xml.tag("hasLine",    _hasLine,       true);
-      xml.tag(P_ID::LINE_WIDTH, _lineWidth,     LINEWIDTH_DEFAULT);
+      xml.tag(Pid::LINE_WIDTH, _lineWidth,     LINEWIDTH_DEFAULT);
       xml.tag("topPitch",   _topPitch);
       xml.tag("topTpc",     _topTpc);
       xml.tag("bottomPitch",_bottomPitch);
@@ -196,44 +212,57 @@ void Ambitus::write(Xml& xml) const
 void Ambitus::read(XmlReader& e)
       {
       while (e.readNextStartElement()) {
-            const QStringRef& tag(e.name());
-            if (tag == "head")
-                  setProperty(P_ID::HEAD_GROUP, Ms::getProperty(P_ID::HEAD_GROUP, e));
-            else if (tag == "headType")
-                  setProperty(P_ID::HEAD_TYPE, Ms::getProperty(P_ID::HEAD_TYPE, e).toInt());
-            else if (tag == "mirror")
-                  setProperty(P_ID::MIRROR_HEAD, Ms::getProperty(P_ID::MIRROR_HEAD, e).toInt());
-            else if (tag == "hasLine")
-                  setHasLine(e.readInt());
-            else if (tag == "lineWidth")
-                  setProperty(P_ID::LINE_WIDTH, Ms::getProperty(P_ID::LINE_WIDTH, e).toReal());
-            else if (tag == "topPitch")
-                  _topPitch = e.readInt();
-            else if (tag == "bottomPitch")
-                  _bottomPitch = e.readInt();
-            else if (tag == "topTpc")
-                  _topTpc = e.readInt();
-            else if (tag == "bottomTpc")
-                  _bottomTpc = e.readInt();
-            else if (tag == "topAccidental") {
-                  while (e.readNextStartElement()) {
-                        if (e.name() == "Accidental")
-                              _topAccid.read(e);
-                        else
-                              e.skipCurrentElement();
-                        }
-                  }
-            else if (tag == "bottomAccidental") {
-                  while (e.readNextStartElement()) {
-                        if (e.name() == "Accidental")
-                              _bottomAccid.read(e);
-                        else
-                              e.skipCurrentElement();
-                        }
-                  }
-            else if (!Element::readProperties(e))
+            if (!readProperties(e))
                   e.unknown();
             }
+      }
+
+//---------------------------------------------------------
+//   readProperties
+//---------------------------------------------------------
+
+bool Ambitus::readProperties(XmlReader& e)
+      {
+      const QStringRef& tag(e.name());
+      if (tag == "head")
+            setProperty(Pid::HEAD_GROUP, Ms::getProperty(Pid::HEAD_GROUP, e));
+      else if (tag == "headType")
+            setProperty(Pid::HEAD_TYPE, Ms::getProperty(Pid::HEAD_TYPE, e));
+      else if (tag == "mirror")
+            setProperty(Pid::MIRROR_HEAD, Ms::getProperty(Pid::MIRROR_HEAD, e).toInt());
+      else if (tag == "hasLine")
+            setHasLine(e.readInt());
+      else if (tag == "lineWidth")
+            setProperty(Pid::LINE_WIDTH, Ms::getProperty(Pid::LINE_WIDTH, e));
+      else if (tag == "topPitch")
+            _topPitch = e.readInt();
+      else if (tag == "bottomPitch")
+            _bottomPitch = e.readInt();
+      else if (tag == "topTpc")
+            _topTpc = e.readInt();
+      else if (tag == "bottomTpc")
+            _bottomTpc = e.readInt();
+      else if (tag == "topAccidental") {
+            while (e.readNextStartElement()) {
+                  if (e.name() == "Accidental")
+                        _topAccid.read(e);
+                  else
+                        e.skipCurrentElement();
+                  }
+            }
+      else if (tag == "bottomAccidental") {
+            while (e.readNextStartElement()) {
+                  if (e.name() == "Accidental")
+                        _bottomAccid.read(e);
+                  else
+                        e.skipCurrentElement();
+                  }
+            }
+      else if (Element::readProperties(e))
+            ;
+      else
+            return false;
+      return true;
       }
 
 //---------------------------------------------------------
@@ -254,8 +283,8 @@ void Ambitus::layout()
       if (segm && track() > -1) {
             int tick    = segm->tick();
             stf         = score()->staff(staffIdx());
-            lineDist    = stf->lineDistance() * _spatium;
-            numOfLines  = stf->lines();
+            lineDist    = stf->lineDistance(tick) * _spatium;
+            numOfLines  = stf->lines(tick);
             clf         = stf->clef(tick);
             }
       else {                              // for use in palettes
@@ -265,7 +294,7 @@ void Ambitus::layout()
             }
 
       //
-      // NOTE HEADS Y POS
+      // NOTEHEADS Y POS
       //
       // if pitch == INVALID_PITCH oor tpc == INALID_TPC, set to some default:
       // for use in palettes and when actual range cannot be calculated (new ambitus or no notes in staff)
@@ -277,7 +306,7 @@ void Ambitus::layout()
       else
             key = Key::C;
 
-      // top note head
+      // top notehead
       if (_topPitch == INVALID_PITCH || _topTpc == Tpc::TPC_INVALID)
             _topPos.setY(0);                          // if uninitialized, set to top staff line
       else {
@@ -303,7 +332,7 @@ void Ambitus::layout()
             _topAccid.rypos() = _topPos.y();
             }
 
-      // bottom note head
+      // bottom notehead
       if (_bottomPitch == INVALID_PITCH || _bottomTpc == Tpc::TPC_INVALID)
             _bottomPos.setY( (numOfLines-1) * lineDist);          // if uninitialized, set to last staff line
       else {
@@ -329,11 +358,11 @@ void Ambitus::layout()
             }
 
       //
-      // NOTE HEAD X POS
+      // NOTEHEAD X POS
       //
       // Note: manages colliding accidentals
       //
-      qreal accNoteDist = point(score()->styleS(StyleIdx::accidentalNoteDistance));
+      qreal accNoteDist = point(score()->styleS(Sid::accidentalNoteDistance));
       xAccidOffTop      = _topAccid.width() + accNoteDist;
       xAccidOffBottom   = _bottomAccid.width() + accNoteDist;
 
@@ -353,23 +382,23 @@ void Ambitus::layout()
             }
 
       switch (_dir) {
-            case MScore::DirectionH::AUTO:               // note heads one above the other
-                  // left align note heads and right align accidentals 'hanging' on the left
+            case MScore::DirectionH::AUTO:               // noteheads one above the other
+                  // left align noteheads and right align accidentals 'hanging' on the left
                   _topPos.setX(0.0);
                   _bottomPos.setX(0.0);
                   _topAccid.rxpos()       = - xAccidOffTop;
                   _bottomAccid.rxpos()    = - xAccidOffBottom;
                   break;
-            case MScore::DirectionH::LEFT:               // top note head at the left of bottom note head
-                  // place top note head at left margin; bottom note head at right of top head;
+            case MScore::DirectionH::LEFT:               // top notehead at the left of bottom notehead
+                  // place top notehead at left margin; bottom notehead at right of top head;
                   // top accid. 'hanging' on left of top head and bottom accid. 'hanging' at left of bottom head
                   _topPos.setX(0.0);
                   _bottomPos.setX(headWdt);
                   _topAccid.rxpos() = - xAccidOffTop;
                   _bottomAccid.rxpos() = collision ? - xAccidOffBottom : headWdt - xAccidOffBottom;
                   break;
-            case MScore::DirectionH::RIGHT:              // top note head at the right of bottom note head
-                  // bottom note head at left margin; top note head at right of bottomnote head
+            case MScore::DirectionH::RIGHT:              // top notehead at the right of bottom notehead
+                  // bottom notehead at left margin; top notehead at right of bottomnotehead
                   // top accid. 'hanging' on left of top head and bottom accid. 'hanging' at left of bottom head
                   _bottomPos.setX(0.0);
                   _topPos.setX(headWdt);
@@ -406,7 +435,7 @@ void Ambitus::layout()
 void Ambitus::draw(QPainter* p) const
       {
       qreal _spatium = spatium();
-      qreal lw = lineWidth() * _spatium;
+      qreal lw = lineWidth().val() * _spatium;
       p->setPen(QPen(curColor(), lw, Qt::SolidLine, Qt::RoundCap));
       drawSymbol(noteHead(), p, _topPos);
       drawSymbol(noteHead(), p, _bottomPos);
@@ -415,13 +444,14 @@ void Ambitus::draw(QPainter* p) const
 
       // draw ledger lines (if not in a palette)
       if (segment() && track() > -1) {
+            int tick          = segment()->tick();
             Staff* stf        = score()->staff(staffIdx());
-            qreal lineDist    = stf->lineDistance();
-            int numOfLines    = stf->lines();
+            qreal lineDist    = stf->lineDistance(tick);
+            int numOfLines    = stf->lines(tick);
             qreal step        = lineDist * _spatium;
             qreal stepTolerance = step * 0.1;
-            qreal ledgerOffset = score()->styleS(StyleIdx::ledgerLineLength).val() * 0.5 * _spatium;
-            p->setPen(QPen(curColor(), score()->styleS(StyleIdx::ledgerLineWidth).val() * _spatium,
+            qreal ledgerOffset = score()->styleS(Sid::ledgerLineLength).val() * 0.5 * _spatium;
+            p->setPen(QPen(curColor(), score()->styleS(Sid::ledgerLineWidth).val() * _spatium,
                         Qt::SolidLine, Qt::RoundCap) );
             if (_topPos.y()-stepTolerance <= -step) {
                   qreal xMin = _topPos.x() - ledgerOffset;
@@ -436,21 +466,6 @@ void Ambitus::draw(QPainter* p) const
                         p->drawLine(QPointF(xMin, y), QPointF(xMax, y));
                   }
             }
-      }
-
-//---------------------------------------------------------
-//   space
-//---------------------------------------------------------
-
-Space Ambitus::space() const
-      {
-      qreal _spatium = spatium();
-      // reduce left space if there accidentals
-      qreal leftSpace = _spatium *
-            ((_topAccid.accidentalType() != AccidentalType::NONE
-                  || _bottomAccid.accidentalType() != AccidentalType::NONE)
-            ? 0.5 : 0.75);
-      return Space(leftSpace - bbox().x(), width() + bbox().x() + _spatium * 0.5);
       }
 
 //---------------------------------------------------------
@@ -480,7 +495,7 @@ SymId Ambitus::noteHead() const
 
       SymId t = Note::noteHead(hg, _noteHeadGroup, ht);
       if (t == SymId::noSym) {
-            qDebug("invalid note head %d/%d", int(_noteHeadGroup), int(_noteHeadType));
+            qDebug("invalid notehead %d/%d", int(_noteHeadGroup), int(_noteHeadType));
             t = Note::noteHead(0, NoteHead::Group::HEAD_NORMAL, ht);
             }
       return t;
@@ -489,7 +504,7 @@ SymId Ambitus::noteHead() const
 //---------------------------------------------------------
 //   headWidth
 //
-//    returns the width of the note head symbol
+//    returns the width of the notehead symbol
 //---------------------------------------------------------
 
 qreal Ambitus::headWidth() const
@@ -551,8 +566,8 @@ void Ambitus::updateRange()
       int   tpcTop, tpcBottom;
       int   trk;
       Measure* meas     = segment()->measure();
-      Segment* segm     = meas->findSegment(Segment::Type::ChordRest, segment()->tick());
-      bool     stop     = meas->sectionBreak() != nullptr;
+      Segment* segm     = meas->findSegment(SegmentType::ChordRest, segment()->tick());
+      bool     stop     = meas->sectionBreak();
       while (segm) {
             // moved to another measure?
             if (segm->measure() != meas) {
@@ -561,27 +576,29 @@ void Ambitus::updateRange()
                         break;
                   // update meas and stop condition
                   meas = segm->measure();
-                  stop = meas->sectionBreak() != nullptr;
+                  stop = meas->sectionBreak();
                   }
             // scan all relevant tracks of this segment for chords
-            for (trk=firstTrack; trk <= lastTrack; trk++)
-                  if ( (chord=static_cast<Chord*>(segm->element(trk))) != nullptr
-                              && chord->type() == Element::Type::CHORD) {
-                        // update pitch range (with associated tpc's)
-                        foreach (Note* n, chord->notes()) {
-                              if (!n->play())         // skip notes which are not to be played
-                                    continue;
-                              int pitch = n->ppitch();
-                              if (pitch > pitchTop) {
-                                    pitchTop = pitch;
-                                    tpcTop   = n->tpc();
-                                    }
-                              if (pitch < pitchBottom) {
-                                    pitchBottom = pitch;
-                                    tpcBottom   = n->tpc();
-                                    }
+            for (trk = firstTrack; trk <= lastTrack; trk++) {
+                  Element* e = segm->element(trk);
+                  if (!e || !e->isChord())
+                        continue;
+                  chord = toChord(e);
+                  // update pitch range (with associated tpc's)
+                  for (Note* n : chord->notes()) {
+                        if (!n->play())         // skip notes which are not to be played
+                              continue;
+                        int pitch = n->ppitch();
+                        if (pitch > pitchTop) {
+                              pitchTop = pitch;
+                              tpcTop   = n->tpc();
+                              }
+                        if (pitch < pitchBottom) {
+                              pitchBottom = pitch;
+                              tpcBottom   = n->tpc();
                               }
                         }
+                  }
             segm = segm->nextCR();
             }
 
@@ -597,30 +614,30 @@ void Ambitus::updateRange()
 //   getProperty
 //---------------------------------------------------------
 
-QVariant Ambitus::getProperty(P_ID propertyId) const
+QVariant Ambitus::getProperty(Pid propertyId) const
       {
       switch(propertyId) {
-            case P_ID::HEAD_GROUP:
+            case Pid::HEAD_GROUP:
                   return int(noteHeadGroup());
-            case P_ID::HEAD_TYPE:
+            case Pid::HEAD_TYPE:
                   return int(noteHeadType());
-            case P_ID::MIRROR_HEAD:
+            case Pid::MIRROR_HEAD:
                   return int(direction());
-            case P_ID::GHOST:                 // recycled property = _hasLine
+            case Pid::GHOST:                 // recycled property = _hasLine
                   return hasLine();
-            case P_ID::LINE_WIDTH:
+            case Pid::LINE_WIDTH:
                   return lineWidth();
-            case P_ID::TPC1:
+            case Pid::TPC1:
                   return topTpc();
-            case P_ID::FBPARENTHESIS1:        // recycled property = _bottomTpc
+            case Pid::FBPARENTHESIS1:        // recycled property = _bottomTpc
                   return bottomTpc();
-            case P_ID::PITCH:
+            case Pid::PITCH:
                   return topPitch();
-            case P_ID::FBPARENTHESIS2:        // recycled property = _bottomPitch
+            case Pid::FBPARENTHESIS2:        // recycled property = _bottomPitch
                   return bottomPitch();
-            case P_ID::FBPARENTHESIS3:        // recycled property = octave of _topPitch
+            case Pid::FBPARENTHESIS3:        // recycled property = octave of _topPitch
                   return topOctave();
-            case P_ID::FBPARENTHESIS4:        // recycled property = octave of _bottomPitch
+            case Pid::FBPARENTHESIS4:        // recycled property = octave of _bottomPitch
                   return bottomOctave();
             default:
                   return Element::getProperty(propertyId);
@@ -631,92 +648,93 @@ QVariant Ambitus::getProperty(P_ID propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Ambitus::setProperty(P_ID propertyId, const QVariant& v)
+bool Ambitus::setProperty(Pid propertyId, const QVariant& v)
       {
-      bool  rv = true;
-
-      score()->addRefresh(canvasBoundingRect());
-      switch(propertyId) {
-            case P_ID::HEAD_GROUP:
+      switch (propertyId) {
+            case Pid::HEAD_GROUP:
                   setNoteHeadGroup( NoteHead::Group(v.toInt()) );
                   break;
-            case P_ID::HEAD_TYPE:
+            case Pid::HEAD_TYPE:
                   setNoteHeadType( NoteHead::Type(v.toInt()) );
                   break;
-            case P_ID::MIRROR_HEAD:
+            case Pid::MIRROR_HEAD:
                   setDirection(MScore::DirectionH(v.toInt()) );
                   break;
-            case P_ID::GHOST:                 // recycled property = _hasLine
+            case Pid::GHOST:                 // recycled property = _hasLine
                   setHasLine(v.toBool());
                   break;
-            case P_ID::LINE_WIDTH:
-                  setLineWidth(v.toReal());
+            case Pid::LINE_WIDTH:
+                  setLineWidth(v.value<Spatium>());
                   break;
-            case P_ID::TPC1:
+            case Pid::TPC1:
                   setTopTpc(v.toInt());
                   break;
-            case P_ID::FBPARENTHESIS1:        // recycled property = _bottomTpc
+            case Pid::FBPARENTHESIS1:        // recycled property = _bottomTpc
                   setBottomTpc(v.toInt());
                   break;
-            case P_ID::PITCH:
+            case Pid::PITCH:
                   setTopPitch(v.toInt());
                   break;
-            case P_ID::FBPARENTHESIS2:        // recycled property = _bottomPitch
+            case Pid::FBPARENTHESIS2:        // recycled property = _bottomPitch
                   setBottomPitch(v.toInt());
                   break;
-            case P_ID::FBPARENTHESIS3:        // recycled property = octave of _topPitch
+            case Pid::FBPARENTHESIS3:        // recycled property = octave of _topPitch
                   setTopPitch(topPitch() % 12 + v.toInt() * 12);
                   break;
-            case P_ID::FBPARENTHESIS4:        // recycled property = octave of _bottomPitch
+            case Pid::FBPARENTHESIS4:        // recycled property = octave of _bottomPitch
                   setBottomPitch(bottomPitch() % 12 + v.toInt() * 12);
                   break;
             default:
-                  rv = Element::setProperty(propertyId, v);
-                  break;
+                  return Element::setProperty(propertyId, v);
             }
-      if (rv)
-            score()->setLayoutAll(true);
-      return rv;
+      triggerLayout();
+      return true;
       }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-QVariant Ambitus::propertyDefault(P_ID id) const
+QVariant Ambitus::propertyDefault(Pid id) const
       {
       switch(id) {
-            case P_ID::HEAD_GROUP:      return int(NOTEHEADGROUP_DEFAULT);
-            case P_ID::HEAD_TYPE:       return int(NOTEHEADTYPE_DEFAULT);
-            case P_ID::MIRROR_HEAD:     return int(DIR_DEFAULT);
-            case P_ID::GHOST:           return HASLINE_DEFAULT;
-            case P_ID::LINE_WIDTH:      return LINEWIDTH_DEFAULT;
-            case P_ID::TPC1:                  // no defaults for pitches, tpc's and octaves
-            case P_ID::FBPARENTHESIS1:
-            case P_ID::PITCH:
-            case P_ID::FBPARENTHESIS2:
-            case P_ID::FBPARENTHESIS3:
-            case P_ID::FBPARENTHESIS4:
+            case Pid::HEAD_GROUP:
+                  return int(NOTEHEADGROUP_DEFAULT);
+            case Pid::HEAD_TYPE:
+                  return int(NOTEHEADTYPE_DEFAULT);
+            case Pid::MIRROR_HEAD:
+                  return int(DIR_DEFAULT);
+            case Pid::GHOST:
+                  return HASLINE_DEFAULT;
+            case Pid::LINE_WIDTH:
+                  return Spatium(LINEWIDTH_DEFAULT);
+            case Pid::TPC1:                  // no defaults for pitches, tpc's and octaves
+            case Pid::FBPARENTHESIS1:
+            case Pid::PITCH:
+            case Pid::FBPARENTHESIS2:
+            case Pid::FBPARENTHESIS3:
+            case Pid::FBPARENTHESIS4:
                   break;
-            default:                return Element::propertyDefault(id);
+            default:
+                  return Element::propertyDefault(id);
             }
       return QVariant();
       }
 
 //---------------------------------------------------------
-//   nextElement
+//   nextSegmentElement
 //---------------------------------------------------------
 
-Element* Ambitus::nextElement()
+Element* Ambitus::nextSegmentElement()
       {
       return segment()->firstInNextSegments(staffIdx());
       }
 
 //---------------------------------------------------------
-//   prevElement
+//   prevSegmentElement
 //---------------------------------------------------------
 
-Element* Ambitus::prevElement()
+Element* Ambitus::prevSegmentElement()
       {
       return segment()->lastInPrevSegments(staffIdx());
       }
@@ -724,25 +742,13 @@ Element* Ambitus::prevElement()
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
-QString Ambitus::accessibleInfo()
-      {
-      return tr("%1; Top pitch: %2%3; Bottom pitch: %4%5").arg(Element::accessibleInfo())\
-                                                          .arg(tpc2name(topTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false))\
-                                                          .arg(QString::number(topOctave()))\
-                                                          .arg(tpc2name(bottomTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false))\
-                                                          .arg(QString::number(bottomOctave()));
-      }
 
-//---------------------------------------------------------
-//   screenReaderInfo
-//---------------------------------------------------------
-
-QString Ambitus::screenReaderInfo()
+QString Ambitus::accessibleInfo() const
       {
-      return tr("%1; Top pitch: %2%3; Bottom pitch: %4%5").arg(Element::screenReaderInfo())\
-                                                          .arg(tpc2name(topTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, true))\
-                                                          .arg(QString::number(topOctave()))\
-                                                          .arg(tpc2name(bottomTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, true))\
+      return QObject::tr("%1; Top pitch: %2%3; Bottom pitch: %4%5").arg(Element::accessibleInfo())
+                                                          .arg(tpc2name(topTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false))
+                                                          .arg(QString::number(topOctave()))
+                                                          .arg(tpc2name(bottomTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, false))
                                                           .arg(QString::number(bottomOctave()));
       }
 }

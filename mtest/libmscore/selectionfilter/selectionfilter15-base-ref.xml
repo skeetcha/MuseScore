@@ -2,14 +2,11 @@
 <StaffList version="2.00" tick="0" len="3840" staff="0" staves="1">
   <Staff id="0">
     <voice id="0">0</voice>
-    <tick>0</tick>
+    <move>0/1</move>
     <TextLine id="2">
-      <endHook>1</endHook>
+      <beginText>VII</beginText>
+      <beginTextPlace>3</beginTextPlace>
       <track>0</track>
-      <lineWidth>0.15</lineWidth>
-      <beginText>
-        <text>VII</text>
-        </beginText>
       </TextLine>
     <Chord>
       <track>0</track>

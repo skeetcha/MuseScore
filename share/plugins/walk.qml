@@ -2,7 +2,7 @@
 //  MuseScore
 //  Music Composition & Notation
 //
-//  Copyright (C) 2012 Werner Schweer
+//  Copyright (C) 2012-2017 Werner Schweer
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2
@@ -11,10 +11,10 @@
 //=============================================================================
 
 import QtQuick 2.0
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
-      version:  "1.0"
+      version:  "3.0"
       description: "This test plugin walks through all elements in a score"
       menuPath: "Plugins.Walk"
 
@@ -24,18 +24,23 @@ MuseScore {
             if (typeof curScore === 'undefined')
                   Qt.quit();
 
-            for (var track = 0; track < curScore.ntracks; ++track) {
-                  var segment = curScore.firstSegment();
-                  while (segment) {
-                        console.log("segment: " + segment + "  type " + segment.segmentType);
-                        var element = segment.elementAt(track);
-                        if (element) {
-                              var type    = element.type;
-	                        console.log(type);
-                              }
-                        segment = segment.next;
+            var cursor = curScore.newCursor();
+            cursor.voice    = 0;
+            cursor.staffIdx = 0;
+            cursor.filter   = -1;
+            cursor.rewind(0);
+
+            while (cursor.segment()) {
+                var e = cursor.element();
+                if (e) {
+	              console.log("type: " + e.name + " (" + e.type + ") at  tick: " + e.tick + " color " + e.get("color"));
+                    if (e.type == Ms.REST) {
+                        var d = e.get("duration");
+                        console.log("   duration " + d.numerator + "/" + d.denominator);
                         }
-                  }
+                    }
+                cursor.next();
+                }
             Qt.quit();
             }
       }

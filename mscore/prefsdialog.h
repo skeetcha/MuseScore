@@ -3,7 +3,7 @@
 //  Linux Music Score Editor
 //  $Id:$
 //
-//  Copyright (C) 2002-2010 Werner Schweer and others
+//  Copyright (C) 2002-2016 Werner Schweer and others
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2.
@@ -23,6 +23,8 @@
 
 #include "ui_prefsdialog.h"
 #include "preferences.h"
+#include "abstractdialog.h"
+#include "preferenceslistwidget.h"
 
 namespace Ms {
 
@@ -32,23 +34,24 @@ class Shortcut;
 //   PreferenceDialog
 //---------------------------------------------------------
 
-class PreferenceDialog : public QDialog, private Ui::PrefsDialogBase {
+class PreferenceDialog : public AbstractDialog, private Ui::PrefsDialogBase {
       Q_OBJECT
 
       QMap<QString, Shortcut*> localShortcuts;
       bool shortcutsChanged;
       QButtonGroup* recordButtons;
-      Preferences prefs;
+      PreferencesListWidget* advancedWidget;
 
+      virtual void hideEvent(QHideEvent*);
       void apply();
       void updateSCListView();
       void setUseMidiOutput(bool);
-      void updateValues();
+      void updateValues(bool useDefaultValues = false);
 
    private slots:
       void buttonBoxClicked(QAbstractButton*);
-      void bgClicked(bool);
-      void fgClicked(bool);
+      void updateBgView(bool);
+      void updateFgView(bool);
       void selectFgWallpaper();
       void selectBgWallpaper();
       void selectDefaultStyle();
@@ -57,6 +60,8 @@ class PreferenceDialog : public QDialog, private Ui::PrefsDialogBase {
       void selectInstrumentList2();
       void selectStartWith();
       void resetShortcutClicked();
+      void saveShortcutListClicked();
+      void loadShortcutListClicked();
       void clearShortcutClicked();
       void defineShortcutClicked();
       void portaudioApiActivated(int idx);
@@ -71,10 +76,12 @@ class PreferenceDialog : public QDialog, private Ui::PrefsDialogBase {
       void selectTemplatesDirectory();
       void selectPluginsDirectory();
       void selectImagesDirectory();
+      void selectExtensionsDirectory();
       void printShortcutsClicked();
       void filterShortcutsTextChanged(const QString &);
+      void filterAdvancedPreferences(const QString&);
+      void resetAdvancedPreferenceToDefault();
 
-      void languageChanged(int);
       void changeSoundfontPaths();
       void updateTranslationClicked();
 
@@ -82,11 +89,26 @@ class PreferenceDialog : public QDialog, private Ui::PrefsDialogBase {
       void preferencesChanged();
       void mixerPreferencesChanged(bool showMidiControls);
 
+   protected:
+      virtual void retranslate() { retranslateUi(this); updateValues(); }
+
    public:
       PreferenceDialog(QWidget* parent);
       ~PreferenceDialog();
-      void setPreferences(const Preferences& p);
+      void start();
       void updateRemote();
+      };
+
+//---------------------------------------------------------
+//   ShortcutItem
+//---------------------------------------------------------
+
+class ShortcutItem : public QTreeWidgetItem {
+
+      bool operator<(const QTreeWidgetItem&) const;
+
+   public:
+      ShortcutItem() : QTreeWidgetItem() {}
       };
 
 } // namespace Ms

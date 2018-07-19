@@ -847,7 +847,7 @@ void addTupletEvents(std::multimap<ReducedFraction, TupletData> &tupletEvents,
                         message += QString::number(midiChord.barIndex + 1);
 #endif
                         Q_ASSERT_X(tiedTuplet.voice == midiChord.voice,
-                                   "MidiTuplet::addTupletEvents", message.toAscii().data());
+                                   "MidiTuplet::addTupletEvents", message.toLatin1().data());
 
                         for (int j: tiedTuplet.tiedNoteIndexes) {
                               midiChord.notes[j].tuplet = it;
@@ -1028,8 +1028,8 @@ void findTuplets(
       if (chords.empty() || startBarChordIt == endBarChordIt)
             return;
 
-      const auto &opers = preferences.midiImportOperations.data()->trackOpers;
-      const int currentTrack = preferences.midiImportOperations.currentTrack();
+      const auto &opers = midiImportOperations.data()->trackOpers;
+      const int currentTrack = midiImportOperations.currentTrack();
       if (!opers.searchTuplets.value(currentTrack))
             return;
 

@@ -13,19 +13,40 @@
 #ifndef __NOTELINE_H__
 #define __NOTELINE_H__
 
-#include "textline.h"
+#include "textlinebase.h"
 
 namespace Ms {
 
 class Note;
 
+#if 0
+//---------------------------------------------------------
+//   @@ TextLineSegment
+//---------------------------------------------------------
+
+class TextLineSegment : public TextLineBaseSegment {
+   protected:
+
+   public:
+      TextLineSegment(Score* s) : TextLineBaseSegment(s)  { }
+      virtual ElementType type() const override     { return ElementType::TEXTLINE_SEGMENT; }
+      virtual TextLineSegment* clone() const override { return new TextLineSegment(*this); }
+      TextLine* textLine() const                      { return (TextLine*)spanner(); }
+      virtual void layout() override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
+      virtual PropertyStyle propertyStyle(Pid) const override;
+      virtual void resetProperty(Pid id) override;
+      virtual void styleChanged() override;
+      };
+#endif
+
 //---------------------------------------------------------
 //   @@ NoteLine
 //---------------------------------------------------------
 
-class NoteLine : public TextLine {
-      Q_OBJECT
-
+class NoteLine final : public TextLineBase {
       Note* _startNote;
       Note* _endNote;
 
@@ -34,13 +55,14 @@ class NoteLine : public TextLine {
       NoteLine(const NoteLine&);
       ~NoteLine() {}
 
-      virtual NoteLine* clone() const           { return new NoteLine(*this); }
-      virtual Element::Type type() const        { return Element::Type::NOTELINE; }
+      virtual NoteLine* clone() const         { return new NoteLine(*this); }
+      virtual ElementType type() const        { return ElementType::NOTELINE; }
 
       void setStartNote(Note* n)  { _startNote = n; }
       Note* startNote() const     { return _startNote; }
       void setEndNote(Note* n)    { _endNote = n; }
       Note* endNote() const       { return _endNote; }
+      virtual LineSegment* createLineSegment() override;
       };
 
 

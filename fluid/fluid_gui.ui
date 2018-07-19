@@ -23,7 +23,7 @@
    <item row="0" column="0">
     <widget class="QListWidget" name="soundFonts">
      <property name="accessibleName">
-      <string>Sound Fonts</string>
+      <string>SoundFonts</string>
      </property>
     </widget>
    </item>
@@ -44,13 +44,17 @@
         <enum>Qt::TabFocus</enum>
        </property>
        <property name="toolTip">
-        <string>Move Soundfont up</string>
+        <string>Move SoundFont up</string>
        </property>
        <property name="accessibleDescription">
         <string/>
        </property>
        <property name="text">
-        <string notr="true">Up</string>
+        <string notr="true"/>
+       </property>
+       <property name="icon">
+        <iconset resource="../mscore/musescore.qrc">
+         <normaloff>:/data/icons/arrow_up.svg</normaloff>:/data/icons/arrow_up.svg</iconset>
        </property>
       </widget>
      </item>
@@ -66,10 +70,14 @@
         <enum>Qt::TabFocus</enum>
        </property>
        <property name="toolTip">
-        <string>Move Soundfont down</string>
+        <string>Move SoundFont down</string>
        </property>
        <property name="text">
-        <string notr="true">Down</string>
+        <string notr="true"/>
+       </property>
+       <property name="icon">
+        <iconset resource="../mscore/musescore.qrc">
+         <normaloff>:/data/icons/arrow_down.svg</normaloff>:/data/icons/arrow_down.svg</iconset>
        </property>
       </widget>
      </item>
@@ -116,6 +124,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../mscore/musescore.qrc"/>
+ </resources>
  <connections/>
 </ui>

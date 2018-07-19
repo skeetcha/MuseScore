@@ -30,6 +30,7 @@ MTrack::MTrack(const MTrack &other)
       , division(other.division)
       , isDivisionInTps(other.isDivisionInTps)
       , hadInitialNotes(other.hadInitialNotes)
+      , volumes(other.volumes)
       , chords(other.chords)
       {
       updateTupletsFromChords();
@@ -46,6 +47,7 @@ MTrack& MTrack::operator=(MTrack other)
       std::swap(division, other.division);
       std::swap(isDivisionInTps, other.isDivisionInTps);
       std::swap(hadInitialNotes, other.hadInitialNotes);
+      std::swap(volumes, other.volumes);
       std::swap(chords, other.chords);
       updateTupletsFromChords();
 
@@ -233,7 +235,7 @@ namespace MidiCharset {
 QString convertToCharset(const std::string &text)
       {
                   // charset for the current MIDI file
-      QString charset = preferences.midiImportOperations.data()->charset;
+      QString charset = midiImportOperations.data()->charset;
       auto *codec = QTextCodec::codecForName(charset.toLatin1());
       if (codec)
             return codec->toUnicode(text.c_str());

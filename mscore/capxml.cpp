@@ -165,7 +165,7 @@ void CapExplicitBarline::readCapx(XmlReader& e)
       else if (type == "end") _type = BarLineType::END;
       else if (type == "repEnd") _type = BarLineType::END_REPEAT;
       else if (type == "repBegin") _type = BarLineType::START_REPEAT;
-      else if (type == "repEndBegin") _type = BarLineType::END_START_REPEAT;
+//TODO      else if (type == "repEndBegin") _type = BarLineType::END_START_REPEAT;
       else if (type == "dashed") _type = BarLineType::BROKEN;
       else _type = BarLineType::NORMAL; // default
       _barMode = 0;
@@ -187,10 +187,26 @@ void CapExplicitBarline::readCapx(XmlReader& e)
 void CapClef::readCapx(XmlReader& e)
       {
       QString clef = e.attribute("clef");
-      if (clef == "G2-") { form = Form::G; line = ClefLine::L2; oct = Oct::OCT_BASSA; }
-      else if (clef == "treble") { form = Form::G; line = ClefLine::L2; oct = Oct::OCT_NULL; }
-      else if (clef == "bass") { form = Form::F; line = ClefLine::L4; oct = Oct::OCT_NULL; }
-      else { /* default */ form = Form::G; line = ClefLine::L2; oct = Oct::OCT_NULL; }
+      if (clef == "G2-") {
+            form = Form::G;
+            line = ClefLine::L2;
+            oct = Oct::OCT_BASSA;
+            }
+      else if (clef == "treble") {
+            form = Form::G;
+            line = ClefLine::L2;
+            oct = Oct::OCT_NULL;
+            }
+      else if (clef == "bass") {
+            form = Form::F;
+            line = ClefLine::L4;
+            oct = Oct::OCT_NULL;
+            }
+      else {
+            /* default */ form = Form::G;
+            line = ClefLine::L2;
+            oct = Oct::OCT_NULL;
+            }
       qDebug("Clef::read '%s' -> form %d line %d oct %d", qPrintable(clef), int(form), int(line), int(oct));
       e.readNext();
       }
@@ -1166,7 +1182,7 @@ void Capella::readCapx(XmlReader& e)
 
 void convertCapella(Score* score, Capella* cap, bool capxMode);
 
-Score::FileError importCapXml(Score* score, const QString& name)
+Score::FileError importCapXml(MasterScore* score, const QString& name)
       {
       qDebug("importCapXml(score %p, name %s)", score, qPrintable(name));
       MQZipReader uz(name);

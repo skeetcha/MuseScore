@@ -2,7 +2,7 @@
 <StaffList version="2.00" tick="0" len="1920" staff="0" staves="1">
   <Staff id="0">
     <voice id="0">0</voice>
-    <tick>0</tick>
+    <move>0/1</move>
     <Chord>
       <track>0</track>
       <durationType>quarter</durationType>
@@ -12,10 +12,8 @@
         <tpc>14</tpc>
         <Glissando id="2">
           <text>gliss.</text>
-          <subtype>0</subtype>
           <track>0</track>
           <diagonal>1</diagonal>
-          <lineWidth>0.15</lineWidth>
           <anchor>3</anchor>
           </Glissando>
         </Note>
@@ -42,7 +40,6 @@
           <subtype>1</subtype>
           <track>0</track>
           <diagonal>1</diagonal>
-          <lineWidth>0.15</lineWidth>
           <anchor>3</anchor>
           </Glissando>
         </Note>

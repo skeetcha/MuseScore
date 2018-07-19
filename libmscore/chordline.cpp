@@ -26,15 +26,13 @@ const char* scorelineNames[] = {
       QT_TRANSLATE_NOOP("Ms", "Scoop"),
       };
 
-
 //---------------------------------------------------------
 //   ChordLine
 //---------------------------------------------------------
 
 ChordLine::ChordLine(Score* s)
-   : Element(s)
+   : Element(s, ElementFlag::MOVABLE)
       {
-      setFlags(ElementFlag::MOVABLE | ElementFlag::SELECTABLE);
       modified = false;
       _chordLineType = ChordLineType::NOTYPE;
       _straight = false;
@@ -117,18 +115,17 @@ void ChordLine::layout()
             QPointF p(note->pos());
             // chordlines to the right of the note
             if (_chordLineType == ChordLineType::FALL || _chordLineType == ChordLineType::DOIT)
-                  setPos(p.x() + note->headWidth() + _spatium * .2, p.y());
+                  setPos(p.x() + note->bboxRightPos() + _spatium * .2, p.y());
             // chordlines to the left of the note
             if (_chordLineType == ChordLineType::PLOP)
-                  setPos(p.x() + note->headWidth() * .25, p.y() - note->headHeight() * .75);
+                  setPos(p.x() + note->bboxRightPos() * .25, p.y() - note->headHeight() * .75);
             if (_chordLineType == ChordLineType::SCOOP) {
-                  qreal x = p.x() + (chord()->up() ? note->headWidth() * .25 : _spatium * -.2);
+                  qreal x = p.x() + (chord()->up() ? note->bboxRightPos() * .25 : _spatium * -.2);
                   setPos(x, p.y() + note->headHeight() * .75);
                   }
             }
       else
             setPos(0.0, 0.0);
-      adjustReadPos();
       QRectF r(path.boundingRect());
       int x1, y1, width, height = 0;
 
@@ -208,7 +205,7 @@ void ChordLine::read(XmlReader& e)
 //   write
 //---------------------------------------------------------
 
-void ChordLine::write(Xml& xml) const
+void ChordLine::write(XmlWriter& xml) const
       {
       xml.stag(name());
       xml.tag("subtype", int(_chordLineType));
@@ -243,7 +240,7 @@ void ChordLine::draw(QPainter* painter) const
             painter->setBrush(Qt::NoBrush);
 
             QPainterPath pathOffset = path;
-            float offset = 0.5;
+            qreal offset = 0.5;
 
             if (_chordLineType == ChordLineType::FALL)
                   pathOffset.translate(offset, -offset);
@@ -270,7 +267,7 @@ void ChordLine::draw(QPainter* painter) const
 //   editDrag
 //---------------------------------------------------------
 
-void ChordLine::editDrag(const EditData& ed)
+void ChordLine::editDrag(EditData& ed)
       {
       int n = path.elementCount();
       QPainterPath p;
@@ -348,32 +345,30 @@ void ChordLine::editDrag(const EditData& ed)
 //   updateGrips
 //---------------------------------------------------------
 
-void ChordLine::updateGrips(Grip* defaultGrip, QVector<QRectF>& grip) const
+void ChordLine::updateGrips(EditData& ed) const
       {
-      int n = path.elementCount();
-      QPointF cp(pagePos());
       qreal sp = spatium();
+      int n    = path.elementCount();
+      QPointF cp(pagePos());
       if (_straight) {
             // limit the number of grips to one
-            float offset = 0.5 * sp;
+            qreal offset = 0.5 * sp;
 
             if (_chordLineType == ChordLineType::FALL)
-                  grip[0].translate(QPointF(offset, -offset));
+                  ed.grip[0].translate(QPointF(offset, -offset));
             else if (_chordLineType == ChordLineType::DOIT)
-                   grip[0].translate(QPointF(offset, offset));
+                   ed.grip[0].translate(QPointF(offset, offset));
             else if (_chordLineType == ChordLineType::SCOOP)
-                   grip[0].translate(QPointF(-offset, offset));
+                   ed.grip[0].translate(QPointF(-offset, offset));
             else if (_chordLineType == ChordLineType::PLOP)
-                   grip[0].translate(QPointF(-offset, -offset));
+                   ed.grip[0].translate(QPointF(-offset, -offset));
 
-            // translate on the length and height - stops the grips from goint past boundries of slide
-            grip[0].translate(cp + QPointF(path.elementAt(1).x * sp, path.elementAt(1).y * sp));
+            // translate on the length and height - stops the grips from going past boundaries of slide
+            ed.grip[0].translate(cp + QPointF(path.elementAt(1).x * sp, path.elementAt(1).y * sp));
             }
       else  {
-            *defaultGrip = Grip(n - 1);
             for (int i = 0; i < n; ++i)
-                  grip[i].translate(cp + QPointF(path.elementAt(i).x * sp, path.elementAt(i).y * sp));
-
+                  ed.grip[i].translate(cp + QPointF(path.elementAt(i).x * sp, path.elementAt(i).y * sp));
             }
       }
 
@@ -381,18 +376,24 @@ void ChordLine::updateGrips(Grip* defaultGrip, QVector<QRectF>& grip) const
 //   grips
 //---------------------------------------------------------
 
-int ChordLine::grips() const
+void ChordLine::startEdit(EditData& ed)
       {
-      if (_straight)
-            return 1;
-      return path.elementCount();
+      Element::startEdit(ed);
+      if (_straight) {
+            ed.curGrip = Grip(0);
+            ed.grips   = 1;
+            }
+      else {
+            ed.grips   = path.elementCount();
+            ed.curGrip = Grip(ed.grips-1);
+            }
       }
 
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
-QString ChordLine::accessibleInfo()
+QString ChordLine::accessibleInfo() const
       {
       QString rez = Element::accessibleInfo();
       if(chordLineType() != ChordLineType::NOTYPE)

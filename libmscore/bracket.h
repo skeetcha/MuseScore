@@ -14,72 +14,81 @@
 #define __BRACKET_H__
 
 #include "element.h"
-
-class QPainter;
+#include "bracketItem.h"
 
 namespace Ms {
 
 class MuseScoreView;
 class System;
+enum class BracketType : signed char;
 
 //---------------------------------------------------------
 //   @@ Bracket
 //---------------------------------------------------------
 
-class Bracket : public Element {
-      Q_OBJECT
-
-      BracketType _bracketType;
-
+class Bracket final : public Element {
+      BracketItem* _bi;
       qreal h2;
 
-      int _column;
-      int _span;
       int _firstStaff;
       int _lastStaff;
 
       QPainterPath path;
+      SymId _braceSymbol;
+      Shape _shape;
+
+      // horizontal scaling factor for brace symbol. Cannot be equal to magY or depend on h
+      // because layout needs width of brace before knowing height of system...
+      qreal _magx;
 
    public:
       Bracket(Score*);
+      virtual ~Bracket();
       virtual Bracket* clone() const override   { return new Bracket(*this); }
-      virtual Element::Type type() const override { return Element::Type::BRACKET;  }
+      virtual ElementType type() const override { return ElementType::BRACKET;  }
 
-      BracketType bracketType() const    { return _bracketType; }
-      void setBracketType(BracketType t) { _bracketType = t;    }
+      void setBracketItem(BracketItem* i)       { _bi = i; }
+      BracketItem* bracketItem() const          { return _bi;          }
 
-      int firstStaff() const           { return _firstStaff; }
-      void setFirstStaff(int val)      { _firstStaff = val;  }
+      BracketType bracketType() const           { return _bi->bracketType(); }
 
-      int lastStaff() const            { return _lastStaff; }
-      void setLastStaff(int val)       { _lastStaff = val;  }
+      int firstStaff() const                    { return _firstStaff; }
+      int lastStaff() const                     { return _lastStaff; }
+      void setStaffSpan(int a, int b);
 
-      int level() const                { return _column;           }
-      void setLevel(int v)             { _column = v;              }
-      int span() const                 { return _span;             }
-      void setSpan(int v)              { _span = v;                }
-      System* system() const           { return (System*)parent(); }
+      SymId braceSymbol() const                 { return _braceSymbol; }
+      int column() const                        { return _bi->column();  }
+      int span() const                          { return _bi->bracketSpan();    }
+      qreal magx() const                        { return _magx;                 }
+
+      System* system() const                    { return (System*)parent(); }
 
       virtual void setHeight(qreal) override;
       virtual qreal width() const override;
 
+      virtual Shape shape() const override { return _shape; }
+
       virtual void draw(QPainter*) const override;
-      virtual void write(Xml& xml) const override;
-      virtual void read(XmlReader&) override;
       virtual void layout() override;
 
-      virtual bool isEditable() const override { return true; }
-      virtual void startEdit(MuseScoreView*, const QPointF&) override;
-      virtual bool edit(MuseScoreView*, Grip, int, Qt::KeyboardModifiers, const QString&) override;
-      virtual void endEdit() override;
-      virtual void editDrag(const EditData&) override;
-      virtual void endEditDrag() override;
-      virtual void updateGrips(Grip*, QVector<QRectF>&) const override;
-      virtual int grips() const override { return 1; }
-      virtual QPointF gripAnchor(Grip) const override;
+      virtual void write(XmlWriter& xml) const override;
+      virtual void read(XmlReader&) override;
 
-      virtual bool acceptDrop(const DropData&) const override;
-      virtual Element* drop(const DropData&) override;
+      virtual bool isEditable() const override { return true; }
+      virtual void startEdit(EditData&) override;
+      virtual bool edit(EditData&) override;
+      virtual void endEdit(EditData&) override;
+      virtual void editDrag(EditData&) override;
+      virtual void endEditDrag(EditData&) override;
+      virtual void updateGrips(EditData&) const override;
+
+      virtual bool acceptDrop(EditData&) const override;
+      virtual Element* drop(EditData&) override;
+
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
+      virtual void setSelected(bool f) override;
       };
 
 

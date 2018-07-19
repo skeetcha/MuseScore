@@ -13,6 +13,10 @@
 #ifndef __SELECT_H__
 #define __SELECT_H__
 
+#include "pitchspelling.h"
+#include "mscore.h"
+#include "durationtype.h"
+
 namespace Ms {
 
 class Score;
@@ -38,6 +42,24 @@ struct ElementPattern {
       int voice;
       const System* system;
       bool subtypeValid;
+      };
+
+//---------------------------------------------------------
+//   NotePattern
+//---------------------------------------------------------
+
+struct NotePattern {
+      QList<Note*> el;
+      int pitch = -1;
+      int string = STRING_NONE;
+      int tpc = Tpc::TPC_INVALID;;
+      NoteHead::Group notehead = NoteHead::Group::HEAD_INVALID;
+      TDuration duration = TDuration();
+      NoteType type = NoteType::INVALID;
+      int staffStart;
+      int staffEnd; // exclusive
+      int voice;
+      const System* system;
       };
 
 //---------------------------------------------------------
@@ -129,7 +151,8 @@ class Selection {
       void setState(SelState s);
 
       const QList<Element*>& elements() const { return _el; }
-      QList<Note*> noteList(int track = -1) const;
+      QList<Element*>& elements()             { return _el; }
+      std::vector<Note*> noteList(int track = -1) const;
 
       const QList<Element*> uniqueElements() const;
       QList<Note*> uniqueNotes(int track = -1) const;

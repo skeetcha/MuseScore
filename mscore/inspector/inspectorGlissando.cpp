@@ -15,6 +15,7 @@
 #include "musescore.h"
 #include "libmscore/glissando.h"
 #include "libmscore/score.h"
+#include "icons.h"
 
 namespace Ms {
 
@@ -23,24 +24,29 @@ namespace Ms {
 //---------------------------------------------------------
 
 InspectorGlissando::InspectorGlissando(QWidget* parent)
-   : InspectorBase(parent)
+   : InspectorElementBase(parent)
       {
-      e.setupUi(addWidget());
       g.setupUi(addWidget());
 
-      iList = {
-            { P_ID::COLOR,           0, false, e.color,    e.resetColor    },
-            { P_ID::VISIBLE,         0, false, e.visible,  e.resetVisible  },
-            { P_ID::USER_OFF,        0, false, e.offsetX,  e.resetX        },
-            { P_ID::USER_OFF,        1, false, e.offsetY,  e.resetY        },
-            { P_ID::GLISS_TYPE,      0, false, g.type,     g.resetType     },
-            { P_ID::GLISS_TEXT,      0, false, g.text,     g.resetText     },
-            { P_ID::GLISS_SHOW_TEXT, 0, false, g.showText, g.resetShowText },
-            { P_ID::GLISSANDO_STYLE, 0, false, g.glissandoStyle, g.resetGlissandoStyle},
-            { P_ID::PLAY,            0, 0,     g.playGlissando, g.resetPlayGlissando}
+      const std::vector<InspectorItem> iiList = {
+            { Pid::GLISS_TYPE,      0, g.type,           g.resetType           },
+            { Pid::GLISS_TEXT,      0, g.text,           g.resetText           },
+            { Pid::GLISS_SHOW_TEXT, 0, g.showText,       g.resetShowText       },
+            { Pid::GLISSANDO_STYLE, 0, g.glissandoStyle, g.resetGlissandoStyle },
+            { Pid::PLAY,            0, g.playGlissando,  g.resetPlayGlissando  },
+            { Pid::FONT_FACE,       0, g.fontFace,       g.resetFontFace       },
+            { Pid::FONT_SIZE,       0, g.fontSize,       g.resetFontSize       },
+            { Pid::FONT_BOLD,       0, g.fontBold,       g.resetFontBold       },
+            { Pid::FONT_ITALIC,     0, g.fontItalic,     g.resetFontItalic     },
+            { Pid::FONT_UNDERLINE,  0, g.fontUnderline,  g.resetFontUnderline  },
             };
-
-      mapSignals();
+      const std::vector<InspectorPanel> ppList = {
+            { g.title, g.panel }
+            };
+      g.fontBold->setIcon(*icons[int(Icons::textBold_ICON)]);
+      g.fontUnderline->setIcon(*icons[int(Icons::textUnderline_ICON)]);
+      g.fontItalic->setIcon(*icons[int(Icons::textItalic_ICON)]);
+      mapSignals(iiList, ppList);
       }
 }
 

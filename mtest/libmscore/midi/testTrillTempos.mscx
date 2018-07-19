@@ -1,31 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.07">
-  <programVersion>2.1.0</programVersion>
-  <programRevision>3543170</programRevision>
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
-    <Synthesizer>
-      </Synthesizer>
     <Division>480</Division>
     <Style>
       <lastSystemFillLimit>0</lastSystemFillLimit>
-      <page-layout>
-        <page-height>1683.36</page-height>
-        <page-width>1190.88</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -35,34 +15,14 @@
     <metaTag name="arranger"></metaTag>
     <metaTag name="composer">Composer</metaTag>
     <metaTag name="copyright"></metaTag>
-    <metaTag name="creationDate"></metaTag>
     <metaTag name="lyricist"></metaTag>
     <metaTag name="movementNumber"></metaTag>
     <metaTag name="movementTitle"></metaTag>
-    <metaTag name="platform">Linux</metaTag>
     <metaTag name="poet"></metaTag>
     <metaTag name="source"></metaTag>
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle">Title</metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -109,7 +69,6 @@
           </Articulation>
         <Channel>
           <program value="0"/>
-          <synti>Fluid</synti>
           </Channel>
         </Instrument>
       </Part>
@@ -139,8 +98,13 @@
         <Slur id="2">
           <track>0</track>
           </Slur>
+        <Beam id="1">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>1</Beam>
           <Slur type="start" id="2"/>
           <Note>
             <pitch>69</pitch>
@@ -149,6 +113,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>1</Beam>
           <Slur type="stop" id="2"/>
           <Note>
             <pitch>74</pitch>
@@ -160,9 +125,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>1</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -173,16 +139,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>1</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="2">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>2</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -193,11 +165,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>2</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="3">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -207,6 +184,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>3</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -217,9 +195,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>3</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -232,7 +211,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -251,8 +230,13 @@
         <Slur id="3">
           <track>0</track>
           </Slur>
+        <Beam id="4">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>4</Beam>
           <Slur type="start" id="3"/>
           <Note>
             <pitch>69</pitch>
@@ -261,6 +245,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>4</Beam>
           <Slur type="stop" id="3"/>
           <Note>
             <pitch>74</pitch>
@@ -272,9 +257,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>4</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -285,16 +271,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>4</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="5">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>5</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -305,11 +297,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>5</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="6">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -319,6 +316,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>6</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -329,9 +327,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>6</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -344,7 +343,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -360,8 +359,13 @@
         <Slur id="4">
           <track>0</track>
           </Slur>
+        <Beam id="7">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>7</Beam>
           <Slur type="start" id="4"/>
           <Note>
             <pitch>69</pitch>
@@ -370,6 +374,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>7</Beam>
           <Slur type="stop" id="4"/>
           <Note>
             <pitch>74</pitch>
@@ -381,9 +386,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>7</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -394,16 +400,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>7</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="8">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>8</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -414,11 +426,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>8</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="9">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -428,6 +445,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>9</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -438,9 +456,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>9</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -453,7 +472,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -472,8 +491,13 @@
         <Slur id="5">
           <track>0</track>
           </Slur>
+        <Beam id="10">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>10</Beam>
           <Slur type="start" id="5"/>
           <Note>
             <pitch>69</pitch>
@@ -482,6 +506,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>10</Beam>
           <Slur type="stop" id="5"/>
           <Note>
             <pitch>74</pitch>
@@ -493,9 +518,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>10</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -506,16 +532,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>10</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="11">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>11</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -526,11 +558,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>11</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="12">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -540,6 +577,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>12</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -550,9 +588,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>12</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -565,7 +604,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -581,8 +620,13 @@
         <Slur id="6">
           <track>0</track>
           </Slur>
+        <Beam id="13">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>13</Beam>
           <Slur type="start" id="6"/>
           <Note>
             <pitch>69</pitch>
@@ -591,6 +635,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>13</Beam>
           <Slur type="stop" id="6"/>
           <Note>
             <pitch>74</pitch>
@@ -602,9 +647,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>13</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -615,16 +661,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>13</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="14">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>14</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -635,11 +687,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>14</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="15">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -649,6 +706,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>15</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -659,9 +717,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>15</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -674,7 +733,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -693,8 +752,13 @@
         <Slur id="7">
           <track>0</track>
           </Slur>
+        <Beam id="16">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>16</Beam>
           <Slur type="start" id="7"/>
           <Note>
             <pitch>69</pitch>
@@ -703,6 +767,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>16</Beam>
           <Slur type="stop" id="7"/>
           <Note>
             <pitch>74</pitch>
@@ -714,9 +779,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>16</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -727,16 +793,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>16</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="17">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>17</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -747,11 +819,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>17</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="18">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -761,6 +838,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>18</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -771,9 +849,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>18</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -786,7 +865,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -802,8 +881,13 @@
         <Slur id="8">
           <track>0</track>
           </Slur>
+        <Beam id="19">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>19</Beam>
           <Slur type="start" id="8"/>
           <Note>
             <pitch>69</pitch>
@@ -812,6 +896,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>19</Beam>
           <Slur type="stop" id="8"/>
           <Note>
             <pitch>74</pitch>
@@ -823,9 +908,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>19</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -836,16 +922,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>19</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="20">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>20</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -856,11 +948,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>20</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="21">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -870,6 +967,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>21</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -880,9 +978,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>21</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -895,7 +994,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -914,8 +1013,13 @@
         <Slur id="9">
           <track>0</track>
           </Slur>
+        <Beam id="22">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>22</Beam>
           <Slur type="start" id="9"/>
           <Note>
             <pitch>69</pitch>
@@ -924,6 +1028,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>22</Beam>
           <Slur type="stop" id="9"/>
           <Note>
             <pitch>74</pitch>
@@ -935,9 +1040,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>22</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -948,16 +1054,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>22</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="23">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>23</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -968,11 +1080,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>23</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="24">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -982,6 +1099,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>24</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -992,9 +1110,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>24</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -1007,7 +1126,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -1023,8 +1142,13 @@
         <Slur id="10">
           <track>0</track>
           </Slur>
+        <Beam id="25">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>25</Beam>
           <Slur type="start" id="10"/>
           <Note>
             <pitch>69</pitch>
@@ -1033,6 +1157,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>25</Beam>
           <Slur type="stop" id="10"/>
           <Note>
             <pitch>74</pitch>
@@ -1044,9 +1169,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>25</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -1057,16 +1183,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>25</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="26">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>26</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -1077,11 +1209,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>26</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="27">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -1091,6 +1228,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>27</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -1101,9 +1239,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>27</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -1116,7 +1255,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -1135,8 +1274,13 @@
         <Slur id="11">
           <track>0</track>
           </Slur>
+        <Beam id="28">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>28</Beam>
           <Slur type="start" id="11"/>
           <Note>
             <pitch>69</pitch>
@@ -1145,6 +1289,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>28</Beam>
           <Slur type="stop" id="11"/>
           <Note>
             <pitch>74</pitch>
@@ -1156,9 +1301,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>28</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -1169,16 +1315,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>28</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="29">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>29</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -1189,11 +1341,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>29</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="30">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -1203,6 +1360,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>30</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -1213,9 +1371,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>30</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -1228,7 +1387,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -1244,8 +1403,13 @@
         <Slur id="12">
           <track>0</track>
           </Slur>
+        <Beam id="31">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>31</Beam>
           <Slur type="start" id="12"/>
           <Note>
             <pitch>69</pitch>
@@ -1254,6 +1418,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>31</Beam>
           <Slur type="stop" id="12"/>
           <Note>
             <pitch>74</pitch>
@@ -1265,9 +1430,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>31</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -1278,16 +1444,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>31</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="32">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>32</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -1298,11 +1470,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>32</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="33">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -1312,6 +1489,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>33</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -1322,9 +1500,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>33</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -1337,7 +1516,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>
@@ -1353,8 +1532,13 @@
         <Slur id="13">
           <track>0</track>
           </Slur>
+        <Beam id="34">
+          <l1>24</l1>
+          <l2>23</l2>
+          </Beam>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>34</Beam>
           <Slur type="start" id="13"/>
           <Note>
             <pitch>69</pitch>
@@ -1363,6 +1547,7 @@
           </Chord>
         <Chord>
           <durationType>16th</durationType>
+          <Beam>34</Beam>
           <Slur type="stop" id="13"/>
           <Note>
             <pitch>74</pitch>
@@ -1374,9 +1559,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>34</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>73</pitch>
             <tpc>21</tpc>
@@ -1387,16 +1573,22 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>34</Beam>
           <Note>
             <pitch>71</pitch>
             <tpc>19</tpc>
             </Note>
           </Chord>
+        <Beam id="35">
+          <l1>-1</l1>
+          <l2>0</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>35</Beam>
           <Note>
             <pitch>69</pitch>
             <tpc>17</tpc>
@@ -1407,11 +1599,16 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>35</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
+        <Beam id="36">
+          <l1>0</l1>
+          <l2>1</l2>
+          </Beam>
         <Chord>
           <durationType>eighth</durationType>
           <Articulation>
@@ -1421,6 +1618,7 @@
             <subtype>trill</subtype>
             <ornamentStyle>baroque</ornamentStyle>
             </Articulation>
+          <Beam>36</Beam>
           <Note>
             <pitch>67</pitch>
             <tpc>15</tpc>
@@ -1431,9 +1629,10 @@
           <Articulation>
             <subtype>staccato</subtype>
             </Articulation>
+          <Beam>36</Beam>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>66</pitch>
             <tpc>20</tpc>
@@ -1446,7 +1645,7 @@
           <durationType>eighth</durationType>
           <Note>
             <Accidental>
-              <subtype>sharp</subtype>
+              <subtype>accidentalSharp</subtype>
               </Accidental>
             <pitch>78</pitch>
             <tpc>20</tpc>

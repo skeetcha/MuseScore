@@ -25,6 +25,8 @@
 #cmakedefine USE_PULSEAUDIO
 #cmakedefine USE_LAME
 
+#cmakedefine FOR_WINSTORE
+
 #cmakedefine MSCORE_UNSTABLE
 
 #cmakedefine HAS_MIDI
@@ -36,6 +38,7 @@
 #define INSTALL_NAME            "${Mscore_INSTALL_NAME}"
 #define INSTPREFIX              "${CMAKE_INSTALL_PREFIX}"
 #define VERSION                 "${MUSESCORE_VERSION_FULL}"
+#define BUILD_NUMBER            "${CMAKE_BUILD_NUMBER}"
 
 #cmakedefine AEOLUS
 #cmakedefine ZERBERUS

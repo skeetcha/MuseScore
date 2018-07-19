@@ -2,7 +2,7 @@
 //  MuseScore
 //  Music Composition & Notation
 //
-//  Copyright (C) 2002-2012 Werner Schweer
+//  Copyright (C) 2002-2016 Werner Schweer
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2
@@ -11,7 +11,9 @@
 //=============================================================================
 
 #include <fenv.h>
-
+#include "loginmanager.h"
+#include "uploadscoredialog.h"
+#include <QStyleFactory>
 #include "palettebox.h"
 #include "config.h"
 #include "musescore.h"
@@ -22,7 +24,6 @@
 #include "preferences.h"
 #include "prefsdialog.h"
 #include "icons.h"
-#include "textstyle.h"
 #include "libmscore/xml.h"
 #include "seq.h"
 #include "libmscore/tempo.h"
@@ -54,16 +55,17 @@
 #include "keyedit.h"
 #include "harmonyedit.h"
 #include "navigator.h"
+#include "timeline.h"
 #include "importmidi/importmidi_panel.h"
+#include "importmidi/importmidi_operations.h"
 #include "libmscore/chord.h"
-#include "mstyle/mstyle.h"
-#include "mstyle/mconfig.h"
 #include "libmscore/segment.h"
 #include "editraster.h"
 #include "pianotools.h"
 #include "mediadialog.h"
 #include "workspace.h"
 #include "selectdialog.h"
+#include "selectnotedialog.h"
 #include "transposedialog.h"
 #include "metaedit.h"
 #include "inspector/inspector.h"
@@ -82,6 +84,7 @@
 #include "textpalette.h"
 #include "resourceManager.h"
 #include "scoreaccessibility.h"
+#include "startupWizard.h"
 
 #include "libmscore/mscore.h"
 #include "libmscore/system.h"
@@ -90,6 +93,8 @@
 #include "libmscore/volta.h"
 #include "libmscore/lasso.h"
 #include "libmscore/excerpt.h"
+#include "libmscore/synthesizerstate.h"
+#include "libmscore/utils.h"
 
 #include "driver.h"
 
@@ -102,10 +107,21 @@
 #include "fluid/fluid.h"
 #include "qmlplugin.h"
 #include "accessibletoolbutton.h"
+#include "toolbuttonmenu.h"
 #include "searchComboBox.h"
 #include "startcenter.h"
 #include "help.h"
 #include "awl/aslider.h"
+#include "extension.h"
+#include "thirdparty/qzip/qzipreader_p.h"
+
+#ifdef USE_LAME
+#include "exportmp3.h"
+#endif
+
+#ifdef Q_OS_MAC
+#include "macos/cocoabridge.h"
+#endif
 
 #ifdef AEOLUS
 extern Ms::Synthesizer* createAeolus();
@@ -114,34 +130,46 @@ extern Ms::Synthesizer* createAeolus();
 extern Ms::Synthesizer* createZerberus();
 #endif
 
+#ifdef QT_NO_DEBUG
+      Q_LOGGING_CATEGORY(undoRedo, "undoRedo", QtCriticalMsg)
+#else
+      Q_LOGGING_CATEGORY(undoRedo, "undoRedo", QtCriticalMsg)
+//      Q_LOGGING_CATEGORY(undoRedo, "undoRedo")
+#endif
+
 namespace Ms {
 
 MuseScore* mscore;
 MasterSynthesizer* synti;
 
 bool enableExperimental = false;
-bool enableTestMode = false;
 
 QString dataPath;
 QString iconPath;
 
 bool converterMode = false;
+bool processJob = false;
 bool externalIcons = false;
 bool pluginMode = false;
 static bool startWithNewScore = false;
-double converterDpi = 0;
 double guiScaling = 0.0;
+static double userDPI = 0.0;
 int trimMargin = -1;
 bool noWebView = false;
 bool exportScoreParts = false;
+bool ignoreWarnings = false;
 
 QString mscoreGlobalShare;
 
 static QString outFileName;
+static QString jsonFileName;
 static QString audioDriver;
 static QString pluginName;
 static QString styleFile;
+static QString extensionName;
 static bool scoresOnCommandline { false };
+
+static QList<QTranslator*> translatorList;
 
 QString localeName;
 bool useFactorySettings = false;
@@ -150,6 +178,115 @@ QString styleName;
 QString revision;
 QErrorMessage* errorMessage;
 const char* voiceActions[] = { "voice-1", "voice-2", "voice-3", "voice-4" };
+
+const std::list<const char*> MuseScore::_allNoteInputMenuEntries {
+            "note-input",
+            "pad-note-128",
+            "pad-note-64",
+            "pad-note-32",
+            "pad-note-16",
+            "pad-note-8",
+            "pad-note-4",
+            "pad-note-2",
+            "pad-note-1",
+            "note-breve",
+            "note-longa",
+            "pad-dot",
+            "pad-dotdot",
+            "pad-dot3",
+            "pad-dot4",
+            "tie",
+            "",
+            "pad-rest",
+            "",
+            "sharp2",
+            "sharp",
+            "nat",
+            "flat",
+            "flat2",
+            "flip",
+            "",
+            "voice-1",
+            "voice-2",
+            "voice-3",
+            "voice-4"
+            };
+
+const std::list<const char*> MuseScore::_advancedNoteInputMenuEntries {
+            "note-input",
+            "pad-note-128",
+            "pad-note-64",
+            "pad-note-32",
+            "pad-note-16",
+            "pad-note-8",
+            "pad-note-4",
+            "pad-note-2",
+            "pad-note-1",
+            "note-breve",
+            "note-longa",
+            "pad-dot",
+            "pad-dotdot",
+            "pad-dot3",
+            "pad-dot4",
+            "tie",
+            "",
+            "pad-rest",
+            "",
+            "sharp2",
+            "sharp",
+            "nat",
+            "flat",
+            "flat2",
+            "flip",
+            "",
+            "voice-1",
+            "voice-2",
+            "voice-3",
+            "voice-4"
+            };
+
+const std::list<const char*> MuseScore::_basicNoteInputMenuEntries {
+            "note-input",
+            "pad-note-32",
+            "pad-note-16",
+            "pad-note-8",
+            "pad-note-4",
+            "pad-note-2",
+            "pad-note-1",
+            "pad-dot",
+            "tie",
+            "",
+            "pad-rest",
+            "",
+            "sharp",
+            "nat",
+            "flat",
+            "flip",
+            "",
+            "voice-1",
+            "voice-2",
+            "voice-3",
+            "voice-4"
+            };
+
+const std::list<const char*> MuseScore::_allFileOperationEntries {
+            "file-new",
+            "file-open",
+            "file-save",
+            "print",
+            "redo",
+            "undo"
+            };
+
+const std::list<const char*> MuseScore::_allPlaybackControlEntries {
+            "midi-on",
+            "rewind",
+            "play",
+            "loop",
+            "repeat",
+            "pan",
+            "metronome"
+            };
 
 extern bool savePositions(Score*, const QString& name, bool segments );
 extern TextPalette* textPalette;
@@ -183,6 +320,7 @@ void MuseScore::cmdInsertMeasures()
 InsertMeasuresDialog::InsertMeasuresDialog(QWidget* parent)
    : QDialog(parent)
       {
+      setObjectName("InsertMeasuresDialog");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
       insmeasures->selectAll();
@@ -196,8 +334,18 @@ void InsertMeasuresDialog::accept()
       {
       int n = insmeasures->value();
       if (mscore->currentScore())
-            mscore->currentScoreView()->cmdInsertMeasures(n, Element::Type::MEASURE);
+            mscore->currentScoreView()->cmdInsertMeasures(n, ElementType::MEASURE);
       done(1);
+      }
+
+//---------------------------------------------------------
+// InsertMeasuresDialog hideEvent
+//---------------------------------------------------------
+
+void InsertMeasuresDialog::hideEvent(QHideEvent* event)
+      {
+      MuseScore::saveGeometry(this);
+      QDialog::hideEvent(event);
       }
 
 //---------------------------------------------------------
@@ -246,8 +394,8 @@ static const int RECENT_LIST_SIZE = 20;
 void MuseScore::closeEvent(QCloseEvent* ev)
       {
       unloadPlugins();
-      QList<Score*> removeList;
-      foreach(Score* score, scoreList) {
+      QList<MasterScore*> removeList;
+      for (MasterScore* score : scoreList) {
             if (score->created() && !score->dirty())
                   removeList.append(score);
             else {
@@ -266,11 +414,11 @@ void MuseScore::closeEvent(QCloseEvent* ev)
 
       // remove all new created/not save score so they are
       // note saved as session data
-      foreach(Score* score, removeList)
+      for (MasterScore* score : removeList)
             scoreList.removeAll(score);
 
       writeSessionFile(true);
-      foreach(Score* score, scoreList) {
+      for (MasterScore* score : scoreList) {
             if (!score->tmpName().isEmpty()) {
                   QFile f(score->tmpName());
                   f.remove();
@@ -282,10 +430,50 @@ void MuseScore::closeEvent(QCloseEvent* ev)
       _loginManager->save();
 
       ev->accept();
-      if (preferences.dirty)
-            preferences.write();
+
+      if (Shortcut::dirty)
+            Shortcut::save();
+
       this->deleteLater();     //this is necessary on windows http://musescore.org/node/16713
       qApp->quit();
+      }
+
+void updateExternalValuesFromPreferences() {
+      // set values in libmscore
+      MScore::bgColor = preferences.getColor(PREF_UI_CANVAS_BG_COLOR);
+      MScore::dropColor = preferences.getColor(PREF_UI_SCORE_NOTE_DROPCOLOR);
+      MScore::defaultColor = preferences.getColor(PREF_UI_SCORE_DEFAULTCOLOR);
+      MScore::defaultPlayDuration = preferences.getInt(PREF_SCORE_NOTE_DEFAULTPLAYDURATION);
+      MScore::panPlayback = preferences.getBool(PREF_APP_PLAYBACK_PANPLAYBACK);
+      MScore::playRepeats = preferences.getBool(PREF_APP_PLAYBACK_PLAYREPEATS);
+      MScore::warnPitchRange = preferences.getBool(PREF_SCORE_NOTE_WARNPITCHRANGE);
+      MScore::layoutBreakColor = preferences.getColor(PREF_UI_SCORE_LAYOUTBREAKCOLOR);
+      MScore::frameMarginColor = preferences.getColor(PREF_UI_SCORE_FRAMEMARGINCOLOR);
+      MScore::setVerticalOrientation(preferences.getBool(PREF_UI_CANVAS_SCROLL_VERTICALORIENTATION));
+
+      MScore::selectColor[0] = preferences.getColor(PREF_UI_SCORE_VOICE1_COLOR);
+      MScore::selectColor[1] = preferences.getColor(PREF_UI_SCORE_VOICE2_COLOR);
+      MScore::selectColor[2] = preferences.getColor(PREF_UI_SCORE_VOICE3_COLOR);
+      MScore::selectColor[3] = preferences.getColor(PREF_UI_SCORE_VOICE4_COLOR);
+
+      MScore::setHRaster(preferences.getInt(PREF_UI_APP_RASTER_HORIZONTAL));
+      MScore::setVRaster(preferences.getInt(PREF_UI_APP_RASTER_VERTICAL));
+
+      MScore::setNudgeStep(.1);         // cursor key (default 0.1)
+      MScore::setNudgeStep10(1.0);      // Ctrl + cursor key (default 1.0)
+      MScore::setNudgeStep50(0.01);     // Alt  + cursor key (default 0.01)
+
+      //Create directories if they are missing
+      QDir dir;
+      dir.mkpath(preferences.getString(PREF_APP_PATHS_MYSCORES));
+      dir.mkpath(preferences.getString(PREF_APP_PATHS_MYSTYLES));
+      dir.mkpath(preferences.getString(PREF_APP_PATHS_MYIMAGES));
+      dir.mkpath(preferences.getString(PREF_APP_PATHS_MYTEMPLATES));
+      dir.mkpath(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS));
+      dir.mkpath(preferences.getString(PREF_APP_PATHS_MYPLUGINS));
+      foreach (QString path, preferences.getString(PREF_APP_PATHS_MYSOUNDFONTS).split(";"))
+            dir.mkpath(path);
+
       }
 
 //---------------------------------------------------------
@@ -294,22 +482,34 @@ void MuseScore::closeEvent(QCloseEvent* ev)
 
 void MuseScore::preferencesChanged()
       {
+      updateExternalValuesFromPreferences();
+
+      setPlayRepeats(MScore::playRepeats);
+      getAction("pan")->setChecked(MScore::panPlayback);
+      getAction("follow")->setChecked(preferences.getBool(PREF_APP_PLAYBACK_FOLLOWSONG));
+      getAction("midi-on")->setEnabled(preferences.getBool(PREF_IO_MIDI_ENABLEINPUT));
+      getAction("toggle-statusbar")->setChecked(preferences.getBool(PREF_UI_APP_SHOWSTATUSBAR));
+      _statusBar->setVisible(preferences.getBool(PREF_UI_APP_SHOWSTATUSBAR));
+
+      MuseScore::updateUiStyleAndTheme();
+
+      QString fgWallpaper = preferences.getString(PREF_UI_CANVAS_FG_WALLPAPER);
       for (int i = 0; i < tab1->count(); ++i) {
             ScoreView* canvas = tab1->view(i);
             if (canvas == 0)
                   continue;
-            if (preferences.bgUseColor)
-                  canvas->setBackground(MScore::bgColor);
+            if (preferences.getBool(PREF_UI_CANVAS_BG_USECOLOR))
+                  canvas->setBackground(preferences.getColor(PREF_UI_CANVAS_BG_COLOR));
             else {
-                  QPixmap* pm = new QPixmap(preferences.bgWallpaper);
+                  QPixmap* pm = new QPixmap(preferences.getString(PREF_UI_CANVAS_BG_WALLPAPER));
                   canvas->setBackground(pm);
                   }
-            if (preferences.fgUseColor)
-                  canvas->setForeground(preferences.fgColor);
+            if (preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR))
+                  canvas->setForeground(preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
             else {
-                  QPixmap* pm = new QPixmap(preferences.fgWallpaper);
+                  QPixmap* pm = new QPixmap(fgWallpaper);
                   if (pm == 0 || pm->isNull())
-                        qDebug("no valid pixmap %s", preferences.fgWallpaper.toLatin1().data());
+                        qDebug("no valid pixmap %s", fgWallpaper.toLatin1().data());
                   canvas->setForeground(pm);
                   }
             }
@@ -318,18 +518,18 @@ void MuseScore::preferencesChanged()
                   ScoreView* canvas = tab2->view(i);
                   if (canvas == 0)
                         continue;
-                  if (preferences.bgUseColor)
-                        canvas->setBackground(MScore::bgColor);
+                  if (preferences.getBool(PREF_UI_CANVAS_BG_USECOLOR))
+                        canvas->setBackground(preferences.getColor(PREF_UI_CANVAS_BG_COLOR));
                   else {
-                        QPixmap* pm = new QPixmap(preferences.bgWallpaper);
+                        QPixmap* pm = new QPixmap(preferences.getString(PREF_UI_CANVAS_BG_WALLPAPER));
                         canvas->setBackground(pm);
                         }
-                  if (preferences.fgUseColor)
-                        canvas->setForeground(preferences.fgColor);
+                  if (preferences.getBool(PREF_UI_CANVAS_FG_USECOLOR))
+                        canvas->setForeground(preferences.getColor(PREF_UI_CANVAS_FG_COLOR));
                   else {
-                        QPixmap* pm = new QPixmap(preferences.fgWallpaper);
+                        QPixmap* pm = new QPixmap(fgWallpaper);
                         if (pm == 0 || pm->isNull())
-                              qDebug("no valid pixmap %s", preferences.fgWallpaper.toLatin1().data());
+                              qDebug("no valid pixmap %s", fgWallpaper.toLatin1().data());
                         canvas->setForeground(pm);
                         }
                   }
@@ -338,10 +538,367 @@ void MuseScore::preferencesChanged()
       transportTools->setEnabled(!noSeq && seq && seq->isRunning());
       playId->setEnabled(!noSeq && seq && seq->isRunning());
 
-      getAction("midi-on")->setEnabled(preferences.enableMidiInput);
-      _statusBar->setVisible(preferences.showStatusBar);
+      // change workspace
+      if (preferences.getString(PREF_APP_WORKSPACE) != Workspace::currentWorkspace->name()) {
+            Workspace* workspace = 0;
+            for (Workspace* w: Workspace::workspaces()) {
+                  if (w->name() == preferences.getString(PREF_APP_WORKSPACE)) {
+                        workspace = w;
+                        break;
+                        }
+                  }
 
-      updateNewWizard();
+            if (workspace != 0) {
+                  mscore->changeWorkspace(workspace);
+                  mscore->getPaletteBox()->updateWorkspaces();
+                  }
+            }
+
+      delete newWizard;
+      newWizard = 0;
+      reloadInstrumentTemplates();
+      updateInstrumentDialog();
+      }
+
+//---------------------------------------------------------
+//   populateNoteInputMenu
+//---------------------------------------------------------
+
+void MuseScore::populateNoteInputMenu()
+      {
+      entryTools->clear();
+
+      for (const auto s : _noteInputMenuEntries) {
+            if (!*s)
+                  entryTools->addSeparator();
+            else {
+                  QAction* a = getAction(s);
+                  QWidget* w;
+                  if (strcmp(s, "note-input") == 0) {
+                        //-----------------------------------------------------------------
+                        // Note Entry Modes menu
+                        // ToolButtonMenu to swap between Note Entry Methods
+                        //-----------------------------------------------------------------
+                        QActionGroup* noteEntryMethods = new QActionGroup(entryTools);
+
+                        noteEntryMethods->addAction(getAction("note-input-steptime"));
+                        noteEntryMethods->addAction(getAction("note-input-repitch"));
+                        noteEntryMethods->addAction(getAction("note-input-rhythm"));
+                        noteEntryMethods->addAction(getAction("note-input-realtime-auto"));
+                        noteEntryMethods->addAction(getAction("note-input-realtime-manual"));
+
+                        connect(noteEntryMethods, SIGNAL(triggered(QAction*)), this, SLOT(cmd(QAction*)));
+
+                        w = new ToolButtonMenu(tr("Note Entry Methods"),
+                           ToolButtonMenu::TYPES::ICON_CHANGED,
+                           getAction("note-input"),
+                           noteEntryMethods,
+                           this);
+                        }
+                  else if (strncmp(s, "voice-", 6) == 0) {
+                        AccessibleToolButton* tb = new AccessibleToolButton(this, a);
+                        tb->setObjectName("voice");
+                        tb->setFocusPolicy(Qt::ClickFocus);
+                        tb->setToolButtonStyle(Qt::ToolButtonTextOnly);
+                        tb->setProperty((QString("voice%1").arg(atoi(s+6))).toUtf8().data(), true);
+                        QPalette p(tb->palette());
+                        int i = atoi(s+6) - 1;
+                        p.setColor(QPalette::Base, MScore::selectColor[i]);
+                        tb->setPalette(p);
+                        a->setCheckable(true);
+                        // tb->setDefaultAction(a);
+                        w = tb;
+                        }
+                  else
+                        w = new AccessibleToolButton(entryTools, a);
+                  entryTools->addWidget(w);
+                  }
+            }
+      }
+
+//---------------------------------------------------------
+//   onLongOperationFinished
+//---------------------------------------------------------
+
+void MuseScore::onLongOperationFinished()
+      {
+      infoMsgBox->accept();
+      }
+
+//---------------------------------------------------------
+//   importExtension
+//---------------------------------------------------------
+
+bool MuseScore::importExtension(QString path)
+      {
+      MQZipReader zipFile(path);
+      // compute total unzipped size
+      qint64 totalZipSize = 0;
+      for (auto fi : zipFile.fileInfoList())
+            totalZipSize += fi.size;
+
+      // check if extension path is writable and has enough space
+      QStorageInfo storage = QStorageInfo(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS));
+      if (storage.isReadOnly()) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Cannot import extension on read-only storage: %1").arg(storage.displayName()));
+            return false;
+            }
+      if (totalZipSize >= storage.bytesAvailable()) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Cannot import extension: storage %1 is full").arg(storage.displayName()));
+            return false;
+            }
+      // Check structure of the extension
+      bool hasMetadata = false;
+      bool hasAlienDirectory = false;
+      bool hasAlienFiles = false;
+      QSet<QString> acceptableFolders = { Extension::sfzsDir, Extension::soundfontsDir, Extension::templatesDir, Extension::instrumentsDir, Extension::workspacesDir };
+      for (auto fi : zipFile.fileInfoList()) {
+            if (fi.filePath == "metadata.json")
+                  hasMetadata = true;
+            else {
+                  // get folders
+                  auto path = QDir::cleanPath(fi.filePath);
+                  QStringList folders(path);
+                  while ((path = QFileInfo(path).path()).length() < folders.last().length())
+                        folders << path;
+                  if (folders.size() < 2) {
+                        hasAlienFiles = true; // in root dir
+                        break;
+                        }
+                  QString rootDir = folders.at(folders.size() - 2);
+                  if (!acceptableFolders.contains(rootDir)) {
+                        hasAlienDirectory = true; // in root dir
+                        break;
+                        }
+                  }
+            }
+      if (!hasMetadata) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Corrupted extension: no metadata.json"));
+            return false;
+            }
+      if (hasAlienDirectory) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Corrupted extension: unsupported directories in root directory"));
+            return false;
+            }
+      if (hasAlienFiles) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Corrupted extension: unsupported files in root directory"));
+            return false;
+            }
+      zipFile.close();
+
+      MQZipReader zipFile2(path);
+      // get extension id from metadata.json
+      QByteArray mdba = zipFile2.fileData("metadata.json");
+      zipFile2.close();
+      QJsonDocument loadDoc = QJsonDocument::fromJson(mdba);
+      QJsonObject mdObject = loadDoc.object();
+      QString extensionId = mdObject["id"].toString();
+      QString version = mdObject["version"].toString();
+      if (extensionId.isEmpty() || version.isEmpty()) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Corrupted extension: corrupted metadata.json"));
+            return false;
+            }
+
+      // Check if extension is already installed, ask for uninstall
+      QDir dir(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS));
+      auto dirList = dir.entryList(QStringList(extensionId), QDir::Dirs | QDir::NoDotAndDotDot);
+      bool newerVersion = false;
+      if (dirList.contains(extensionId)) {
+            QString extDirName = QString("%1/%2").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId);
+            QDir extDir(extDirName);
+            auto versionDirList = extDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+            if (versionDirList.size() > 0) {
+                  // potentially other versions
+                  // is there a more recent version?
+                  for (auto versionDir : versionDirList) {
+                        if (compareVersion(version, versionDir)) {
+                              qDebug() << "There is a newer version. We don't install";
+                              if (!MScore::noGui)
+                                    QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("A newer version is already installed"));
+                              newerVersion = true;
+                              return false;
+                              }
+                        }
+                  }
+            if (!newerVersion) {
+                  qDebug() << "found already install extension without newer version: deleting it";
+                  QDir d(QString("%1/%2").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId));
+                  if (!d.removeRecursively()) {
+                        if (!MScore::noGui)
+                              QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Error while deleting previous version of the extension: %1").arg(extensionId));
+                        return false;
+                        }
+                  }
+            }
+
+      //setup the message box
+      infoMsgBox = new QMessageBox();
+      infoMsgBox->setWindowModality(Qt::ApplicationModal);
+      infoMsgBox->setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint));
+      infoMsgBox->setTextFormat(Qt::RichText);
+      infoMsgBox->setMinimumSize(300, 100);
+      infoMsgBox->setMaximumSize(300, 100);
+      infoMsgBox->setStandardButtons(0);
+      infoMsgBox->setText(QString("<p align='center'>") + tr("Please wait, unpacking extension...") + QString("</p>"));
+
+      //setup async run of long operations
+      QFutureWatcher<bool> futureWatcherUnzip;
+      connect(&futureWatcherUnzip, SIGNAL(finished()), this, SLOT(onLongOperationFinished()));
+
+      MQZipReader* zipFile3 = new MQZipReader(path);
+      // Unzip the extension asynchronously
+      QFuture<bool> futureUnzip = QtConcurrent::run(zipFile3, &MQZipReader::extractAll, QString("%1/%2/%3").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version));
+      futureWatcherUnzip.setFuture(futureUnzip);
+      if (!MScore::noGui)
+            infoMsgBox->exec();
+      bool unzipResult = futureUnzip.result();
+      zipFile3->close();
+      delete zipFile3;
+      zipFile3 = nullptr;
+
+      if (!unzipResult) {
+            if (!MScore::noGui)
+                  QMessageBox::critical(mscore, QWidget::tr("Import Extension File"), QWidget::tr("Unable to extract files from the extension"));
+            return false;
+            }
+
+      delete newWizard;
+      newWizard = 0;
+      mscore->reloadInstrumentTemplates();
+      mscore->updateInstrumentDialog();
+
+      auto loadSoundFontAsync = [&]() {
+            // After install: add sfz to zerberus
+            QDir sfzDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::sfzsDir));
+            if (sfzDir.exists()) {
+                  // get all sfz files
+                  QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
+                  Synthesizer* s = synti->synthesizer("Zerberus");
+                  QStringList sfzs;
+                  while (it.hasNext()) {
+                        it.next();
+                        sfzs.append(it.fileName());
+                        }
+                  sfzs.sort();
+                  for (int sfzNum = 0; sfzNum < sfzs.size(); ++sfzNum)
+                        s->addSoundFont(sfzs[sfzNum]);
+
+                  if (!sfzs.isEmpty())
+                        synti->storeState();
+                  }
+
+            // After install: add soundfont to fluid
+            QDir sfDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::soundfontsDir));
+            if (sfDir.exists()) {
+                  // get all soundfont files
+                  QStringList filters("*.sf2");
+                  filters.append("*.sf3");
+                  QDirIterator it(sfzDir.absolutePath(), filters, QDir::Files, QDirIterator::Subdirectories);
+                  Synthesizer* s = synti->synthesizer("Fluid");
+                  QStringList sfs;
+                  while (it.hasNext()) {
+                        it.next();
+                        sfs.append(it.fileName());
+                        }
+                  sfs.sort();
+                  for (auto sf : sfs)
+                        s->addSoundFont(sf);
+                  if (!sfs.isEmpty())
+                        synti->storeState();
+                  }
+            };
+      if (!enableExperimental) {
+            //load soundfonts async
+            QFuture<void> futureLoadSFs = QtConcurrent::run(loadSoundFontAsync);
+            QFutureWatcher<void> futureWatcherLoadSFs;
+            futureWatcherLoadSFs.setFuture(futureLoadSFs);
+            connect(&futureWatcherLoadSFs, SIGNAL(finished()), this, SLOT(onLongOperationFinished()));
+            infoMsgBox->setText(QString("<p align='center'>") + tr("Please wait, loading soundfonts...") + QString("</p>"));
+            if (!MScore::noGui)
+                  infoMsgBox->exec();
+            else
+                  futureLoadSFs.waitForFinished();
+            }
+
+      // after install: refresh workspaces if needed
+      QDir workspacesDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::workspacesDir));
+      if (workspacesDir.exists() && !MScore::noGui) {
+            auto wsList = workspacesDir.entryInfoList(QStringList("*.workspace"), QDir::Files);
+            if (!wsList.isEmpty()) {
+                  Workspace::refreshWorkspaces();
+                  paletteBox->updateWorkspaces();
+                  paletteBox->selectWorkspace(wsList.last().absoluteFilePath());
+                  }
+            }
+      return true;
+      }
+
+//---------------------------------------------------------
+//   uninstallExtension
+//---------------------------------------------------------
+
+bool MuseScore::uninstallExtension(QString extensionId)
+      {
+      QString version = Extension::getLatestVersion(extensionId);
+      // Before install: remove sfz from zerberus
+      QDir sfzDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::sfzsDir));
+      if (sfzDir.exists()) {
+            // get all sfz files
+            QDirIterator it(sfzDir.absolutePath(), QStringList("*.sfz"), QDir::Files, QDirIterator::Subdirectories);
+            Synthesizer* s = synti->synthesizer("Zerberus");
+            bool found = it.hasNext();
+            while (it.hasNext()) {
+                  it.next();
+                  s->removeSoundFont(it.fileInfo().absoluteFilePath());
+                  }
+            if (found)
+                  synti->storeState();
+            }
+      // Before install: remove soundfont from fluid
+      QDir sfDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::soundfontsDir));
+      if (sfDir.exists()) {
+            // get all soundfont files
+            QStringList filters("*.sf2");
+            filters.append("*.sf3");
+            QDirIterator it(sfzDir.absolutePath(), filters, QDir::Files, QDirIterator::Subdirectories);
+            Synthesizer* s = synti->synthesizer("Fluid");
+            bool found = it.hasNext();
+            while (it.hasNext()) {
+                  it.next();
+                  s->removeSoundFont(it.fileInfo().absoluteFilePath());
+                  }
+            if (found)
+                  synti->storeState();
+            }
+      bool refreshWorkspaces = false;
+      QDir workspacesDir(QString("%1/%2/%3/%4").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId).arg(version).arg(Extension::workspacesDir));
+      if (workspacesDir.exists()) {
+            auto wsList = workspacesDir.entryInfoList(QStringList("*.workspace"), QDir::Files);
+            if (!wsList.isEmpty())
+                  refreshWorkspaces = true;
+            }
+
+      // delete directories
+      QDir extensionDir(QString("%1/%2").arg(preferences.getString(PREF_APP_PATHS_MYEXTENSIONS)).arg(extensionId));
+      extensionDir.removeRecursively();
+
+      // update UI
+      delete newWizard;
+      newWizard = 0;
+      mscore->reloadInstrumentTemplates();
+      mscore->updateInstrumentDialog();
+      if (refreshWorkspaces) {
+            Workspace::refreshWorkspaces();
+            paletteBox->updateWorkspaces();
+            paletteBox->selectWorkspace("Basic");
+            }
+      return true;
       }
 
 //---------------------------------------------------------
@@ -351,7 +908,8 @@ void MuseScore::preferencesChanged()
 MuseScore::MuseScore()
    : QMainWindow()
       {
-      QScreen* screen      = QGuiApplication::primaryScreen();
+      QScreen* screen = QGuiApplication::primaryScreen();
+      if (userDPI == 0.0) {
 #if defined(Q_OS_WIN)
       if (QSysInfo::WindowsVersion <= QSysInfo::WV_WINDOWS7)
             _physicalDotsPerInch = screen->logicalDotsPerInch() * screen->devicePixelRatio();
@@ -360,6 +918,10 @@ MuseScore::MuseScore()
 #else
       _physicalDotsPerInch = screen->physicalDotsPerInch();        // physical resolution
 #endif
+            }
+      else {
+            _physicalDotsPerInch = userDPI;
+            }
       if (guiScaling == 0.0) {
             // set scale for icons, palette elements, window sizes, etc
             // the default values are hard coded in pixel sizes and assume ~96 DPI
@@ -369,22 +931,22 @@ MuseScore::MuseScore()
                   guiScaling = 1.0;
             }
 
+      MScore::pixelRatio = DPI / screen->logicalDotsPerInch();
+
+      setObjectName("MuseScore");
       _sstate = STATE_INIT;
       setWindowTitle(QString(MUSESCORE_NAME_VERSION));
-      setIconSize(QSize(preferences.iconWidth * guiScaling, preferences.iconHeight * guiScaling));
+      setIconSize(QSize(preferences.getInt(PREF_UI_THEME_ICONWIDTH) * guiScaling, preferences.getInt(PREF_UI_THEME_ICONHEIGHT) * guiScaling));
 
-      ucheck = new UpdateChecker();
+      ucheck = new UpdateChecker(this);
+      packUChecker = new ExtensionsUpdateChecker(this);
 
       setAcceptDrops(true);
       setFocusPolicy(Qt::NoFocus);
 
-      if (!preferences.styleName.isEmpty()) {
-            QFile f(preferences.styleName);
-            if (f.open(QIODevice::ReadOnly)) {
-                  MScore::defaultStyle()->load(&f);
-                  f.close();
-                  }
-            }
+#ifdef SCRIPT_INTERFACE
+      pluginManager = new PluginManager(0);
+#endif
 
       if (!converterMode && !pluginMode) {
             _loginManager = new LoginManager(this);
@@ -395,7 +957,6 @@ MuseScore::MuseScore()
                   lang = "en";
 
             QString s = getSharePath() + "manual/doc_" + lang + ".qhc";
-            qDebug("init Help from: <%s>", qPrintable(s));
             _helpEngine = new QHelpEngine(s, this);
             if (!_helpEngine->setupData()) {
                   qDebug("cannot setup data for help engine: %s", qPrintable(_helpEngine->error()));
@@ -407,13 +968,10 @@ MuseScore::MuseScore()
 
       _positionLabel = new QLabel;
       _positionLabel->setObjectName("decoration widget");  // this prevents animations
-      _positionLabel->setToolTip(tr("Measure:Beat:Tick"));
 
       _modeText = new QLabel;
       _modeText->setAutoFillBackground(false);
       _modeText->setObjectName("modeLabel");
-
-      _statusBar = new QStatusBar;
 
       hRasterAction   = getAction("hraster");
       vRasterAction   = getAction("vraster");
@@ -424,6 +982,7 @@ MuseScore::MuseScore()
       countInAction   = getAction("countin");
       panAction       = getAction("pan");
 
+      _statusBar = new QStatusBar;
       _statusBar->addPermanentWidget(new QWidget(this), 2);
       _statusBar->addPermanentWidget(new QWidget(this), 100);
       _statusBar->addPermanentWidget(_modeText, 0);
@@ -433,14 +992,15 @@ MuseScore::MuseScore()
             layerSwitch->setToolTip(tr("Switch layer"));
             connect(layerSwitch, SIGNAL(activated(const QString&)), SLOT(switchLayer(const QString&)));
             playMode = new QComboBox(this);
-            playMode->addItem(tr("synthesizer"));
-            playMode->addItem(tr("audio track"));
+            playMode->addItem(tr("Synthesizer"));
+            playMode->addItem(tr("Audio track"));
             playMode->setToolTip(tr("Switch play mode"));
             connect(playMode, SIGNAL(activated(int)), SLOT(switchPlayMode(int)));
 
             _statusBar->addPermanentWidget(playMode);
             _statusBar->addPermanentWidget(layerSwitch);
             }
+
       _statusBar->addPermanentWidget(_positionLabel, 0);
 
       setStatusBar(_statusBar);
@@ -469,7 +1029,13 @@ MuseScore::MuseScore()
       _navigator->setFocusPolicy(Qt::NoFocus);
       mainWindow->addWidget(_navigator);
       scorePageLayoutChanged();
-      showNavigator(preferences.showNavigator);
+      showNavigator(preferences.getBool(PREF_UI_APP_STARTUP_SHOWNAVIGATOR));
+
+      _timeline = new TDockWidget;
+      _timeline->setFocusPolicy(Qt::NoFocus);
+      addDockWidget(Qt::BottomDockWidgetArea, _timeline);
+      scorePageLayoutChanged();
+      showTimeline(false);
 
       mainWindow->setStretchFactor(0, 1);
       mainWindow->setStretchFactor(1, 0);
@@ -490,12 +1056,12 @@ MuseScore::MuseScore()
       hl->setMargin(0);
       hl->setSpacing(0);
       importmidiShowPanel->setLayout(hl);
-      QPushButton *b = new QPushButton(tr("Show MIDI import panel"));
-      b->setFocusPolicy(Qt::ClickFocus);
+      showMidiImportButton = new QPushButton();
+      showMidiImportButton->setFocusPolicy(Qt::ClickFocus);
       importmidiShowPanel->setVisible(false);
-      connect(b, SIGNAL(clicked()), SLOT(showMidiImportPanel()));
+      connect(showMidiImportButton, SIGNAL(clicked()), SLOT(showMidiImportPanel()));
       connect(importmidiPanel, SIGNAL(closeClicked()), importmidiShowPanel, SLOT(show()));
-      hl->addWidget(b);
+      hl->addWidget(showMidiImportButton);
       QSpacerItem *item = new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Fixed);
       hl->addSpacerItem(item);
       envelope->addWidget(importmidiShowPanel);
@@ -532,28 +1098,30 @@ MuseScore::MuseScore()
       QAction* a;
 #ifdef HAS_MIDI
       a  = getAction("midi-on");
-      a->setEnabled(preferences.enableMidiInput);
+      a->setEnabled(preferences.getBool(PREF_IO_MIDI_ENABLEINPUT));
       a->setChecked(_midiinEnabled);
 #endif
 
       getAction("undo")->setEnabled(false);
       getAction("redo")->setEnabled(false);
       getAction("paste")->setEnabled(false);
+      getAction("swap")->setEnabled(false);
       selectionChanged(SelState::NONE);
 
       //---------------------------------------------------
-      //    File Action
+      //    File Tool Bar
       //---------------------------------------------------
 
-      //---------------------
-      //    Tool Bar
-      //---------------------
-
-      fileTools = addToolBar(tr("File Operations"));
+      fileTools = addToolBar("");
       fileTools->setObjectName("file-operations");
-
-      for (auto i : { "file-new", "file-open", "file-save", "print", "undo", "redo"})
-            fileTools->addWidget(new AccessibleToolButton(fileTools, getAction(i)));
+      if (qApp->layoutDirection() == Qt::LayoutDirection::LeftToRight) {
+            for (auto i : { "file-new", "file-open", "file-save", "print", "undo", "redo"})
+                  fileTools->addWidget(new AccessibleToolButton(fileTools, getAction(i)));
+            }
+      else {
+            for (auto i : { "undo", "redo", "print", "file-save", "file-open", "file-new"})
+                  fileTools->addWidget(new AccessibleToolButton(fileTools, getAction(i)));
+            }
 
       fileTools->addSeparator();
       mag = new MagBox;
@@ -565,16 +1133,18 @@ MuseScore::MuseScore()
 #else
       viewModeCombo->setFocusPolicy(Qt::TabFocus);
 #endif
-      viewModeCombo->setAccessibleName(tr("View Mode"));
-      viewModeCombo->setFixedHeight(preferences.iconHeight + 8);  // hack
-      viewModeCombo->addItem(tr("Page View"), int(LayoutMode::PAGE));
-      viewModeCombo->addItem(tr("Continuous View"), int(LayoutMode::LINE));
-      if (enableExperimental)
-            viewModeCombo->addItem(tr("Single Page"), int(LayoutMode::SYSTEM));
+      viewModeCombo->setFixedHeight(preferences.getInt(PREF_UI_THEME_ICONHEIGHT) + 8);  // hack
+      viewModeCombo->addItem("",       int(LayoutMode::PAGE));
+      viewModeCombo->addItem("", int(LayoutMode::LINE));
+      viewModeCombo->addItem("", int(LayoutMode::SYSTEM));
       connect(viewModeCombo, SIGNAL(activated(int)), SLOT(switchLayoutMode(int)));
       fileTools->addWidget(viewModeCombo);
 
-      transportTools = addToolBar(tr("Transport Tools"));
+      //---------------------
+      //    Transport Tool Bar
+      //---------------------
+
+      transportTools = addToolBar("");
       transportTools->setObjectName("transport-tools");
 #ifdef HAS_MIDI
       transportTools->addWidget(new AccessibleToolButton(transportTools, getAction("midi-on")));
@@ -586,18 +1156,28 @@ MuseScore::MuseScore()
       transportTools->addWidget(new AccessibleToolButton(transportTools, getAction("loop")));
       transportTools->addSeparator();
       QAction* repeatAction = getAction("repeat");
-      repeatAction->setChecked(MScore::playRepeats);
+      repeatAction->setChecked(preferences.getBool(PREF_APP_PLAYBACK_PLAYREPEATS));
       transportTools->addWidget(new AccessibleToolButton(transportTools, repeatAction));
       transportTools->addWidget(new AccessibleToolButton(transportTools, getAction("pan")));
       transportTools->addWidget(new AccessibleToolButton(transportTools, metronomeAction));
 
-      cpitchTools = addToolBar(tr("Concert Pitch"));
-      cpitchTools->setObjectName("pitch-tools");
-      cpitchTools->addWidget(new AccessibleToolButton( cpitchTools, getAction("concert-pitch")));
+      //-------------------------------
+      //    Concert Pitch Tool Bar
+      //-------------------------------
 
-      QToolBar* foto = addToolBar(tr("Image Capture"));
-      foto->setObjectName("foto-tools");
-      foto->addWidget(new AccessibleToolButton(foto, getAction("fotomode")));
+      cpitchTools = addToolBar("");
+      cpitchTools->setObjectName("pitch-tools");
+      a = getAction("concert-pitch");
+      a->setCheckable(true);
+      cpitchTools->addWidget(new AccessibleToolButton(cpitchTools, a));
+
+      //-------------------------------
+      //    Image Capture Tool Bar
+      //-------------------------------
+
+      fotoTools = addToolBar("");
+      fotoTools->setObjectName("foto-tools");
+      fotoTools->addWidget(new AccessibleToolButton(fotoTools, getAction("fotomode")));
 
       addToolBarBreak();
 
@@ -605,43 +1185,10 @@ MuseScore::MuseScore()
       //    Note Input Tool Bar
       //-------------------------------
 
-      entryTools = addToolBar(tr("Note Input"));
+      entryTools = addToolBar("");
       entryTools->setObjectName("entry-tools");
 
-      static const char* sl1[] = {
-            "note-input",
-            "repitch", "pad-note-128", "pad-note-64", "pad-note-32", "pad-note-16",
-            "pad-note-8",
-            "pad-note-4", "pad-note-2", "pad-note-1", "note-breve", "note-longa",
-            "pad-dot",
-            "pad-dotdot", "tie", "", "pad-rest", "",
-            "sharp2", "sharp", "nat", "flat", "flat2", "flip", ""
-            };
-
-      for (auto s : sl1) {
-            if (!*s)
-                  entryTools->addSeparator();
-            else
-                  entryTools->addAction(getAction(s));
-            }
-
-      static const char* vbsh { "QToolButton:checked, QToolButton:pressed { color: white;}" };
-
-      for (int i = 0; i < VOICES; ++i) {
-            QToolButton* tb = new QToolButton(this);
-            if (preferences.globalStyle == MuseScoreStyleType::LIGHT)
-                  tb->setStyleSheet(vbsh);
-            tb->setToolButtonStyle(Qt::ToolButtonTextOnly);
-            QPalette p(tb->palette());
-            p.setColor(QPalette::Base, MScore::selectColor[i]);
-            tb->setPalette(p);
-            QAction* a = getAction(voiceActions[i]);
-            a->setCheckable(true);
-            tb->setDefaultAction(a);
-            tb->setFocusPolicy(Qt::ClickFocus);
-            entryTools->addWidget(tb);
-            }
-
+      populateNoteInputMenu();
 
       //---------------------
       //    Menus
@@ -653,44 +1200,58 @@ MuseScore::MuseScore()
       //    Menu File
       //---------------------
 
-      _fileMenu = mb->addMenu(tr("&File"));
-      _fileMenu->setObjectName("File");
+      menuFile = mb->addMenu("");
+      menuFile->setObjectName("File");
 
-      _fileMenu->addAction(getAction("file-new"));
-      _fileMenu->addAction(getAction("file-open"));
+      a = getAction("startcenter");
+      a->setCheckable(true);
+      menuFile->addAction(a);
+      menuFile->addAction(getAction("file-new"));
+      menuFile->addAction(getAction("file-open"));
 
-      openRecent = _fileMenu->addMenu(tr("Open &Recent"));
+      openRecent = menuFile->addMenu("");
 
       connect(openRecent, SIGNAL(aboutToShow()), SLOT(openRecentMenu()));
       connect(openRecent, SIGNAL(triggered(QAction*)), SLOT(selectScore(QAction*)));
 
       for (auto i : {
-            "", "file-save", "file-save-as", "file-save-a-copy",
-            "file-save-selection", "file-save-online", "file-export", "file-part-export", "file-import-pdf",
-            "", "file-close", "", "parts", "album" }) {
+            "",
+            "file-save",
+            "file-save-as",
+            "file-save-a-copy",
+            "file-save-selection",
+            "file-save-online",
+            "file-export",
+            "file-part-export",
+            "file-import-pdf",
+            "",
+            "file-close",
+            "",
+            "parts",
+            "album" }) {
             if (!*i)
-                  _fileMenu->addSeparator();
-            else
-                  _fileMenu->addAction(getAction(i));
+                  menuFile->addSeparator();
+            else if (enableExperimental || strcmp(i,"file-save-online") != 0)
+                  menuFile->addAction(getAction(i));
             }
       if (enableExperimental)
-            _fileMenu->addAction(getAction("layer"));
-      _fileMenu->addSeparator();
-      _fileMenu->addAction(getAction("edit-info"));
+            menuFile->addAction(getAction("layer"));
+      menuFile->addSeparator();
+      menuFile->addAction(getAction("edit-info"));
       if (enableExperimental)
-            _fileMenu->addAction(getAction("media"));
-      _fileMenu->addSeparator();
-      _fileMenu->addAction(getAction("print"));
+            menuFile->addAction(getAction("media"));
+      menuFile->addSeparator();
+      menuFile->addAction(getAction("print"));
 #ifndef Q_OS_MAC
-      _fileMenu->addSeparator();
-      _fileMenu->addAction(getAction("quit"));
+      menuFile->addSeparator();
+      menuFile->addAction(getAction("quit"));
 #endif
 
       //---------------------
       //    Menu Edit
       //---------------------
 
-      menuEdit = mb->addMenu(tr("&Edit"));
+      menuEdit = mb->addMenu("");
       menuEdit->setObjectName("Edit");
       menuEdit->addAction(getAction("undo"));
       menuEdit->addAction(getAction("redo"));
@@ -699,6 +1260,8 @@ MuseScore::MuseScore()
       menuEdit->addAction(getAction("cut"));
       menuEdit->addAction(getAction("copy"));
       menuEdit->addAction(getAction("paste"));
+      menuEdit->addAction(getAction("swap"));
+      menuEdit->addAction(getAction("delete"));
 
       menuEdit->addSeparator();
       menuEdit->addAction(getAction("select-all"));
@@ -708,21 +1271,6 @@ MuseScore::MuseScore()
       menuEdit->addSeparator();
 
       menuEdit->addAction(getAction("instruments"));
-
-      QMenu* menuMeasure = new QMenu(tr("&Measure"));
-      for (auto i : { "delete-measures", "split-measure", "join-measure" })
-            menuMeasure->addAction(getAction(i));
-      menuEdit->addMenu(menuMeasure);
-
-      QMenu* menuTools = new QMenu(tr("&Tools"));
-      for (auto i : { "add-remove-breaks", "explode", "implode", "slash-fill", "slash-rhythm", "resequence-rehearsal-marks", "copy-lyrics-to-clipboard" })
-            menuTools->addAction(getAction(i));
-      menuEdit->addMenu(menuTools);
-
-      QMenu* menuVoices = new QMenu(tr("&Voices"));
-      for (auto i : { "voice-x12", "voice-x13", "voice-x14", "voice-x23", "voice-x24", "voice-x34" })
-            menuVoices->addAction(getAction(i));
-      menuEdit->addMenu(menuVoices);
 
 #ifdef NDEBUG
       if (enableExperimental) {
@@ -734,23 +1282,15 @@ MuseScore::MuseScore()
 #endif
 
       menuEdit->addSeparator();
-      menuWorkspaces = new QMenu(tr("W&orkspaces"));
-      connect(menuWorkspaces, SIGNAL(aboutToShow()), SLOT(showWorkspaceMenu()));
-      menuEdit->addMenu(menuWorkspaces);
-
-      QAction* pref = menuEdit->addAction(tr("&Preferences..."), this, SLOT(startPreferenceDialog()));
+      pref = menuEdit->addAction("", this, SLOT(startPreferenceDialog()));
       pref->setMenuRole(QAction::PreferencesRole);
 
       //---------------------
       //    Menu View
       //---------------------
 
-      menuView = mb->addMenu(tr("&View"));
+      menuView = mb->addMenu("");
       menuView->setObjectName("View");
-
-      a = getAction("startcenter");
-      a->setCheckable(true);
-      menuView->addAction(a);
 
       a = getAction("toggle-palette");
       a->setCheckable(true);
@@ -763,20 +1303,22 @@ MuseScore::MuseScore()
       a = getAction("inspector");
       a->setCheckable(true);
       menuView->addAction(a);
-
 #ifdef OMR
       a = getAction("omr");
       a->setCheckable(true);
       menuView->addAction(a);
 #endif
-
       playId = getAction("toggle-playpanel");
       playId->setCheckable(true);
       menuView->addAction(playId);
 
       a = getAction("toggle-navigator");
       a->setCheckable(true);
-      a->setChecked(preferences.showNavigator);
+      a->setChecked(preferences.getBool(PREF_UI_APP_STARTUP_SHOWNAVIGATOR));
+      menuView->addAction(a);
+
+      a = getAction("toggle-timeline");
+      a->setCheckable(true);
       menuView->addAction(a);
 
       a = getAction("toggle-mixer");
@@ -800,20 +1342,51 @@ MuseScore::MuseScore()
       menuView->addAction(getAction("zoomout"));
       menuView->addSeparator();
 
-//      a = getAction("toggle-transport");
-//      a->setCheckable(true);
-//      a->setChecked(transportTools->isVisible());
-//      connect(transportTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
-//      menuView->addAction(a);
+      menuToolbars = new QMenu();
 
-//      a = getAction("toggle-noteinput");
-//      a->setCheckable(true);
-//      a->setChecked(true);
-//      menuView->addAction(a);
+      a = getAction("toggle-fileoperations");
+      a->setCheckable(true);
+      a->setChecked(fileTools->isVisible());
+      connect(fileTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-transport");
+      a->setCheckable(true);
+      a->setChecked(transportTools->isVisible());
+      connect(transportTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-concertpitch");
+      a->setCheckable(true);
+      a->setChecked(cpitchTools->isVisible());
+      connect(cpitchTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-imagecapture");
+      a->setCheckable(true);
+      a->setChecked(fotoTools->isVisible());
+      connect(fotoTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      a = getAction("toggle-noteinput");
+      a->setCheckable(true);
+      a->setChecked(entryTools->isVisible());
+      connect(entryTools, SIGNAL(visibilityChanged(bool)), a, SLOT(setChecked(bool)));
+      menuToolbars->addAction(a);
+
+      menuToolbars->addSeparator();
+
+      menuToolbars->addAction(getAction("edit-toolbars"));
+
+      menuView->addMenu(menuToolbars);
+
+      menuWorkspaces = new QMenu();
+      connect(menuWorkspaces, SIGNAL(aboutToShow()), SLOT(showWorkspaceMenu()));
+      menuView->addMenu(menuWorkspaces);
 
       a = getAction("toggle-statusbar");
       a->setCheckable(true);
-      a->setChecked(true);
+      a->setChecked(preferences.getBool(PREF_UI_APP_SHOWSTATUSBAR));
       menuView->addAction(a);
 
       menuView->addSeparator();
@@ -829,33 +1402,26 @@ MuseScore::MuseScore()
       menuView->addAction(getAction("show-unprintable"));
       menuView->addAction(getAction("show-frames"));
       menuView->addAction(getAction("show-pageborders"));
+      menuView->addAction(getAction("mark-irregular"));
       menuView->addSeparator();
-      
-#ifndef Q_OS_MAC
+
       a = getAction("fullscreen");
       a->setCheckable(true);
       a->setChecked(false);
+#ifndef Q_OS_MAC
       menuView->addAction(a);
 #endif
 
       //---------------------
-      //    Menu Create
+      //    Menu Add
       //---------------------
 
-      mb->addMenu(genCreateMenu(mb));
+      menuAdd = mb->addMenu("");
+      menuAdd->setObjectName("Add");
 
-      //---------------------
-      //    Menu Notes
-      //---------------------
-
-      menuNotes = mb->addMenu(qApp->translate("MenuNotes", "&Notes"));
-      menuNotes->setObjectName("Notes");
-
-      menuNotes->addAction(getAction("note-input"));
-      menuNotes->addAction(getAction("pitch-spell"));
-      menuNotes->addSeparator();
-
-      QMenu* menuAddPitch = new QMenu(tr("Add N&ote"));
+      menuAddPitch = new QMenu();
+      menuAddPitch->addAction(getAction("note-input"));
+      menuAddPitch->addSeparator();
 
       for (int i = 0; i < 7; ++i) {
             char buffer[8];
@@ -863,17 +1429,16 @@ MuseScore::MuseScore()
             a = getAction(buffer);
             menuAddPitch->addAction(a);
             }
-
-      menuNotes->addMenu(menuAddPitch);
-
+      menuAddPitch->addSeparator();
       for (int i = 0; i < 7; ++i) {
             char buffer[8];
             sprintf(buffer, "chord-%c", "cdefgab"[i]);
             a = getAction(buffer);
             menuAddPitch->addAction(a);
             }
+      menuAdd->addMenu(menuAddPitch);
 
-      QMenu* menuAddInterval = new QMenu(tr("Add &Interval"));
+      menuAddInterval = new QMenu();
       for (int i = 1; i < 10; ++i) {
             char buffer[16];
             sprintf(buffer, "interval%d", i);
@@ -887,53 +1452,136 @@ MuseScore::MuseScore()
             a = getAction(buffer);
             menuAddInterval->addAction(a);
             }
-      menuNotes->addMenu(menuAddInterval);
+      menuAdd->addMenu(menuAddInterval);
 
-      QMenu* menuNtole = new QMenu(tr("T&uplets"));
+      menuTuplet = new QMenu();
       for (auto i : { "duplet", "triplet", "quadruplet", "quintuplet", "sextuplet",
-         "septuplet", "octuplet", "nonuplet", "tuplet-dialog" })
-            menuNtole->addAction(getAction(i));
-      menuNotes->addMenu(menuNtole);
+            "septuplet", "octuplet", "nonuplet", "tuplet-dialog" })
+            menuTuplet->addAction(getAction(i));
+      menuAdd->addMenu(menuTuplet);
 
-      menuNotes->addSeparator();
-      menuNotes->addAction(getAction("transpose"));
-      a = getAction("concert-pitch");
-      a->setCheckable(true);
-      menuNotes->addAction(a);
+      menuAdd->addSeparator();
 
-      //---------------------
-      //    Menu Layout
-      //---------------------
+      menuAddMeasures = new QMenu("");
+      menuAddMeasures->addAction(getAction("insert-measure"));
+      menuAddMeasures->addAction(getAction("insert-measures"));
+      menuAddMeasures->addSeparator();
+      menuAddMeasures->addAction(getAction("append-measure"));
+      menuAddMeasures->addAction(getAction("append-measures"));
+      menuAdd->addMenu(menuAddMeasures);
 
-      menuLayout = mb->addMenu(tr("&Layout"));
-      menuLayout->setObjectName("Layout");
-
-      for (auto i : { "page-settings", "reset", "stretch+", "stretch-", "reset-stretch", "reset-beammode" }) {
-            QAction* action = getAction(i);
-            action->setMenuRole(QAction::NoRole);
-            menuLayout->addAction(action);
-            }
-
-      //---------------------
-      //    Menu Style
-      //---------------------
-
-      menuStyle = mb->addMenu(tr("&Style"));
-      menuStyle->setObjectName("Style");
-      menuStyle->addAction(getAction("edit-style"));
-      menuStyle->addAction(getAction("edit-text-style"));
+      menuAddFrames = new QMenu();
+      menuAddFrames->addAction(getAction("insert-hbox"));
+      menuAddFrames->addAction(getAction("insert-vbox"));
+      menuAddFrames->addAction(getAction("insert-textframe"));
       if (enableExperimental)
-            menuStyle->addAction(getAction("edit-harmony"));
+            menuAddFrames->addAction(getAction("insert-fretframe"));
+      menuAddFrames->addSeparator();
+      menuAddFrames->addAction(getAction("append-hbox"));
+      menuAddFrames->addAction(getAction("append-vbox"));
+      menuAddFrames->addAction(getAction("append-textframe"));
+      menuAdd->addMenu(menuAddFrames);
 
-      menuStyle->addSeparator();
-      menuStyle->addAction(getAction("load-style"));
-      menuStyle->addAction(getAction("save-style"));
+      menuAddText = new QMenu();
+      menuAddText->addAction(getAction("title-text"));
+      menuAddText->addAction(getAction("subtitle-text"));
+      menuAddText->addAction(getAction("composer-text"));
+      menuAddText->addAction(getAction("poet-text"));
+      menuAddText->addAction(getAction("part-text"));
+      menuAddText->addSeparator();
+      menuAddText->addAction(getAction("system-text"));
+      menuAddText->addAction(getAction("staff-text"));
+      menuAddText->addAction(getAction("expression-text"));
+      menuAddText->addAction(getAction("chord-text"));
+      menuAddText->addAction(getAction("rehearsalmark-text"));
+      menuAddText->addAction(getAction("instrument-change-text"));
+      menuAddText->addAction(getAction("fingering-text"));
+      menuAddText->addSeparator();
+      menuAddText->addAction(getAction("lyrics"));
+      menuAddText->addAction(getAction("figured-bass"));
+      menuAddText->addAction(getAction("tempo"));
+      menuAdd->addMenu(menuAddText);
+
+      menuAddLines = new QMenu();
+      menuAddLines->addAction(getAction("add-slur"));
+      menuAddLines->addAction(getAction("add-hairpin"));
+      menuAddLines->addAction(getAction("add-hairpin-reverse"));
+      menuAddLines->addAction(getAction("add-8va"));
+      menuAddLines->addAction(getAction("add-8vb"));
+      menuAddLines->addAction(getAction("add-noteline"));
+      menuAdd->addMenu(menuAddLines);
+
+      //---------------------
+      //    Menu Format
+      //---------------------
+
+      menuFormat = mb->addMenu("");
+      menuFormat->setObjectName("Format");
+
+      menuFormat->addAction(getAction("edit-style"));
+      QAction* pageSettingsAction = getAction("page-settings");
+      // in some locale (fr), page settings ends up in Application menu on mac
+      // this line prevents it.
+      pageSettingsAction->setMenuRole(QAction::NoRole);
+      menuFormat->addAction(pageSettingsAction);
+      menuFormat->addSeparator();
+
+      menuFormat->addAction(getAction("add-remove-breaks"));
+
+      QMenu* menuStretch = new QMenu(tr("&Stretch"));
+      for (auto i : { "stretch+", "stretch-", "reset-stretch" })
+            menuStretch->addAction(getAction(i));
+      menuFormat->addMenu(menuStretch);
+      menuFormat->addSeparator();
+
+      menuFormat->addAction(getAction("reset-beammode"));
+      menuFormat->addAction(getAction("reset"));
+      menuFormat->addSeparator();
+
+      if (enableExperimental)
+            menuFormat->addAction(getAction("edit-harmony"));
+
+      menuFormat->addSeparator();
+      menuFormat->addAction(getAction("load-style"));
+      menuFormat->addAction(getAction("save-style"));
+
+      //---------------------
+      //    Menu Tools
+      //---------------------
+
+      menuTools = mb->addMenu("");
+      menuTools->setObjectName("Tools");
+
+      menuTools->addAction(getAction("transpose"));
+      menuTools->addSeparator();
+      menuTools->addAction(getAction("explode"));
+      menuTools->addAction(getAction("implode"));
+
+      menuVoices = new QMenu("");
+      for (auto i : { "voice-x12", "voice-x13", "voice-x14", "voice-x23", "voice-x24", "voice-x34" })
+            menuVoices->addAction(getAction(i));
+      menuTools->addMenu(menuVoices);
+      menuTools->addSeparator();
+
+      menuTools->addAction(getAction("slash-fill"));
+      menuTools->addAction(getAction("slash-rhythm"));
+      menuTools->addSeparator();
+
+      menuTools->addAction(getAction("pitch-spell"));
+      menuTools->addAction(getAction("reset-groupings"));
+      menuTools->addAction(getAction("resequence-rehearsal-marks"));
+      menuTools->addSeparator();
+
+      menuTools->addAction(getAction("copy-lyrics-to-clipboard"));
+      menuTools->addAction(getAction("fotomode"));
+
+      menuTools->addAction(getAction("del-empty-measures"));
 
       //---------------------
       //    Menu Plugins
       //---------------------
 
-      QMenu* menuPlugins = mb->addMenu(tr("&Plugins"));
+      menuPlugins = mb->addMenu("");
       menuPlugins->setObjectName("Plugins");
 
       menuPlugins->addAction(getAction("plugin-manager"));
@@ -944,13 +1592,47 @@ MuseScore::MuseScore()
 
       menuPlugins->addSeparator();
 
+      //---------------------
+      //    Menu Debug
+      //---------------------
+
+#ifndef NDEBUG
+      QMenu* menuDebug = mb->addMenu("Debug");
+      menuDebug->setObjectName("Debug");
+      a = getAction("no-horizontal-stretch");
+      a->setCheckable(true);
+      menuDebug->addAction(a);
+      a = getAction("no-vertical-stretch");
+      a->setCheckable(true);
+      menuDebug->addAction(a);
+      menuDebug->addSeparator();
+      a = getAction("show-segment-shapes");
+      a->setCheckable(true);
+      menuDebug->addAction(a);
+      a = getAction("show-measure-shapes");
+      a->setCheckable(true);
+      menuDebug->addAction(a);
+      a = getAction("show-bounding-rect");
+      a->setCheckable(true);
+      menuDebug->addAction(a);
+      a = getAction("show-corrupted-measures");
+      a->setCheckable(true);
+      a->setChecked(true);
+      menuDebug->addAction(a);
+      a = getAction("relayout");
+      menuDebug->addAction(a);
+      a = getAction("autoplace-slurs");
+      a->setCheckable(true);
+      a->setChecked(MScore::autoplaceSlurs);
+      menuDebug->addAction(a);
+#endif
 
       //---------------------
       //    Menu Help
       //---------------------
 
       mb->addSeparator();
-      QMenu* menuHelp = mb->addMenu(tr("&Help"));
+      menuHelp = mb->addMenu("");
       menuHelp->setObjectName("Help");
 
 #if 0
@@ -960,54 +1642,55 @@ MuseScore::MuseScore()
             connect(menuHelp, SIGNAL(aboutToShow()), hw, SLOT(setFocus()));
             }
 #endif
-      //menuHelp->addAction(getAction("local-help"));
-      menuHelp->addAction(tr("&Online Handbook"), this, SLOT(helpBrowser1()));
+      //menuHelp->addAction(getAction("help"));
+      onlineHandbookAction = menuHelp->addAction("", this, SLOT(helpBrowser1()));
 
       menuHelp->addSeparator();
 
-      QAction* aboutAction = new QAction(tr("&About..."), 0);
+      aboutAction = new QAction("", 0);
 
       aboutAction->setMenuRole(QAction::AboutRole);
       connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
       menuHelp->addAction(aboutAction);
 
-      QAction* aboutQtAction = new QAction(tr("About &Qt..."), 0);
+      aboutQtAction = new QAction("", 0);
       aboutQtAction->setMenuRole(QAction::AboutQtRole);
       connect(aboutQtAction, SIGNAL(triggered()), this, SLOT(aboutQt()));
       menuHelp->addAction(aboutQtAction);
 
-      QAction* aboutMusicXMLAction = new QAction(tr("About &MusicXML..."), 0);
+      aboutMusicXMLAction = new QAction("", 0);
       aboutMusicXMLAction->setMenuRole(QAction::ApplicationSpecificRole);
       connect(aboutMusicXMLAction, SIGNAL(triggered()), this, SLOT(aboutMusicXML()));
       menuHelp->addAction(aboutMusicXMLAction);
 
 #if defined(Q_OS_MAC) || defined(Q_OS_WIN)
-      menuHelp->addAction(tr("Check for &Update"), this, SLOT(checkForUpdate()));
+#if not defined(FOR_WINSTORE)
+      checkForUpdateAction = menuHelp->addAction("", this, SLOT(checkForUpdate()));
 #endif
-
+#endif
       menuHelp->addSeparator();
-      menuHelp->addAction(tr("Ask for Help"), this, SLOT(askForHelp()));
-      menuHelp->addAction(tr("Report a Bug"), this, SLOT(reportBug()));
+      askForHelpAction = menuHelp->addAction("", this, SLOT(askForHelp()));
+      reportBugAction = menuHelp->addAction("", this, SLOT(reportBug()));
 
       menuHelp->addSeparator();
       menuHelp->addAction(getAction("resource-manager"));
       menuHelp->addSeparator();
-      menuHelp->addAction(tr("Revert to Factory Settings"), this, SLOT(resetAndRestart()));
+      revertToFactoryAction = menuHelp->addAction("", this, SLOT(resetAndRestart()));
 
-      //accessibility for menus
-      foreach (QMenu* menu, mb->findChildren<QMenu*>()) {
-            menu->setAccessibleName(menu->objectName());
-            menu->setAccessibleDescription(Shortcut::getMenuShortcutString(menu));
+      if (!MScore::noGui) {
+            retranslate(true);
+            //accessibility for menus
+            for (QMenu* menu : mb->findChildren<QMenu*>()) {
+                  menu->setAccessibleName(menu->objectName());
+                  menu->setAccessibleDescription(Shortcut::getMenuShortcutString(menu));
+                  }
             }
 
       setCentralWidget(envelope);
 
-      // load cascading instrument templates
-      loadInstrumentTemplates(preferences.instrumentList1);
-      if (!preferences.instrumentList2.isEmpty())
-            loadInstrumentTemplates(preferences.instrumentList2);
+      if (!MScore::noGui)
+            preferencesChanged();
 
-      preferencesChanged();
       if (seq) {
             connect(seq, SIGNAL(started()), SLOT(seqStarted()));
             connect(seq, SIGNAL(stopped()), SLOT(seqStopped()));
@@ -1017,11 +1700,15 @@ MuseScore::MuseScore()
       QClipboard* cb = QApplication::clipboard();
       connect(cb, SIGNAL(dataChanged()), SLOT(clipboardChanged()));
       connect(cb, SIGNAL(selectionChanged()), SLOT(clipboardChanged()));
+
       autoSaveTimer = new QTimer(this);
       autoSaveTimer->setSingleShot(true);
       connect(autoSaveTimer, SIGNAL(timeout()), this, SLOT(autoSaveTimerTimeout()));
       initOsc();
       startAutoSave();
+
+      QInputMethod* im = QGuiApplication::inputMethod();
+      connect(im, SIGNAL(localeChanged()), SLOT(inputMethodLocaleChanged()));
 
       if (enableExperimental) {
             cornerLabel = new QLabel(this);
@@ -1034,6 +1721,78 @@ MuseScore::MuseScore()
 MuseScore::~MuseScore()
       {
       delete synti;
+      }
+
+//---------------------------------------------------------
+//   showError
+//---------------------------------------------------------
+
+void MuseScore::showError()
+      {
+      static QErrorMessage* msg = 0;
+      if (msg == 0)
+            msg = new QErrorMessage(this);
+      msg->showMessage(tr(MScore::errorMessage()), MScore::errorGroup());
+      MScore::setError(MS_NO_ERROR);
+      }
+
+//---------------------------------------------------------
+//   retranslate
+//---------------------------------------------------------
+
+void MuseScore::retranslate(bool firstStart)
+      {
+      _positionLabel->setToolTip(tr("Measure:Beat:Tick"));
+
+      // retranslate the menu
+      menuFile->setTitle(tr("&File"));
+      openRecent->setTitle(tr("Open &Recent"));
+      menuEdit->setTitle(tr("&Edit"));
+      menuView->setTitle(tr("&View"));
+      menuToolbars->setTitle(tr("&Toolbars"));
+      menuWorkspaces->setTitle(tr("W&orkspaces"));
+      pref->setText(tr("&Preferences..."));
+      menuAdd->setTitle(tr("&Add"));
+      menuAddMeasures->setTitle(tr("&Measures"));
+      menuAddFrames->setTitle(tr("&Frames"));
+      menuAddText->setTitle(tr("&Text"));
+      menuAddLines->setTitle(tr("&Lines"));
+      menuAddPitch->setTitle(tr("N&otes"));
+      menuAddInterval->setTitle(tr("&Intervals"));
+      menuTuplet->setTitle(tr("T&uplets"));
+      menuFormat->setTitle(tr("F&ormat"));
+      menuTools->setTitle(tr("&Tools"));
+      menuVoices->setTitle(tr("&Voices"));
+      menuPlugins->setTitle(tr("&Plugins"));
+      menuHelp->setTitle(tr("&Help"));
+
+      aboutAction->setText(tr("&About..."));
+      aboutQtAction->setText(tr("About &Qt..."));
+      aboutMusicXMLAction->setText(tr("About &MusicXML..."));
+      onlineHandbookAction->setText(tr("&Online Handbook"));
+      if (checkForUpdateAction)
+            checkForUpdateAction->setText(tr("Check for &Update"));
+      askForHelpAction->setText(tr("Ask for Help"));
+      reportBugAction->setText(tr("Report a Bug"));
+      revertToFactoryAction->setText(tr("Revert to Factory Settings"));
+
+      fileTools->setWindowTitle(tr("File Operations"));
+      transportTools->setWindowTitle(tr("Playback Controls"));
+      cpitchTools->setWindowTitle(tr("Concert Pitch"));
+      fotoTools->setWindowTitle(tr("Image Capture"));
+      entryTools->setWindowTitle(tr("Note Input"));
+
+      viewModeCombo->setAccessibleName(tr("View Mode"));
+      viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::PAGE)), tr("Page View"));
+      viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::LINE)), tr("Continuous View"));
+      viewModeCombo->setItemText(viewModeCombo->findData(int(LayoutMode::SYSTEM)), tr("Single Page"));
+
+      showMidiImportButton->setText(tr("Show MIDI import panel"));
+
+      Shortcut::retranslate();
+      if (!firstStart && Workspace::currentWorkspace->readOnly()) {
+            changeWorkspace(Workspace::currentWorkspace);
+            }
       }
 
 //---------------------------------------------------------
@@ -1053,8 +1812,8 @@ void MuseScore::resizeEvent(QResizeEvent*)
 
 void MuseScore::startAutoSave()
       {
-      if (preferences.autoSave) {
-            int t = preferences.autoSaveTime * 60 * 1000;
+      if (preferences.getBool(PREF_APP_AUTOSAVE_USEAUTOSAVE)) {
+            int t = preferences.getInt(PREF_APP_AUTOSAVE_AUTOSAVETIME) * 60 * 1000;
             autoSaveTimer->start(t);
             }
       else
@@ -1172,7 +1931,7 @@ void MuseScore::selectScore(QAction* action)
                         startcenter->updateRecentScores();
                   }
             else {
-                  Score* score = readScore(a);
+                  MasterScore* score = readScore(a);
                   if (score) {
                         setCurrentScoreView(appendScore(score));
                         addRecentScore(score);
@@ -1196,6 +1955,14 @@ void MuseScore::selectionChanged(SelState selectionState)
             pianorollEditor->changeSelection(selectionState);
       if (drumrollEditor)
             drumrollEditor->changeSelection(selectionState);
+      if (timeline())
+            timeline()->changeSelection(selectionState);
+      if (_pianoTools && _pianoTools->isVisible()) {
+            if (cs)
+                  _pianoTools->changeSelection(cs->selection());
+            else
+                  _pianoTools->clearSelection();
+            }
       if (_inspector)
             updateInspector();
       }
@@ -1206,19 +1973,18 @@ void MuseScore::selectionChanged(SelState selectionState)
 
 void MuseScore::updateInspector()
       {
-      if (!_inspector)
-            return;
-      if (_inspector->isVisible() && cs) {
-            if (state() == STATE_EDIT)
-                  _inspector->setElement(cv->getEditObject());
-            else if (state() == STATE_FOTO)
-                  _inspector->setElement(cv->fotoLasso());
-            else {
-                  _inspector->setElements(cs->selection().elements());
-                  }
-            }
-      else
-            _inspector->setElement(0);
+      if (_inspector)
+            _inspector->update(cs);
+      }
+
+//---------------------------------------------------------
+//   updateShadowNote
+//   update the shadow note in the current ScoreView
+//---------------------------------------------------------
+
+void MuseScore::updateShadowNote()
+      {
+      currentScoreView()->updateShadowNotes();
       }
 
 //---------------------------------------------------------
@@ -1226,13 +1992,13 @@ void MuseScore::updateInspector()
 //    append score to project list
 //---------------------------------------------------------
 
-int MuseScore::appendScore(Score* score)
+int MuseScore::appendScore(MasterScore* score)
       {
       int index = scoreList.size();
       for (int i = 0; i < scoreList.size(); ++i) {
             if ((!score->importedFilePath().isEmpty()
                  && scoreList[i]->importedFilePath() == score->importedFilePath())
-                        || (scoreList[i]->fileInfo()->canonicalFilePath() == score->fileInfo()->canonicalFilePath() && score->fileInfo()->exists())) {
+                    || (scoreList[i]->fileInfo()->canonicalFilePath() == score->fileInfo()->canonicalFilePath() && score->fileInfo()->exists())) {
                   removeTab(i);
                   index = i;
                   break;
@@ -1259,7 +2025,7 @@ void MuseScore::addRecentScore(Score* score)
       {
       QString path = score->importedFilePath(); // defined for scores imported from e.g. MIDI files
       addRecentScore(path);
-      path = score->fileInfo()->absoluteFilePath();
+      path = score->masterScore()->fileInfo()->absoluteFilePath();
       addRecentScore(path);
       if (startcenter)
             startcenter->updateRecentScores();
@@ -1277,6 +2043,7 @@ void MuseScore::addRecentScore(const QString& scorePath)
             _recentScores.removeLast();
       }
 
+#if 0
 //---------------------------------------------------------
 //   updateTabNames
 //---------------------------------------------------------
@@ -1286,16 +2053,17 @@ void MuseScore::updateTabNames()
       for (int i = 0; i < tab1->count(); ++i) {
             ScoreView* view = tab1->view(i);
             if (view)
-                  tab1->setTabText(i, view->score()->name());
+                  tab1->setTabText(i, view->score()->masterScore()->fileInfo()->completeBaseName());
             }
       if (tab2) {
             for (int i = 0; i < tab2->count(); ++i) {
                   ScoreView* view = tab2->view(i);
                   if (view)
-                        tab2->setTabText(i, view->score()->name());
+                        tab2->setTabText(i, view->score()->masterScore()->fileInfo()->completeBaseName());
                   }
             }
       }
+#endif
 
 //---------------------------------------------------------
 //   loadScoreList
@@ -1339,6 +2107,31 @@ void MuseScore::openRecentMenu()
       }
 
 //---------------------------------------------------------
+//   reloadInstrumentTemplates
+//---------------------------------------------------------
+
+void MuseScore::reloadInstrumentTemplates()
+      {
+      clearInstrumentTemplates();
+      // load cascading instrument templates
+      loadInstrumentTemplates(preferences.getString(PREF_APP_PATHS_INSTRUMENTLIST1));
+      QString list2 = preferences.getString(PREF_APP_PATHS_INSTRUMENTLIST2);
+      if (!list2.isEmpty())
+            loadInstrumentTemplates(list2);
+
+      // load instrument templates from extension
+      QStringList extensionDir = Extension::getDirectoriesByType(Extension::instrumentsDir);
+      QStringList filter("*.xml");
+      for (QString s : extensionDir) {
+            QDir extDir(s);
+            extDir.setNameFilters(filter);
+            auto instFiles = extDir.entryInfoList(QDir::Files | QDir::NoSymLinks | QDir::Readable);
+            for (auto instFile : instFiles)
+                  loadInstrumentTemplates(instFile.absoluteFilePath());
+            }
+      }
+
+//---------------------------------------------------------
 //   setCurrentView
 //---------------------------------------------------------
 
@@ -1368,6 +2161,8 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
       {
       cv = view;
       if (cv) {
+            if (timeline())
+                  timeline()->setScoreView(cv);
             if (cv->score() && (cs != cv->score())) {
                   // exit note entry mode
                   if (cv->noteEntryMode()) {
@@ -1400,7 +2195,7 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
       if (selectionWindow)
             selectionWindow->setScore(cs);
       if (mixer)
-            mixer->updateAll(cs);
+            mixer->updateAll(cs ? cs->masterScore() : nullptr);
 #ifdef OMR
       if (omrPanel) {
             if (cv && cv->omrView())
@@ -1415,8 +2210,12 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
                   navigator()->setScoreView(cv);
                   navigator()->setScore(0);
                   }
+            if (timeline()) {
+                  timeline()->setScoreView(cv);
+                  timeline()->setScore(0);
+                  }
             if (_inspector)
-                  _inspector->setElement(0);
+                  _inspector->update(0);
             viewModeCombo->setEnabled(false);
             if (_textTools) {
                   _textTools->hide();
@@ -1442,15 +2241,16 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
       cv->setFocus(Qt::OtherFocusReason);
       setFocusProxy(cv);
 
-      getAction("file-save")->setEnabled(cs->isSavable());
-      getAction("file-part-export")->setEnabled(cs->rootScore()->excerpts().size() > 0);
+      getAction("file-save")->setEnabled(cs->masterScore()->isSavable());
+      getAction("file-part-export")->setEnabled(cs->masterScore()->excerpts().size() > 0);
       getAction("show-invisible")->setChecked(cs->showInvisible());
       getAction("show-unprintable")->setChecked(cs->showUnprintable());
       getAction("show-frames")->setChecked(cs->showFrames());
       getAction("show-pageborders")->setChecked(cs->showPageborders());
+      getAction("mark-irregular")->setChecked(cs->markIrregularMeasures());
       getAction("fotomode")->setChecked(cv->fotoMode());
-      getAction("join-measure")->setEnabled(cs->rootScore()->excerpts().size() == 0);
-      getAction("split-measure")->setEnabled(cs->rootScore()->excerpts().size() == 0);
+      getAction("join-measures")->setEnabled(cs->masterScore()->excerpts().size() == 0);
+      getAction("split-measure")->setEnabled(cs->masterScore()->excerpts().size() == 0);
       updateUndoRedo();
 
       MagIdx midx = cv->magIdx();
@@ -1461,18 +2261,22 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
             magChanged(midx);
             }
 
-      if (cs->parentScore())
-            setWindowTitle(MUSESCORE_NAME_VERSION ": " + cs->parentScore()->name() + "-" + cs->name());
-      else
-            setWindowTitle(MUSESCORE_NAME_VERSION ": " + cs->name());
+      updateWindowTitle(cs);
+      setWindowModified(cs->dirty());
 
       QAction* a = getAction("concert-pitch");
-      a->setChecked(cs->styleB(StyleIdx::concertPitch));
+      a->setChecked(cs->styleB(Sid::concertPitch));
 
       setPos(cs->inputPos());
       //showMessage(cs->filePath(), 2000);
-      if (_navigator && _navigator->widget())
+      if (_navigator && _navigator->widget()) {
+            navigator()->setScore(cs);
             navigator()->setScoreView(view);
+            }
+      if (timeline()) {
+            timeline()->setScore(cs);
+            timeline()->setScoreView(view);
+            }
       ScoreAccessibility::instance()->updateAccessibilityInfo();
       }
 
@@ -1603,7 +2407,7 @@ void MuseScore::dropEvent(QDropEvent* event)
             foreach(const QUrl& u, event->mimeData()->urls()) {
                   if (u.scheme() == "file") {
                         QString file = u.toLocalFile();
-                        Score* score = readScore(file);
+                        MasterScore* score = readScore(file);
                         if (score) {
                               view = appendScore(score);
                               addRecentScore(score);
@@ -1619,6 +2423,23 @@ void MuseScore::dropEvent(QDropEvent* event)
       }
 
 //---------------------------------------------------------
+//   changeEvent
+//---------------------------------------------------------
+
+void MuseScore::changeEvent(QEvent *e)
+      {
+      QMainWindow::changeEvent(e);
+      switch (e->type()) {
+            case QEvent::LanguageChange:
+                  retranslate();
+                  break;
+            default:
+                  break;
+            }
+      }
+
+
+//---------------------------------------------------------
 //   showPageSettings
 //---------------------------------------------------------
 
@@ -1626,7 +2447,7 @@ void MuseScore::showPageSettings()
       {
       if (pageSettings == 0)
             pageSettings = new PageSettings();
-      pageSettings->setScore(cs);
+      pageSettings->setScore(cs->masterScore());
       pageSettings->show();
       pageSettings->raise();
       }
@@ -1670,15 +2491,17 @@ void MuseScore::showPlayPanel(bool visible)
                   return;
             playPanel = new PlayPanel(this);
             connect(playPanel, SIGNAL(gainChange(float)),     synti, SLOT(setGain(float)));
+            connect(playPanel, SIGNAL(metronomeGainChanged(float)), seq, SLOT(setMetronomeGain(float)));
             connect(playPanel, SIGNAL(relTempoChanged(double)),seq, SLOT(setRelTempo(double)));
             connect(playPanel, SIGNAL(posChange(int)),         seq, SLOT(seek(int)));
             connect(playPanel, SIGNAL(closed(bool)),          playId,   SLOT(setChecked(bool)));
             connect(synti,     SIGNAL(gainChanged(float)), playPanel, SLOT(setGain(float)));
             playPanel->setGain(synti->gain());
             playPanel->setScore(cs);
-            mscore->stackUnder(playPanel);
+            addDockWidget(Qt::RightDockWidgetArea, playPanel);
             }
       playPanel->setVisible(visible);
+      playPanel->setFloating(false);
       playId->setChecked(visible);
       }
 
@@ -1715,7 +2538,7 @@ void MeasuresDialog::accept()
       {
       int n = measures->value();
       if (mscore->currentScore())
-            mscore->currentScoreView()->cmdAppendMeasures(n, Element::Type::MEASURE);
+            mscore->currentScoreView()->cmdAppendMeasures(n, ElementType::MEASURE);
       done(1);
       }
 
@@ -1734,7 +2557,7 @@ void MuseScore::midiinToggled(bool val)
 
 bool MuseScore::midiinEnabled() const
       {
-      return preferences.enableMidiInput && _midiinEnabled;
+      return preferences.getBool(PREF_IO_MIDI_ENABLEINPUT) && _midiinEnabled;
       }
 
 //---------------------------------------------------------
@@ -1742,12 +2565,20 @@ bool MuseScore::midiinEnabled() const
 //    return if midi remote command detected
 //---------------------------------------------------------
 
-bool MuseScore::processMidiRemote(MidiRemoteType type, int data)
+bool MuseScore::processMidiRemote(MidiRemoteType type, int data, int value)
       {
-      if (!preferences.useMidiRemote)
+      if (!preferences.getBool(PREF_IO_MIDI_USEREMOTECONTROL))
             return false;
+      if (!value) {
+            // This was a "NoteOff" or "CtrlOff" event. Most MidiRemote actions should only
+            // be triggered by an "On" event, so we need to check if this is one of those.
+            if (!preferences.getBool(PREF_IO_MIDI_ADVANCEONRELEASE)
+                    || type != preferences.midiRemote(RMIDI_REALTIME_ADVANCE).type
+                    || data != preferences.midiRemote(RMIDI_REALTIME_ADVANCE).data)
+                  return false;
+            }
       for (int i = 0; i < MIDI_REMOTES; ++i) {
-            if (preferences.midiRemote[i].type == type && preferences.midiRemote[i].data == data) {
+            if (preferences.midiRemote(i).type == type && preferences.midiRemote(i).data == data) {
                   if (cv == 0)
                         return false;
                   QAction* a = 0;
@@ -1777,6 +2608,7 @@ bool MuseScore::processMidiRemote(MidiRemoteType type, int data)
                         case RMIDI_TIE:     a = getAction("tie");  break;
                         case RMIDI_UNDO:    a = getAction("undo"); break;
                         case RMIDI_NOTE_EDIT_MODE: a = getAction("note-input");  break;
+                        case RMIDI_REALTIME_ADVANCE: a = getAction("realtime-advance");  break;
                         }
                   if (a)
                         a->trigger();
@@ -1792,10 +2624,11 @@ bool MuseScore::processMidiRemote(MidiRemoteType type, int data)
 
 void MuseScore::midiNoteReceived(int channel, int pitch, int velo)
       {
-      static const int THRESHOLD = 3; // iterations required before consecutive drum notes
+      static const int THRESHOLD_DRUMS = 5; // iterations required before consecutive drum notes
                                      // are not considered part of a chord
       static int active = 0;
-      static int iter = 0;
+      static int iterDrums = 0;
+      static int activeDrums = 0;
 
       if (!midiinEnabled())
             return;
@@ -1803,22 +2636,21 @@ void MuseScore::midiNoteReceived(int channel, int pitch, int velo)
 // qDebug("midiNoteReceived %d %d %d", channel, pitch, velo);
 
       if (_midiRecordId != -1) {
-            preferences.midiRemote[_midiRecordId].type = MIDI_REMOTE_TYPE_NOTEON;
-            preferences.midiRemote[_midiRecordId].data = pitch;
+            preferences.updateMidiRemote(_midiRecordId, MIDI_REMOTE_TYPE_NOTEON, pitch);
             _midiRecordId = -1;
             if (preferenceDialog)
                   preferenceDialog->updateRemote();
             return;
             }
 
-      if (velo && processMidiRemote(MIDI_REMOTE_TYPE_NOTEON, pitch)) {
+      if (processMidiRemote(MIDI_REMOTE_TYPE_NOTEON, pitch, velo)) {
             active = 0;
             return;
             }
 
       QWidget* w = QApplication::activeModalWidget();
       if (!cv || w) {
-            active = 1;
+            active = 0;
             return;
             }
       if (velo) {
@@ -1833,23 +2665,34 @@ void MuseScore::midiNoteReceived(int channel, int pitch, int velo)
              * part of a cord.
              */
             if (channel == 0x09) {
-                  if (iter >= THRESHOLD)
-                        active = 0;
-                  iter = 0;
+                  if (iterDrums >= THRESHOLD_DRUMS)
+                        activeDrums = 0;
+                  iterDrums = 0;
+                  cv->midiNoteReceived(pitch, activeDrums > 0, velo);
                   }
-// qDebug("    midiNoteReceived %d active %d", pitch, active);
-            cv->midiNoteReceived(pitch, active > 0, velo);
-            ++active;
+            else {
+                  //qDebug("    midiNoteReceived %d active %d", pitch, active);
+                  cv->midiNoteReceived(pitch, active > 0, velo);
+                  ++active;
+                  }
             }
       else {
-      		/*
-		* Since a note may be assigned to a midi_remote, don't decrease active below zero
-		* on noteoff.
-		*/
-
+            /*
+            * Since a note may be assigned to a midi_remote,
+            * don't decrease active below zero on noteoff.
+            */
             if ((channel != 0x09) && (active > 0))
                   --active;
+            if ((channel == 0x09) && (activeDrums > 0))
+                  --activeDrums;
             cv->midiNoteReceived(pitch, false, velo);
+            }
+
+      if (_pianoTools && _pianoTools->isVisible()) {
+            if (velo)
+                  _pianoTools->pressPitch(pitch);
+            else
+                  _pianoTools->releasePitch(pitch);
             }
       }
 
@@ -1862,15 +2705,14 @@ void MuseScore::midiCtrlReceived(int controller, int value)
       if (!midiinEnabled())
             return;
       if (_midiRecordId != -1) {
-            preferences.midiRemote[_midiRecordId].type = MIDI_REMOTE_TYPE_CTRL;
-            preferences.midiRemote[_midiRecordId].data = controller;
+            preferences.updateMidiRemote(_midiRecordId, MIDI_REMOTE_TYPE_CTRL, controller);
             _midiRecordId = -1;
             if (preferenceDialog)
                   preferenceDialog->updateRemote();
             return;
             }
       // when value is 0 (usually when a key is released ) nothing happens
-      if (value && processMidiRemote(MIDI_REMOTE_TYPE_CTRL, controller))
+      if (processMidiRemote(MIDI_REMOTE_TYPE_CTRL, controller, value))
             return;
       }
 
@@ -1880,7 +2722,7 @@ void MuseScore::midiCtrlReceived(int controller, int value)
 
 void MuseScore::removeTab()
       {
-      int n = scoreList.indexOf(cs);
+      int n = scoreList.indexOf(cs->masterScore());
       if (n == -1) {
             qDebug("removeTab: %p not found", cs);
             return;
@@ -1890,7 +2732,7 @@ void MuseScore::removeTab()
 
 void MuseScore::removeTab(int i)
       {
-      Score* score = scoreList.value(i);
+      MasterScore* score = scoreList.value(i);
 
       if (score == 0)
             return;
@@ -1943,47 +2785,47 @@ void MuseScore::removeTab(int i)
 
 void loadTranslation(QString filename, QString localeName)
       {
-      static QList<QTranslator*> translatorList;
-      QTranslator* translator = new QTranslator;
-      QString userPrefix = dataPath + "/locale/"+ filename +"_";
+      QString userPrefix    = dataPath + "/locale/"+ filename +"_";
       QString defaultPrefix = mscoreGlobalShare + "locale/"+ filename +"_";
-      QString userlp = userPrefix + localeName;
-
-      QString defaultlp = defaultPrefix + localeName;
-      QString lp = defaultlp;
+      QString userlp        = userPrefix + localeName;
+      QString defaultlp     = defaultPrefix + localeName;
+      QString lp            = defaultlp;
 
       QFileInfo userFi(userlp + ".qm");
       QFileInfo defaultFi(defaultlp + ".qm");
 
-      if(!defaultFi.exists()) { // try with a shorter locale name
-      QString shortLocaleName = localeName.left(localeName.lastIndexOf("_"));
+      if (!defaultFi.exists()) {     // try with a shorter locale name
+            QString shortLocaleName = localeName.left(localeName.lastIndexOf("_"));
             QString shortDefaultlp = defaultPrefix + shortLocaleName;
             QFileInfo shortDefaultFi(shortDefaultlp + ".qm");
-            if(shortDefaultFi.exists()) {
-                  userlp = userPrefix + shortLocaleName;
-                  userFi = QFileInfo(userlp + ".qm");
+            if (shortDefaultFi.exists()) {
+                  userlp    = userPrefix + shortLocaleName;
+                  userFi    = QFileInfo(userlp + ".qm");
                   defaultFi = shortDefaultFi;
                   defaultlp = shortDefaultlp;
                   }
             }
 
-      //      qDebug() << userFi.exists();
-      //      qDebug() << userFi.lastModified() << defaultFi.lastModified();
       if (userFi.exists()) {
             if (userFi.lastModified() > defaultFi.lastModified())
                   lp = userlp;
-            else
-                  QFile::remove(userlp + ".qm");
-      }
+//            else
+//REVIEW                  QFile::remove(userlp + ".qm");
+            }
 
-      if (MScore::debugMode) qDebug("load translator <%s>", qPrintable(lp));
+      if (MScore::debugMode)
+            qDebug("load translator <%s>", qPrintable(lp));
+
+      QTranslator* translator = new QTranslator;
       bool success = translator->load(lp);
-      if (!success && MScore::debugMode) {
-            qDebug("load translator <%s> failed", qPrintable(lp));
-      }
-      if(success) {
+      if (success) {
             qApp->installTranslator(translator);
             translatorList.append(translator);
+            }
+      else {
+            if (MScore::debugMode)
+                  qDebug("load translator <%s> failed", qPrintable(lp));
+            delete translator;
             }
       }
 
@@ -1993,9 +2835,7 @@ void loadTranslation(QString filename, QString localeName)
 
 void setMscoreLocale(QString localeName)
       {
-      static QList<QTranslator*> translatorList;
-
-      foreach(QTranslator* t, translatorList) {
+      for (QTranslator* t : translatorList) {
             qApp->removeTranslator(t);
             delete t;
             }
@@ -2007,6 +2847,11 @@ void setMscoreLocale(QString localeName)
             localeName = QLocale::system().name();
             if (MScore::debugMode)
                   qDebug("real localeName <%s>", qPrintable(localeName));
+            if (localeName == "en_AU") {
+                  localeName = "en_GB"; // otherwise Australia would fall back to US English
+                  if (MScore::debugMode)
+                        qDebug("modified localeName <%s>", qPrintable(localeName));
+                  }
             }
 
       // find the most recent translation file
@@ -2049,7 +2894,7 @@ static void loadScores(const QStringList& argv)
             if (startWithNewScore)
                   mscore->newFile();
             else {
-                  switch (preferences.sessionStart) {
+                  switch (preferences.sessionStart()) {
                         case SessionStart::LAST:
                               {
                               QSettings settings;
@@ -2057,7 +2902,7 @@ static void loadScores(const QStringList& argv)
                               int c = settings.value("currentScore", 0).toInt();
                               for (int i = 0; i < n; ++i) {
                                     QString s = settings.value(QString("score-%1").arg(i),"").toString();
-                                    Score* score = mscore->readScore(s);
+                                    MasterScore* score = mscore->readScore(s);
                                     if (score) {
                                           int view = mscore->appendScore(score);
                                           if (i == c)
@@ -2073,16 +2918,19 @@ static void loadScores(const QStringList& argv)
                               break;
                         case SessionStart::SCORE:
                               {
-                              Score* score = mscore->readScore(preferences.startScore);
-                              if (preferences.startScore.startsWith(":/") && score) {
-                                    score->setPageFormat(*MScore::defaultStyle()->pageFormat());
+                              QString startScore = preferences.getString(PREF_APP_STARTUP_STARTSCORE);
+                              MasterScore* score = mscore->readScore(startScore);
+                              if (startScore.startsWith(":/") && score) {
+                                    score->setName(mscore->createDefaultName());
+                                    // TODO score->setPageFormat(*MScore::defaultStyle().pageFormat());
                                     score->doLayout();
                                     score->setCreated(true);
                                     }
                               if (score == 0) {
                                     score = mscore->readScore(":/data/My_First_Score.mscz");
                                     if (score) {
-                                          score->setPageFormat(*MScore::defaultStyle()->pageFormat());
+                                          score->setName(mscore->createDefaultName());
+                                          // TODO score->setPageFormat(*MScore::defaultStyle().pageFormat());
                                           score->doLayout();
                                           score->setCreated(true);
                                           }
@@ -2098,7 +2946,7 @@ static void loadScores(const QStringList& argv)
             foreach(const QString& name, argv) {
                   if (name.isEmpty())
                         continue;
-                  Score* score = mscore->readScore(name);
+                  MasterScore* score = mscore->readScore(name);
                   if (score) {
                         mscore->appendScore(score);
                         scoresOnCommandline = true;
@@ -2117,112 +2965,120 @@ static void loadScores(const QStringList& argv)
       }
 
 //---------------------------------------------------------
-//   processNonGui
+//   doConvert
 //---------------------------------------------------------
 
-static bool processNonGui()
+static bool doConvert(Score* cs, QString fn, QString plugin = "")
       {
-      if (pluginMode) {
-            QString pn(pluginName);
-            bool res = false;
-            if (mscore->loadPlugin(pn)){
-                  Score* cs = mscore->currentScore();
-                  LayoutMode layoutMode = cs->layoutMode();
-                  if (!styleFile.isEmpty()) {
-                        QFile f(styleFile);
-                        if (f.open(QIODevice::ReadOnly))
-                              cs->style()->load(&f);
-                        }
-                  cs->startCmd();
-                  cs->setLayoutAll(true);
-                  cs->endCmd();
-                  cs->switchToPageMode();
-                  mscore->pluginTriggered(0);
-                  if (layoutMode != cs->layoutMode())
-                        cs->endCmd(true);       // rollback
-                  res = true;
-                  }
-            if (!converterMode)
-                  return res;
-            }
       bool rv = true;
-      if (converterMode) {
-            QString fn(outFileName);
-            Score* cs = mscore->currentScore();
-            if (!cs)
-                  return false;
-            LayoutMode layoutMode = cs->layoutMode();
-            if (!styleFile.isEmpty()) {
-                  QFile f(styleFile);
-                  if (f.open(QIODevice::ReadOnly)) {
-                        cs->style()->load(&f);
-                        }
-                  }
-            if (fn.endsWith(".mscx")) {
-                  QFileInfo fi(fn);
-                  try {
-                        cs->saveFile(fi);
-                        }
-                  catch(QString) {
-                        return false;
-                        }
-                  return true;
-                  }
-            else if (fn.endsWith(".mscz")) {
-                  QFileInfo fi(fn);
-                  try {
-                        cs->saveCompressedFile(fi, false);
-                        }
-                  catch(QString) {
-                        return false;
-                        }
-                  return true;
-                  }
-            else if (fn.endsWith(".xml")) {
-                  cs->switchToPageMode();
-                  rv = saveXml(cs, fn);
-                  }
-            else if (fn.endsWith(".mxl")) {
-                  cs->switchToPageMode();
-                  rv = saveMxl(cs, fn);
-                  }
-            else if (fn.endsWith(".mid"))
-                  return mscore->saveMidi(cs, fn);
-            else if (fn.endsWith(".pdf")) {
-                  if (!exportScoreParts) {
-                        cs->switchToPageMode();
-                        rv = mscore->savePdf(fn);
-                        }
-                  else {
-                        if (cs->excerpts().size() == 0) {
-                              QList<Excerpt*> exceprts = Excerpt::createAllExcerpt(cs);
+      LayoutMode layoutMode = cs->layoutMode();
+      cs->setLayoutMode(LayoutMode::PAGE);
+      if (cs->layoutMode() != layoutMode) {
+            cs->setLayoutMode(LayoutMode::PAGE);
+            cs->doLayout();
+            }
 
-                              foreach(Excerpt* e, exceprts) {
-                                    Score* nscore = new Score(e->oscore());
-                                    e->setPartScore(nscore);
-                                    nscore->setName(e->title()); // needed before AddExcerpt
-                                    nscore->style()->set(StyleIdx::createMultiMeasureRests, true);
-                                    cs->startCmd();
-                                    cs->undo(new AddExcerpt(nscore));
-                                    createExcerpt(e);
-                                    cs->endCmd();
-                                    }
+      if (!styleFile.isEmpty()) {
+            QFile f(styleFile);
+            if (f.open(QIODevice::ReadOnly))
+                  cs->style().load(&f);
+            }
+      if (!plugin.isEmpty()) {
+            mscore->setCurrentScore(cs);
+            LayoutMode layoutMode = cs->layoutMode();
+            if (layoutMode != LayoutMode::PAGE) {
+                  cs->setLayoutMode(LayoutMode::PAGE);
+                  cs->doLayout();
+                  }
+            if (mscore->loadPlugin(plugin))
+                  mscore->pluginTriggered(0);
+            mscore->unloadPlugins();
+            if (layoutMode != cs->layoutMode()) {
+                  cs->setLayoutMode(layoutMode);
+                  cs->doLayout();
+                  }
+            }
+      if (fn.endsWith(".mscx")) {
+            QFileInfo fi(fn);
+            if (!cs->saveFile(fi))
+                  return false;
+            return true;
+            }
+      else if (fn.endsWith(".mscz")) {
+            QFileInfo fi(fn);
+            if (!cs->saveCompressedFile(fi, false))
+                  return false;
+            return true;
+            }
+      else if (fn.endsWith(".xml") || fn.endsWith(".musicxml")) {
+            rv = saveXml(cs, fn);
+            }
+      else if (fn.endsWith(".mxl")) {
+            rv = saveMxl(cs, fn);
+            }
+      else if (fn.endsWith(".mid"))
+            return mscore->saveMidi(cs, fn);
+      else if (fn.endsWith(".pdf")) {
+            if (!exportScoreParts) {
+                  rv = mscore->savePdf(cs, fn);
+                  }
+            else {
+                  if (cs->excerpts().size() == 0) {
+                        auto excerpts = Excerpt::createAllExcerpt(cs->masterScore());
+
+                        for (Excerpt* e : excerpts) {
+                              Score* nscore = new Score(e->oscore());
+                              e->setPartScore(nscore);
+                              nscore->style().set(Sid::createMultiMeasureRests, true);
+                              Excerpt::createExcerpt(e);
+                              cs->startCmd();
+                              cs->undo(new AddExcerpt(e));
+                              cs->endCmd();
                               }
-                        QList<Score*> scores;
-                        scores.append(cs);
-                        foreach(Excerpt* e, cs->excerpts())
-                              scores.append(e->partScore());
-                        return mscore->savePdf(scores, fn);
                         }
+                  QList<Score*> scores;
+                  scores.append(cs);
+                  for (Excerpt* e : cs->excerpts())
+                        scores.append(e->partScore());
+                  return mscore->savePdf(scores, fn);
                   }
-            else if (fn.endsWith(".png")) {
-                  cs->switchToPageMode();
-                  rv = mscore->savePng(cs, fn);
+            }
+      else if (fn.endsWith(".png")) {
+            if (!exportScoreParts)
+                  return mscore->savePng(cs, fn);
+            else {
+                  if (cs->excerpts().size() == 0) {
+                        auto excerpts = Excerpt::createAllExcerpt(cs->masterScore());
+
+                        for (Excerpt* e: excerpts) {
+                              Score* nscore = new Score(e->oscore());
+                              e->setPartScore(nscore);
+                              nscore->setExcerpt(e);
+                              // nscore->setName(e->title()); // needed before AddExcerpt
+                              nscore->style().set(Sid::createMultiMeasureRests, true);
+                              Excerpt::createExcerpt(e);
+                              cs->startCmd();
+                              cs->undo(new AddExcerpt(e));
+                              cs->endCmd();
+                              }
+                        }
+                  if (!mscore->savePng(cs, fn))
+                        return false;
+                  int idx = 0;
+                  int padding = QString("%1").arg(cs->excerpts().size()).size();
+                  for (Excerpt* e: cs->excerpts()) {
+                        QString suffix = QString("__excerpt__%1.png").arg(idx, padding, 10, QLatin1Char('0'));
+                        QString excerptFn = fn.left(fn.size() - 4) + suffix;
+                        if (!mscore->savePng(e->partScore(), excerptFn))
+                              return false;
+                        idx++;
+                        }
+                  return true;
                   }
-            else if (fn.endsWith(".svg")) {
-                  cs->switchToPageMode();
-                  rv = mscore->saveSvg(cs, fn);
-                  }
+            }
+      else if (fn.endsWith(".svg")) {
+            rv = mscore->saveSvg(cs, fn);
+            }
 #ifdef HAS_AUDIOFILE
             else if (fn.endsWith(".wav") || fn.endsWith(".ogg") || fn.endsWith(".flac"))
                   return mscore->saveAudio(cs, fn);
@@ -2231,56 +3087,147 @@ static bool processNonGui()
             else if (fn.endsWith(".mp3"))
                   return mscore->saveMp3(cs, fn);
 #endif
-            else if (fn.endsWith(".spos")) {
-                  cs->switchToPageMode();
-                  rv = savePositions(cs, fn, true);
-                  }
-            else if (fn.endsWith(".mpos")) {
-                  cs->switchToPageMode();
-                  rv = savePositions(cs, fn, false);
-                  }
-            else if (fn.endsWith(".mlog"))
-                  return cs->sanityCheck(fn);
-            else {
-                  qDebug("dont know how to convert to %s", qPrintable(outFileName));
-                  return false;
-                  }
-            if (layoutMode != cs->layoutMode())
-                  cs->endCmd(true);       // rollback
+      else if (fn.endsWith(".spos")) {
+            rv = savePositions(cs, fn, true);
+            }
+      else if (fn.endsWith(".mpos")) {
+            rv = savePositions(cs, fn, false);
+            }
+      else if (fn.endsWith(".mlog"))
+            return cs->sanityCheck(fn);
+      else if (plugin.isEmpty()) {
+            qDebug("don't know how to convert to %s", qPrintable(outFileName));
+            return false;
+            }
+      if (layoutMode != cs->layoutMode()) {
+            cs->setLayoutMode(layoutMode);
+            cs->doLayout();
             }
       return rv;
       }
 
 //---------------------------------------------------------
-//   StartDialog
+//   convert
 //---------------------------------------------------------
 
-StartDialog::StartDialog(QWidget* parent)
-  : QDialog(parent)
+static bool convert(const QString& inFile, const QString& outFile, const QString& plugin = "")
       {
-      setupUi(this);
-      setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
-      setWindowTitle(tr("MuseScore Startup Dialog"));
-      connect(createScore, SIGNAL(clicked()), SLOT(createScoreClicked()));
-      connect(loadScore, SIGNAL(clicked()), SLOT(loadScoreClicked()));
+      if (inFile.isEmpty() || (outFile.isEmpty() && plugin.isEmpty())) {
+            fprintf(stderr, "cannot convert <%s> to <%s>\n", qPrintable(inFile), qPrintable(outFile));
+            return false;
+            }
+      fprintf(stderr, "convert <%s> to <%s>\n", qPrintable(inFile), qPrintable(outFile));
+      MasterScore* score = mscore->readScore(inFile);
+      if (!score)
+            return false;
+      if (!doConvert(score, outFile, plugin)) {
+            delete score;
+            return false;
+            }
+      delete score;
+      return true;
       }
 
 //---------------------------------------------------------
-//   createScoreClicked
+//   doProcessJob
 //---------------------------------------------------------
 
-void StartDialog::createScoreClicked()
+static bool doProcessJob(QString jsonFile)
       {
-      done(1);
+      QFile f(jsonFile);
+      if (!f.open(QIODevice::ReadOnly)) {
+            fprintf(stderr, "cannon open json file <%s>\n", qPrintable(jsonFile));
+            return false;
+            }
+      QJsonParseError pe;
+      QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &pe);
+      if (pe.error != QJsonParseError::NoError) {
+            fprintf(stderr, "error reading json file <%s> at %d: %s\n",
+               qPrintable(jsonFile), pe.offset, qPrintable(pe.errorString()));
+            return false;
+            }
+      if (!doc.isArray()) {
+            fprintf(stderr, "json file <%s> is not an array\n", qPrintable(jsonFile));
+            return false;
+            }
+      QJsonArray a = doc.array();
+      for (const auto i : a) {
+            QString inFile;
+            QString outFile;
+            QString plugin;
+            if (!i.isObject()) {
+                  fprintf(stderr, "array value is not an object\n");
+                  return false;
+                  }
+            QJsonObject obj = i.toObject();
+            for (const auto& key : obj.keys()) {
+                  QString val = obj.value(key).toString();
+                  if (key == "in")
+                        inFile = val;
+                  else if (key == "out")
+                        outFile = val;
+                  else if (key == "plugin")
+                        plugin = val;
+                  else {
+                        fprintf(stderr, "unknown key <%s>\n", qPrintable(key));
+                        return false;
+                        }
+                  }
+            if (!convert(inFile, outFile, plugin))
+                  return false;
+            }
+      return true;
       }
 
 //---------------------------------------------------------
-//   loadScoreClicked
+//   processNonGui
 //---------------------------------------------------------
 
-void StartDialog::loadScoreClicked()
+static bool processNonGui(const QStringList& argv)
       {
-      done(2);
+      if (pluginMode) {
+            loadScores(argv);
+            QString pn(pluginName);
+            bool res = false;
+            if (mscore->loadPlugin(pn)){
+                  Score* cs = mscore->currentScore();
+                  if (!styleFile.isEmpty()) {
+                        QFile f(styleFile);
+                        if (f.open(QIODevice::ReadOnly))
+                              cs->style().load(&f);
+                        }
+                  LayoutMode layoutMode = cs->layoutMode();
+                  if (layoutMode != LayoutMode::PAGE) {
+                        cs->setLayoutMode(LayoutMode::PAGE);
+                        cs->doLayout();
+                        }
+                  mscore->pluginTriggered(0);
+                  if (layoutMode != cs->layoutMode()) {
+                        cs->setLayoutMode(layoutMode);
+                        cs->doLayout();
+                        }
+                  res = true;
+                  }
+            if (!converterMode)
+                  return res;
+            }
+      if (converterMode) {
+            if (processJob)
+                  return doProcessJob(jsonFileName);
+            else
+                  return convert(argv[0], outFileName);
+            }
+      if (!extensionName.isEmpty()) {
+            QFileInfo fi(extensionName);
+            QString suffix = fi.suffix().toLower();
+            if (suffix == "muxt")
+                  return mscore->importExtension(extensionName);
+            else {
+                  fprintf(stderr, "cannot install extension: <%s>\n", qPrintable(extensionName));
+                  return false;
+                  }
+            }
+      return true;
       }
 
 //---------------------------------------------------------
@@ -2294,17 +3241,20 @@ static void mscoreMessageHandler(QtMsgType type, const QMessageLogContext &conte
      QByteArray localMsg = msg.toLocal8Bit();
 
      switch (type) {
+     case QtInfoMsg:
+         cerr << "Info: "     << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
+         break;
      case QtDebugMsg:
-         cerr << "Debug: " << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
+         cerr << "Debug: "    << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
          break;
      case QtWarningMsg:
-         cerr << "Warning: " << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
+         cerr << "Warning: "  << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
          break;
-     case QtCriticalMsg:
+     case QtCriticalMsg: // same as QtSystemMsg
          cerr << "Critical: " << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
          break;
      case QtFatalMsg: // set your breakpoint here, if you want to catch the abort
-         cerr << "Fatal: " << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
+         cerr << "Fatal: "    << localMsg.constData() << " ("  << context.file << ":" << context.line << ", " << context.function << ")" << endl;
          abort();
          }
      }
@@ -2400,6 +3350,9 @@ bool MuseScore::eventFilter(QObject *obj, QEvent *event)
                   {
                   QKeyEvent* e = static_cast<QKeyEvent*>(event);
                   if(obj->isWidgetType() && e->key() == Qt::Key_Escape && e->modifiers() == Qt::NoModifier) {
+                        // Close the search dialog when Escape is pressed:
+                        if(_searchDialog != 0)
+                              endSearch();
                         if (isActiveWindow()) {
                               obj->event(e);
                               if(currentScoreView())
@@ -2438,7 +3391,16 @@ bool MuseScore::hasToCheckForUpdate()
       if (ucheck)
             return ucheck->hasToCheck();
       else
-          return false;
+            return false;
+      }
+
+//---------------------------------------------------------
+//   hasToCheckForExtensionsUpdate
+//---------------------------------------------------------
+
+bool MuseScore::hasToCheckForExtensionsUpdate()
+      {
+      return packUChecker ? packUChecker->hasToCheck() : false;
       }
 
 //---------------------------------------------------------
@@ -2449,6 +3411,16 @@ void MuseScore::checkForUpdate()
       {
       if (ucheck)
             ucheck->check(version(), sender() != 0);
+      }
+
+//---------------------------------------------------------
+//   checkForExtensionsUpdate
+//---------------------------------------------------------
+
+void MuseScore::checkForExtensionsUpdate()
+      {
+      if (packUChecker)
+            packUChecker->check();
       }
 
 //---------------------------------------------------------
@@ -2469,7 +3441,7 @@ bool MuseScore::readLanguages(const QString& path)
                 error.sprintf(qPrintable(tr("Error reading language file %s at line %d column %d: %s\n")),
                    qPrintable(qf.fileName()), line, column, qPrintable(err));
                 QMessageBox::warning(0,
-                   QWidget::tr("MuseScore: Load Languages Failed:"),
+                   QWidget::tr("Load Languages Failed:"),
                    error,
                    QString::null, QWidget::tr("Quit"), QString::null, 0, 1);
                 return false;
@@ -2511,6 +3483,16 @@ void MuseScore::clipboardChanged()
 
       bool flag = true;
       getAction("paste")->setEnabled(flag);
+      getAction("swap")->setEnabled(flag);
+      }
+
+//---------------------------------------------------------
+//   inputMethodLocaleChanged
+//---------------------------------------------------------
+
+void MuseScore::inputMethodLocaleChanged()
+      {
+      qDebug("Input method QLocale::Script enum now #%d.", QGuiApplication::inputMethod()->locale().script());
       }
 
 //---------------------------------------------------------
@@ -2529,12 +3511,8 @@ void MuseScore::showModeText(const QString& s)
 
 void MuseScore::changeState(ScoreState val)
       {
-// printf("MuseScore::changeState: %s\n", stateName(val));
       if (MScore::debugMode)
             qDebug("MuseScore::changeState: %s", stateName(val));
-
-//      if (_sstate == val)
-//            return;
 
       // disallow change to edit modes if currently in play mode
       if (_sstate == STATE_PLAY && (val == STATE_EDIT || val & STATE_ALLTEXTUAL_EDIT || val & STATE_NOTE_ENTRY))
@@ -2546,8 +3524,8 @@ void MuseScore::changeState(ScoreState val)
       static const char* tabNames[] = {
             "note-longa-TAB", "note-breve-TAB", "pad-note-1-TAB", "pad-note-2-TAB", "pad-note-4-TAB",
       "pad-note-8-TAB", "pad-note-16-TAB", "pad-note-32-TAB", "pad-note-64-TAB", "pad-note-128-TAB", "pad-rest-TAB", "rest-TAB"};
-      bool intoTAB = (_sstate != STATE_NOTE_ENTRY_TAB) && (val == STATE_NOTE_ENTRY_TAB);
-      bool fromTAB = (_sstate == STATE_NOTE_ENTRY_TAB) && (val != STATE_NOTE_ENTRY_TAB);
+      bool intoTAB = (_sstate != STATE_NOTE_ENTRY_STAFF_TAB) && (val == STATE_NOTE_ENTRY_STAFF_TAB);
+      bool fromTAB = (_sstate == STATE_NOTE_ENTRY_STAFF_TAB) && (val != STATE_NOTE_ENTRY_STAFF_TAB);
       // if activating TAB note entry, swap "pad-note-...-TAB" shorctuts into "pad-note-..." actions
       if (intoTAB) {
             for (unsigned i = 0; i < sizeof(stdNames)/sizeof(char*); ++i) {
@@ -2567,14 +3545,14 @@ void MuseScore::changeState(ScoreState val)
 
       bool enable = (val != STATE_DISABLED) && (val != STATE_LOCK);
 
-      foreach (const Shortcut* s, Shortcut::shortcuts()) {
+      for (const Shortcut* s : Shortcut::shortcuts()) {
             QAction* a = s->action();
             if (!a)
                   continue;
             if (enable && (s->key() == "undo"))
-                  a->setEnabled((s->state() & val) && (cs ? cs->undo()->canUndo() : false));
+                  a->setEnabled((s->state() & val) && (cs ? cs->undoStack()->canUndo() : false));
             else if (enable && (s->key() == "redo"))
-                  a->setEnabled((s->state() & val) && (cs ? cs->undo()->canRedo() : false));
+                  a->setEnabled((s->state() & val) && (cs ? cs->undoStack()->canRedo() : false));
             else if (enable && (s->key() == "cut"))
                   a->setEnabled(cs && cs->selection().state() != SelState::NONE);
             else if (enable && (s->key() == "copy"))
@@ -2588,21 +3566,19 @@ void MuseScore::changeState(ScoreState val)
                         qDebug("disable synth control");
                   a->setEnabled(driver);
                   }
-            else if (s->key() == "pad-dot" || s->key() == "pad-dot-dot")
-                        a->setEnabled(!(val & (STATE_ALLTEXTUAL_EDIT | STATE_EDIT)));
             else {
                   a->setEnabled(s->state() & val);
                   }
             }
 
       if (getAction("file-part-export")->isEnabled())
-            getAction("file-part-export")->setEnabled(cs && cs->rootScore()->excerpts().size() > 0);
-      if (getAction("join-measure")->isEnabled())
-            getAction("join-measure")->setEnabled(cs && cs->rootScore()->excerpts().size() == 0);
+            getAction("file-part-export")->setEnabled(cs && cs->masterScore()->excerpts().size() > 0);
+      if (getAction("join-measures")->isEnabled())
+            getAction("join-measures")->setEnabled(cs && cs->masterScore()->excerpts().size() == 0);
       if (getAction("split-measure")->isEnabled())
-            getAction("split-measure")->setEnabled(cs && cs->rootScore()->excerpts().size() == 0);
+            getAction("split-measure")->setEnabled(cs && cs->masterScore()->excerpts().size() == 0);
 
-      //getAction("split-measure")->setEnabled(cs->rootScore()->excerpts().size() == 0);
+      //getAction("split-measure")->setEnabled(cs->masterScore()->excerpts().size() == 0);
 
       // disabling top level menu entries does not
       // work for MAC
@@ -2627,10 +3603,12 @@ void MuseScore::changeState(ScoreState val)
 
       if (_sstate == STATE_FOTO)
             updateInspector();
-      if (_sstate == STATE_NOTE_ENTRY_DRUM)
-            showDrumTools(0, 0);
 
-      switch(val) {
+      //always hide drumtools to support hiding on switching docs, switching node entry mode off, etc.
+      //it will be shown later if (_sstate == STATE_NOTE_ENTRY_STAFF_DRUM)
+      showDrumTools(0, 0);
+
+      switch (val) {
             case STATE_DISABLED:
                   showModeText(tr("No score"));
                   if (debugger)
@@ -2640,10 +3618,38 @@ void MuseScore::changeState(ScoreState val)
             case STATE_NORMAL:
                   _modeText->hide();
                   break;
-            case STATE_NOTE_ENTRY_PITCHED:
-                  showModeText(tr("Note input mode"));
+            case STATE_NOTE_ENTRY:
+                  if (cv && !cv->noteEntryMode())
+                        cv->cmd("note-input");
+                  // fall through
+            case STATE_NOTE_ENTRY_STAFF_PITCHED:
+                  if (getAction("note-input-repitch")->isChecked()) {
+                        showModeText(tr("Repitch input mode"));
+                        cs->setNoteEntryMethod(NoteEntryMethod::REPITCH);
+                        val = STATE_NOTE_ENTRY_METHOD_REPITCH;
+                        }
+                  else if (getAction("note-input-rhythm")->isChecked()) {
+                        showModeText(tr("Rhythm input mode"));
+                        cs->setNoteEntryMethod(NoteEntryMethod::RHYTHM);
+                        val = STATE_NOTE_ENTRY_METHOD_RHYTHM;
+                        }
+                  else if (getAction("note-input-realtime-auto")->isChecked()) {
+                        showModeText(tr("Realtime (automatic) note input mode"));
+                        cs->setNoteEntryMethod(NoteEntryMethod::REALTIME_AUTO);
+                        val = STATE_NOTE_ENTRY_METHOD_REALTIME_AUTO;
+                        }
+                  else if (getAction("note-input-realtime-manual")->isChecked()) {
+                        showModeText(tr("Realtime (manual) note input mode"));
+                        cs->setNoteEntryMethod(NoteEntryMethod::REALTIME_MANUAL);
+                        val = STATE_NOTE_ENTRY_METHOD_REALTIME_MANUAL;
+                        }
+                  else {
+                        showModeText(tr("Steptime note input mode"));
+                        cs->setNoteEntryMethod(NoteEntryMethod::STEPTIME);
+                        val = STATE_NOTE_ENTRY_METHOD_STEPTIME;
+                        }
                   break;
-            case STATE_NOTE_ENTRY_DRUM:
+            case STATE_NOTE_ENTRY_STAFF_DRUM:
                   {
                   showModeText(tr("Drum input mode"));
                   InputState& is = cs->inputState();
@@ -2652,7 +3658,7 @@ void MuseScore::changeState(ScoreState val)
                         is.setDrumNote(_drumTools->selectedDrumNote());
                   }
                   break;
-            case STATE_NOTE_ENTRY_TAB:
+            case STATE_NOTE_ENTRY_STAFF_TAB:
                   showModeText(tr("TAB input mode"));
                   break;
             case STATE_EDIT:
@@ -2686,29 +3692,41 @@ void MuseScore::changeState(ScoreState val)
       if (selectionWindow)
             selectionWindow->setDisabled(val == STATE_PLAY || val == STATE_DISABLED);
       QAction* a = getAction("note-input");
-      bool noteEntry = val == STATE_NOTE_ENTRY_PITCHED || val == STATE_NOTE_ENTRY_TAB || val == STATE_NOTE_ENTRY_DRUM;
+      bool noteEntry = val & STATE_NOTE_ENTRY;
       a->setChecked(noteEntry);
       _sstate = val;
 
-      Element* e = 0;
-      if (_sstate & STATE_ALLTEXTUAL_EDIT || _sstate == STATE_EDIT) {
-            if (cv)
-                  e = cv->getEditObject();
-            }
+      Element* e = cv && (_sstate & STATE_ALLTEXTUAL_EDIT || _sstate == STATE_EDIT) ? cv->getEditElement() : 0;
       if (!e) {
             textTools()->hide();
             if (textTools()->kbAction()->isChecked())
                   textTools()->kbAction()->setChecked(false);
             }
       else {
-            if (e->isText()) {
-                  textTools()->setText(static_cast<Text*>(e));
-                  textTools()->updateTools();
-                  if (e->type() != Element::Type::FIGURED_BASS && e->type() != Element::Type::HARMONY)   // do not show text tools for f.b.
+            if (e->isTextBase()) {
+                  textTools()->updateTools(cv->getEditData());
+                  if (!(e->isFiguredBass() || e->isHarmony())) {  // do not show text tools for f.b.
+                        if (timelineScrollArea() && timelineScrollArea()->isVisible()) {
+                              if (dockWidgetArea(timelineScrollArea()) != dockWidgetArea(textTools()) || timelineScrollArea()->isFloating()) {
+                                    QSizePolicy policy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+                                    textTools()->widget()->setSizePolicy(policy);
+                                    }
+                              else {
+                                    QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+                                    textTools()->widget()->setSizePolicy(policy);
+                                    }
+                              }
+                        else {
+                              QSizePolicy policy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+                              textTools()->widget()->setSizePolicy(policy);
+                              }
+                        if (timelineScrollArea())
+                              splitDockWidget(textTools(), timelineScrollArea(), Qt::Vertical);
                         textTools()->show();
+                        }
                   }
             if (_inspector)
-                  _inspector->setElement(e);
+                  _inspector->update(e->score());
             }
       }
 
@@ -2720,8 +3738,7 @@ void MuseScore::saveDialogState(const char* name, QFileDialog* d)
       {
       if (d) {
             settings.beginGroup(name);
-            settings.setValue("size",  d->size());
-            settings.setValue("pos",   d->pos());
+            settings.setValue("geometry", d->saveGeometry());
             settings.setValue("state", d->saveState());
             settings.endGroup();
             }
@@ -2734,9 +3751,8 @@ void MuseScore::saveDialogState(const char* name, QFileDialog* d)
 void MuseScore::restoreDialogState(const char* name, QFileDialog* d)
       {
       settings.beginGroup(name);
-      d->resize(settings.value("size", QSize(860,489)).toSize());
+      d->restoreGeometry(settings.value("geometry").toByteArray());
       d->restoreState(settings.value("state").toByteArray());
-      d->move(settings.value("pos", QPoint(200,200)).toPoint());
       settings.endGroup();
       }
 
@@ -2751,22 +3767,23 @@ void MuseScore::writeSettings()
             settings.setValue(QString("recent-%1").arg(i), _recentScores.value(i));
 
       settings.setValue("scores", scoreList.size());
-      int curScore = scoreList.indexOf(cs);
-      if (curScore == -1)  // cs removed if new created and not modified
-            curScore = 0;
-      settings.setValue("currentScore", curScore);
+      if (cs) {
+            int curScore = scoreList.indexOf(cs->masterScore());
+            if (curScore == -1)  // cs removed if new created and not modified
+                  curScore = 0;
+            settings.setValue("currentScore", curScore);
 
-      for (int idx = 0; idx < scoreList.size(); ++idx)
-            settings.setValue(QString("score-%1").arg(idx), scoreList[idx]->fileInfo()->absoluteFilePath());
+            for (int idx = 0; idx < scoreList.size(); ++idx)
+                  settings.setValue(QString("score-%1").arg(idx), scoreList[idx]->masterScore()->fileInfo()->absoluteFilePath());
+            }
 
       settings.setValue("lastSaveCopyDirectory", lastSaveCopyDirectory);
       settings.setValue("lastSaveCopyFormat", lastSaveCopyFormat);
       settings.setValue("lastSaveDirectory", lastSaveDirectory);
 
+      MuseScore::saveGeometry(this);
+
       settings.beginGroup("MainWindow");
-      settings.setValue("size", size());
-      settings.setValue("pos", pos());
-      settings.setValue("maximized", isMaximized());
       settings.setValue("showPanel", paletteBox && paletteBox->isVisible());
       settings.setValue("showInspector", _inspector && _inspector->isVisible());
       settings.setValue("showPianoKeyboard", _pianoTools && _pianoTools->isVisible());
@@ -2822,7 +3839,7 @@ void MuseScore::writeSettings()
       if (drumrollEditor)
             drumrollEditor->writeSettings();
       if (startcenter)
-            startcenter->writeSettings(settings);
+            startcenter->writeSettings();
       }
 
 //---------------------------------------------------------
@@ -2831,8 +3848,22 @@ void MuseScore::writeSettings()
 
 void MuseScore::readSettings()
       {
+      int margin = 100;
+      int offset = margin / 2;
+      int w = 1024;
+      int h = 768;
+      QScreen* screen      = QGuiApplication::primaryScreen();
+      const QSize screenSize = screen->availableVirtualSize();
+      if (screenSize.width() - margin > w)
+            w = screenSize.width() - margin;
+      else
+            offset = 0;
+      if (screenSize.height() - margin > h)
+            h = screenSize.height() - margin;
+
+      resize(QSize(w, h)); //ensure default size if no geometry in settings
+      move(offset, 0);
       if (useFactorySettings) {
-            resize(QSize(1024, 768));
             QList<int> sizes;
             sizes << 500 << 100;
             mainWindow->setSizes(sizes);
@@ -2841,23 +3872,29 @@ void MuseScore::readSettings()
             return;
             }
 
+      MuseScore::restoreGeometry(this);
+
       settings.beginGroup("MainWindow");
-      resize(settings.value("size", QSize(1024, 768)).toSize());
       mainWindow->restoreState(settings.value("debuggerSplitter").toByteArray());
       mainWindow->setOpaqueResize(false);
       scorePageLayoutChanged();
 
-      move(settings.value("pos", QPoint(10, 10)).toPoint());
       //for some reason when MuseScore starts maximized the screen-reader
-      //doesn't respond to QAccessibleEvents
-      if (settings.value("maximized", false).toBool() && !QAccessible::isActive())
-            showMaximized();
+      //doesn't respond to QAccessibleEvents --> so force normal mode
+      if (isMaximized() && QAccessible::isActive()) {
+            showNormal();
+            }
       mscore->showPalette(settings.value("showPanel", "1").toBool());
       mscore->showInspector(settings.value("showInspector", "1").toBool());
       mscore->showPianoKeyboard(settings.value("showPianoKeyboard", "0").toBool());
       mscore->showSelectionWindow(settings.value("showSelectionWindow", "0").toBool());
 
       restoreState(settings.value("state").toByteArray());
+      //if we were in full screen mode, go to maximized mode
+      if (isFullScreen()) {
+            showMaximized();
+            }
+
       _horizontalSplit = settings.value("split", true).toBool();
       bool splitScreen = settings.value("splitScreen", false).toBool();
       if (splitScreen) {
@@ -2868,10 +3905,20 @@ void MuseScore::readSettings()
       splitter->restoreState(settings.value("splitter").toByteArray());
       settings.endGroup();
 
-//      QAction* a = getAction("toggle-transport");
-//      a->setChecked(!transportTools->isHidden());
-//      a = getAction("toggle-noteinput");
-//      a->setChecked(!entryTools->isHidden());
+      QAction* a = getAction("toggle-fileoperations");
+      a->setChecked(!fileTools->isHidden());
+
+      a = getAction("toggle-transport");
+      a->setChecked(!transportTools->isHidden());
+
+      a = getAction("toggle-concertpitch");
+      a->setChecked(!cpitchTools->isHidden());
+
+      a = getAction("toggle-imagecapture");
+      a->setChecked(!fotoTools->isHidden());
+
+      a = getAction("toggle-noteinput");
+      a->setChecked(!entryTools->isHidden());
       }
 
 //---------------------------------------------------------
@@ -2881,21 +3928,21 @@ void MuseScore::readSettings()
 
 void MuseScore::play(Element* e) const
       {
-      if (noSeq || !(seq && seq->isRunning()) || !preferences.playNotes)
+      if (noSeq || !(seq && seq->isRunning()) || !preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK))
             return;
 
-      if (e->type() == Element::Type::NOTE) {
-            Note* note = static_cast<Note*>(e);
+      if (e->isNote()) {
+            Note* note = toNote(e);
             play(e, note->ppitch());
             }
-      else if (e->type() == Element::Type::CHORD) {
+      else if (e->isChord()) {
             seq->stopNotes();
-            Chord* c = static_cast<Chord*>(e);
+            Chord* c   = toChord(e);
             Part* part = c->staff()->part();
-            int tick = c->segment() ? c->segment()->tick() : 0;
+            int tick   = c->segment() ? c->segment()->tick() : 0;
             seq->seek(tick);
             Instrument* instr = part->instrument(tick);
-            foreach(Note* n, c->notes()) {
+            for (Note* n : c->notes()) {
                   const Channel* channel = instr->channel(n->subchannel());
                   seq->startNote(channel->channel, n->ppitch(), 80, n->tuning());
                   }
@@ -2907,7 +3954,7 @@ void MuseScore::play(Element* e, int pitch) const
       {
       if (noSeq || !(seq && seq->isRunning()))
             return;
-      if (preferences.playNotes && e->type() == Element::Type::NOTE) {
+      if (preferences.getBool(PREF_SCORE_NOTE_PLAYONCLICK) && e->isNote()) {
             Note* note = static_cast<Note*>(e);
             int tick = note->chord()->tick();
             if (tick < 0)
@@ -2956,17 +4003,26 @@ void MuseScore::about()
 AboutBoxDialog::AboutBoxDialog()
       {
       setupUi(this);
-      museLogo->setPixmap(QPixmap(preferences.globalStyle == MuseScoreStyleType::DARK ?
+      museLogo->setPixmap(QPixmap(preferences.isThemeDark() ?
             ":/data/musescore-logo-transbg-m.png" : ":/data/musescore_logo_full.png"));
 
       if (MuseScore::unstable())
-            versionLabel->setText(tr("Unstable Prerelease for Version: ") + VERSION);
+            versionLabel->setText(tr("Unstable Prerelease for Version: %1").arg(VERSION));
       else
-            versionLabel->setText(tr("Version: ") + VERSION);
+            versionLabel->setText(tr("Version: %1").arg(VERSION));
       revisionLabel->setText(tr("Revision: %1").arg(revision));
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-      copyRevisionButton->setIcon(*icons[int(Icons::copy_ICON)]);
+      copyrightLabel->setText(QString("<span style=\"font-size:10pt;\">%1</span>")
+                              .arg(tr(   "Visit %1www.musescore.org%2 for new versions and more information.\n"
+                                         "Support MuseScore with your %3donation%4.\n\n"
+                                         "Copyright &copy; 1999-2018 Werner Schweer and Others.\n"
+                                         "Published under the GNU General Public License.")
+                                   .arg("<a href=\"http://www.musescore.org/\">")
+                                   .arg("</a>")
+                                   .arg("<a href=\"http://www.musescore.org/donate\">")
+                                   .arg("</a>")
+                                   .replace("\n","<br/>")));
       connect(copyRevisionButton, SIGNAL(clicked()), this, SLOT(copyRevisionToClipboard()));
       }
 
@@ -2977,7 +4033,17 @@ AboutBoxDialog::AboutBoxDialog()
 void AboutBoxDialog::copyRevisionToClipboard()
       {
       QClipboard* cb = QApplication::clipboard();
-      cb->setText(QString("github-musescore-musescore-") + revision);
+      QString sysinfo = "OS: ";
+      sysinfo += QSysInfo::prettyProductName();
+      sysinfo += ", Arch.: ";
+      sysinfo += QSysInfo::currentCpuArchitecture();
+      // endianness?
+      sysinfo += ", MuseScore version (";
+      sysinfo += QSysInfo::WordSize==32?"32":"64";
+      sysinfo += "-bit): " VERSION ", revision: ";
+      sysinfo += "github-musescore-musescore-";
+      sysinfo += revision;
+      cb->setText(sysinfo);
       }
 
 //---------------------------------------------------------
@@ -2988,6 +4054,17 @@ AboutMusicXMLBoxDialog::AboutMusicXMLBoxDialog()
       {
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+      label->setText(QString("<span style=\"font-size:10pt;\">%1<br/></span>")
+                     .arg(tr(   "MusicXML is an open file format for exchanging digital sheet music,\n"
+                                "supported by many applications.\n"
+                                "Copyright © 2004-2017 the Contributors to the MusicXML\n"
+                                "Specification, published by the W3C Music Notation Community\n"
+                                "Group under the W3C Community Contributor License Agreement\n"
+                                "(CLA):\n%1\n"
+                                "A human-readable summary is available:\n%2")
+                          .arg( "\n&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"https://www.w3.org/community/about/agreements/cla/\">https://www.w3.org/community/about/agreements/cla/</a>\n",
+                                "\n&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"https://www.w3.org/community/about/agreements/cla-deed/\">https://www.w3.org/community/about/agreements/cla-deed/</a>\n")
+                          .replace("\n","<br/>")));
       }
 
 //---------------------------------------------------------
@@ -2996,19 +4073,20 @@ AboutMusicXMLBoxDialog::AboutMusicXMLBoxDialog()
 
 void MuseScore::dirtyChanged(Score* s)
       {
-      Score* score = s->rootScore();
+      MasterScore* score = s->masterScore();
 
       int idx = scoreList.indexOf(score);
       if (idx == -1) {
             qDebug("score not in list");
             return;
             }
-      QString label(score->name());
+      QString label(score->fileInfo()->completeBaseName());
       if (score->dirty())
             label += "*";
       tab1->setTabText(idx, label);
       if (tab2)
             tab2->setTabText(idx, label);
+      setWindowModified(score->dirty());
       }
 
 //---------------------------------------------------------
@@ -3098,38 +4176,15 @@ void MuseScore::setPos(int t)
 
 void MuseScore::undoRedo(bool undo)
       {
-      if (_sstate == STATE_EDIT
-         || _sstate == STATE_TEXT_EDIT
-         || _sstate == STATE_HARMONY_FIGBASS_EDIT
-         || _sstate == STATE_LYRICS_EDIT) {
-            cv->postCmd("escape");
-            qApp->processEvents();
-            }
-      if (cv)
-            cv->startUndoRedo();
-      if (cs) {
-            if (undo)
-                  cs->undo()->undo();
-            else
-                  cs->undo()->redo();
-            }
-      if (cv) {
-            if (cs->inputState().segment())
-                  setPos(cs->inputState().tick());
-            if (cs->noteEntryMode() && !cv->noteEntryMode()) {
-                  // enter note entry mode
-                  cv->postCmd("note-input");
-                  }
-            else if (!cs->noteEntryMode() && cv->noteEntryMode()) {
-                  // leave note entry mode
-                  cv->postCmd("escape");
-                  }
-            cs->endUndoRedo();
-            updateInputState(cs);
-            }
+      Q_ASSERT(cv);
+      Q_ASSERT(cs);
+      if (_sstate & (STATE_EDIT | STATE_HARMONY_FIGBASS_EDIT | STATE_LYRICS_EDIT))
+            cv->changeState(ViewState::NORMAL);
+      cv->startUndoRedo(undo);
+      updateInputState(cs);
       endCmd();
       if (_inspector)
-            _inspector->reset();
+            _inspector->update();
       }
 
 //---------------------------------------------------------
@@ -3166,7 +4221,7 @@ void MuseScore::handleMessage(const QString& message)
       if (startcenter)
             showStartcenter(false);
       ((QtSingleApplication*)(qApp))->activateWindow();
-      Score* score = readScore(message);
+      MasterScore* score = readScore(message);
       if (score) {
             setCurrentScoreView(appendScore(score));
             addRecentScore(score);
@@ -3214,11 +4269,12 @@ void MuseScore::writeSessionFile(bool cleanExit)
             qDebug("cannot create session file <%s>", qPrintable(f.fileName()));
             return;
             }
-      Xml xml(&f);
+      XmlWriter xml(0, &f);
       xml.header();
       xml.stag("museScore version=\"" MSC_VERSION "\"");
       xml.tagE(cleanExit ? "clean" : "dirty");
-      foreach(Score* score, scoreList) {
+
+      foreach(MasterScore* score, scoreList) {
             xml.stag("Score");
             xml.tag("created", score->created());
             xml.tag("dirty", score->dirty());
@@ -3226,10 +4282,10 @@ void MuseScore::writeSessionFile(bool cleanExit)
             QString path;
             if (score->importedFilePath().isEmpty()) {
                               // score was not imported from another format, e.g. MIDI file
-                  path = score->fileInfo()->absoluteFilePath();
+                  path = score->masterScore()->fileInfo()->absoluteFilePath();
                   }
-            else if (score->fileInfo()->exists()) {   // score was saved
-                  path = score->fileInfo()->absoluteFilePath();
+            else if (score->masterScore()->fileInfo()->exists()) {   // score was saved
+                  path = score->masterScore()->fileInfo()->absoluteFilePath();
                   }
             else {      // score was imported but not saved - store original file (e.g. MIDI) path
                   path = score->importedFilePath();
@@ -3317,12 +4373,12 @@ void MuseScore::removeSessionFile()
 void MuseScore::autoSaveTimerTimeout()
       {
       bool sessionChanged = false;
-      foreach (Score* s, scoreList) {
+      for (MasterScore* s : scoreList) {
             if (s->autosaveDirty()) {
                   QString tmp = s->tmpName();
                   if (!tmp.isEmpty()) {
                         QFileInfo fi(tmp);
-                        // TODO: cannot catch exeption here:
+                        // TODO: cannot catch exception here:
                         s->saveCompressedFile(fi, false);
                         }
                   else {
@@ -3336,7 +4392,7 @@ void MuseScore::autoSaveTimerTimeout()
                               }
                         s->setTmpName(tf.fileName());
                         QFileInfo info(tf.fileName());
-                        s->saveCompressedFile(&tf, info, false);
+                        s->saveCompressedFile(&tf, info, false, false);  // no thumbnail
                         tf.close();
                         sessionChanged = true;
                         }
@@ -3345,8 +4401,8 @@ void MuseScore::autoSaveTimerTimeout()
             }
       if (sessionChanged)
             writeSessionFile(false);
-      if (preferences.autoSave) {
-            int t = preferences.autoSaveTime * 60 * 1000;
+      if (preferences.getBool(PREF_APP_AUTOSAVE_USEAUTOSAVE)) {
+            int t = preferences.getInt(PREF_APP_AUTOSAVE_AUTOSAVETIME) * 60 * 1000;
             autoSaveTimer->start(t);
             }
       }
@@ -3409,10 +4465,13 @@ bool MuseScore::restoreSession(bool always)
                                     else if (tag == "dirty")
                                           /*int dirty =*/ e.readInt();
                                     else if (tag == "path") {
-                                          Score* score = readScore(e.readElementText());
+                                          MasterScore* score = readScore(e.readElementText());
                                           if (score) {
-                                                if (!name.isEmpty())
-                                                      score->setName(name);
+                                                if (!name.isEmpty()) {
+                                                      QFileInfo* fi = score->masterScore()->fileInfo();
+                                                      fi->setFile(name);
+                                                      // TODO: what if that path is no longer valid?
+                                                      }
                                                 if (cleanExit) {
                                                       // override if last session did a clean exit
                                                       created = false;
@@ -3495,9 +4554,9 @@ void MuseScore::splitWindow(bool horizontal)
             splitter->setOrientation(_horizontalSplit ? Qt::Horizontal : Qt::Vertical);
             if (!scoreList.isEmpty()) {
                   tab2->setCurrentIndex(0);
-                  Score* s = scoreList[0];
-                  s->setLayoutAll(true);
-                  s->end();
+                  MasterScore* s = scoreList[0];
+                  s->setLayoutAll();
+                  s->update();
                   setCurrentView(1, 0);
                   }
             }
@@ -3505,6 +4564,7 @@ void MuseScore::splitWindow(bool horizontal)
             if (_horizontalSplit == horizontal) {
                   _splitScreen = false;
                   tab2->setVisible(false);
+                  setCurrentView(0, tab1->currentIndex());
                   }
             else {
                   _horizontalSplit = horizontal;
@@ -3528,10 +4588,15 @@ const char* stateName(ScoreState s)
       switch(s) {
             case STATE_DISABLED:           return "STATE_DISABLED";
             case STATE_NORMAL:             return "STATE_NORMAL";
-            case STATE_NOTE_ENTRY_PITCHED: return "STATE_NOTE_ENTRY_PITCHED";
-            case STATE_NOTE_ENTRY_DRUM:    return "STATE_NOTE_ENTRY_DRUM";
-            case STATE_NOTE_ENTRY_TAB:     return "STATE_NOTE_ENTRY_TAB";
+            case STATE_NOTE_ENTRY_STAFF_PITCHED: return "STATE_NOTE_ENTRY_STAFF_PITCHED";
+            case STATE_NOTE_ENTRY_STAFF_DRUM:    return "STATE_NOTE_ENTRY_STAFF_DRUM";
+            case STATE_NOTE_ENTRY_STAFF_TAB:     return "STATE_NOTE_ENTRY_STAFF_TAB";
             case STATE_NOTE_ENTRY:         return "STATE_NOTE_ENTRY";
+            case STATE_NOTE_ENTRY_METHOD_STEPTIME:          return "STATE_NOTE_ENTRY_METHOD_STEPTIME";
+            case STATE_NOTE_ENTRY_METHOD_REPITCH:           return "STATE_NOTE_ENTRY_METHOD_REPITCH";
+            case STATE_NOTE_ENTRY_METHOD_RHYTHM:            return "STATE_NOTE_ENTRY_METHOD_RHYTHM";
+            case STATE_NOTE_ENTRY_METHOD_REALTIME_AUTO:     return "STATE_NOTE_ENTRY_METHOD_REALTIME_AUTO";
+            case STATE_NOTE_ENTRY_METHOD_REALTIME_MANUAL:   return "STATE_NOTE_ENTRY_METHOD_REALTIME_MANUAL";
             case STATE_EDIT:               return "STATE_EDIT";
             case STATE_TEXT_EDIT:          return "STATE_TEXT_EDIT";
             case STATE_LYRICS_EDIT:        return "STATE_LYRICS_EDIT";
@@ -3543,37 +4608,16 @@ const char* stateName(ScoreState s)
       }
 
 //---------------------------------------------------------
-//   excerptsChanged
-//---------------------------------------------------------
-
-void MuseScore::excerptsChanged(Score* s)
-      {
-      if (tab2) {
-//            ScoreView* v = tab2->view();
-//            if (v && v->score() == s) {
-                  tab2->updateExcerpts();
-//                  }
-            }
-      if (tab1) {
-            ScoreView* v = tab1->view();
-            if (v && v->score()->rootScore() == s) {
-                  tab1->updateExcerpts();
-                  }
-            else if (v == 0) {
-                  tab1->setExcerpt(0);
-                  tab1->updateExcerpts();
-                  }
-            }
-      }
-
-//---------------------------------------------------------
 //   scorePageLayoutChanged
 //---------------------------------------------------------
 
 void MuseScore::scorePageLayoutChanged()
       {
-      if (mainWindow)
-             mainWindow->setOrientation(MScore::verticalOrientation() ? Qt::Horizontal : Qt::Vertical);
+      if (mainWindow) {
+            mainWindow->setOrientation(MScore::verticalOrientation() ? Qt::Horizontal : Qt::Vertical);
+            if (navigatorScrollArea())
+                  navigatorScrollArea()->orientationChanged();
+            }
       }
 
 //---------------------------------------------------------
@@ -3606,6 +4650,10 @@ void MuseScore::showPianoKeyboard(bool on)
             }
       if (on) {
             _pianoTools->show();
+            if (currentScore())
+                  _pianoTools->changeSelection(currentScore()->selection());
+            else
+                  _pianoTools->clearSelection();
             }
       else {
             if (_pianoTools)
@@ -3642,8 +4690,6 @@ void MuseScore::showPluginCreator(QAction* a)
 void MuseScore::showPluginManager()
       {
 #ifdef SCRIPT_INTERFACE
-      if (!pluginManager)
-            pluginManager = new PluginManager(0);
       pluginManager->init();
       pluginManager->show();
 #endif
@@ -3693,7 +4739,7 @@ void MuseScore::midiNoteReceived(int pitch, bool ctrl, int vel)
 void MuseScore::switchLayer(const QString& s)
       {
       if (cs->switchLayer(s)) {
-            cs->setLayoutAll(true);
+            cs->setLayoutAll();
             cs->update();
             }
       }
@@ -3744,7 +4790,9 @@ void MuseScore::networkFinished(QNetworkReply* reply)
       f.write(data);
       f.close();
 
-      Score* score = readScore(tmpName);
+      reply->deleteLater();
+
+      MasterScore* score = readScore(tmpName);
       if (!score) {
             qDebug("readScore failed");
             return;
@@ -3765,12 +4813,20 @@ void MuseScore::loadFile(const QString& s)
 
 void MuseScore::loadFile(const QUrl& url)
       {
-      if (!networkManager) {
-            networkManager = new QNetworkAccessManager(this);
-            connect(networkManager, SIGNAL(finished(QNetworkReply*)),
+      QNetworkReply* nr = networkManager()->get(QNetworkRequest(url));
+      connect(nr, SIGNAL(finished(QNetworkReply*)),
                SLOT(networkFinished(QNetworkReply*)));
-            }
-      networkManager->get(QNetworkRequest(url));
+      }
+
+//---------------------------------------------------------
+//   networkManager
+//---------------------------------------------------------
+
+QNetworkAccessManager* MuseScore::networkManager()
+      {
+      if (!_networkManager)
+            _networkManager = new QNetworkAccessManager(this);
+      return _networkManager;
       }
 
 //---------------------------------------------------------
@@ -3808,41 +4864,80 @@ void MuseScore::selectSimilarInRange(Element* e)
 void MuseScore::selectElementDialog(Element* e)
       {
       Score* score = e->score();
-      SelectDialog sd(e, 0);
-      if (sd.exec()) {
-            ElementPattern pattern;
-            sd.setPattern(&pattern);
+      if (e->isNote()) {
+            Note* n = toNote(e);
+            SelectNoteDialog sd(n, 0);
+            // hide same string option if it doesn't make sense for the instrument
+            if (n->staff()->part()->instrument()->stringData()->strings() == 0)
+                  sd.setSameStringVisible(false);
+            if (sd.exec()) {
+                  NotePattern pattern;
+                  sd.setPattern(&pattern);
 
-            if (sd.isInSelection())
-                  score->scanElementsInRange(&pattern, Score::collectMatch);
-            else
-                  score->scanElements(&pattern, Score::collectMatch);
+                  if (sd.isInSelection())
+                        score->scanElementsInRange(&pattern, Score::collectNoteMatch);
+                  else
+                        score->scanElements(&pattern, Score::collectNoteMatch);
 
-            if (sd.doReplace()) {
-                  score->select(0, SelectType::SINGLE, 0);
-                  foreach(Element* ee, pattern.el)
-                        score->select(ee, SelectType::ADD, 0);
-                  }
-            else if (sd.doSubtract()) {
-                  QList<Element*> sl(score->selection().elements());
-                  foreach(Element* ee, pattern.el)
-                        sl.removeOne(ee);
-                  score->select(0, SelectType::SINGLE, 0);
-                  foreach(Element* ee, sl)
-                        score->select(ee, SelectType::ADD, 0);
-                  }
-            else if (sd.doAdd()) {
-                  QList<Element*> sl(score->selection().elements());
-                  foreach(Element* ee, pattern.el) {
-                        if(!sl.contains(ee))
+                  if (sd.doReplace()) {
+                        score->select(0, SelectType::SINGLE, 0);
+                        for (Note* ee : pattern.el)
                               score->select(ee, SelectType::ADD, 0);
                         }
+                  else if (sd.doSubtract()) {
+                        QList<Element*> sl(score->selection().elements());
+                        for (Note* ee : pattern.el)
+                              sl.removeOne(ee);
+                        score->select(0, SelectType::SINGLE, 0);
+                        for (Element* ee : sl)
+                              score->select(ee, SelectType::ADD, 0);
+                        }
+                  else if (sd.doAdd()) {
+                        QList<Element*> sl(score->selection().elements());
+                        for (Note* ee : pattern.el) {
+                              if(!sl.contains(ee))
+                                    score->select(ee, SelectType::ADD, 0);
+                              }
+                        }
                   }
-            if (score->selectionChanged()) {
-                  score->setSelectionChanged(false);
-                  SelState ss = score->selection().state();
-                  selectionChanged(ss);
+            }
+      else {
+            SelectDialog sd(e, 0);
+            if (sd.exec()) {
+                  ElementPattern pattern;
+                  sd.setPattern(&pattern);
+
+                  if (sd.isInSelection())
+                        score->scanElementsInRange(&pattern, Score::collectMatch);
+                  else
+                        score->scanElements(&pattern, Score::collectMatch);
+
+                  if (sd.doReplace()) {
+                        score->select(0, SelectType::SINGLE, 0);
+                        for (Element* ee : pattern.el)
+                              score->select(ee, SelectType::ADD, 0);
+                        }
+                  else if (sd.doSubtract()) {
+                        QList<Element*> sl(score->selection().elements());
+                        for (Element* ee : pattern.el)
+                              sl.removeOne(ee);
+                        score->select(0, SelectType::SINGLE, 0);
+                        for (Element* ee : sl)
+                              score->select(ee, SelectType::ADD, 0);
+                        }
+                  else if (sd.doAdd()) {
+                        QList<Element*> sl(score->selection().elements());
+                        for (Element* ee : pattern.el) {
+                              if(!sl.contains(ee))
+                                    score->select(ee, SelectType::ADD, 0);
+                              }
+                        }
                   }
+            }
+      if (score->selectionChanged()) {
+            score->setSelectionChanged(false);
+            SelState ss = score->selection().state();
+            selectionChanged(ss);
             }
       }
 
@@ -3924,9 +5019,9 @@ void MuseScore::transpose()
       Key key = Key::C;
       for (int i = startStaffIdx; i < endStaffIdx; ++i) {
             Staff* staff = cs->staff(i);
-            if (staff->isPitchedStaff()) {
+            if (staff->isPitchedStaff(startTick)) {
                   key = staff->key(startTick);
-                  if (!cs->styleB(StyleIdx::concertPitch)) {
+                  if (!cs->styleB(Sid::concertPitch)) {
                         int diff = staff->part()->instrument(startTick)->transpose().chromatic;
                         if (diff)
                               key = transposeKey(key, diff);
@@ -3955,10 +5050,12 @@ void MuseScore::cmd(QAction* a)
       if (inChordEditor)      // HACK
             return;
 
+      MScore::setError(MS_NO_ERROR);
+
       QString cmdn(a->data().toString());
 
       if (MScore::debugMode)
-            qDebug("MuseScore::cmd <%s>", cmdn.toLatin1().data());
+            qDebug("MuseScore::cmd <%s>", qPrintable(cmdn));
 
       const Shortcut* sc = Shortcut::getShortcut(cmdn.toLatin1().data());
       if (sc == 0) {
@@ -3966,9 +5063,30 @@ void MuseScore::cmd(QAction* a)
             return;
             }
       if (cs && (sc->state() & _sstate) == 0) {
+            qDebug("invalid state %04x %04x", sc->state(), _sstate);
             QMessageBox::warning(0,
-               QWidget::tr("MuseScore: Invalid Command"),
-               QString("Command %1 not valid in current state").arg(cmdn));
+               tr("Invalid Command"),
+               tr("Command %1 not valid in current state").arg(cmdn));
+            return;
+            }
+      if (cmdn == "palette-search") {
+            PaletteBox* pb = getPaletteBox();
+            QLineEdit* sb = pb->searchBox();
+            sb->setFocus();
+            if (pb->noSelection())
+                  pb->setKeyboardNavigation(false);
+            else
+                  pb->setKeyboardNavigation(true);
+            return;
+            }
+      if (cmdn == "apply-current-palette-element") {
+            PaletteBox* pb = getPaletteBox();
+            for (Palette* p : pb->palettes()) {
+                  if (p->getCurrentIdx() != -1) {
+                        p->applyPaletteElement();
+                        break;
+                        }
+                  }
             return;
             }
       if (cmdn == "repeat-cmd") {
@@ -4006,6 +5124,10 @@ void MuseScore::cmd(QAction* a)
 
 void MuseScore::endCmd()
       {
+      if (timeline())
+            timeline()->updateGrid();
+      if (MScore::_error != MS_NO_ERROR)
+            showError();
       if (cs) {
             setPos(cs->inputState().tick());
             updateInputState(cs);
@@ -4015,17 +5137,15 @@ void MuseScore::endCmd()
 
             // For multiple notes selected check if they all have same pitch and tuning
             bool samePitch = true;
-            int pitch = 0;
+            int pitch    = -1;
             float tuning = 0;
-            for (int i = 0; i < cs->selection().elements().size(); ++i) {
-                  const auto& element = cs->selection().elements()[i];
-                  if (element->type() != Element::Type::NOTE) {
+            for (Element* e : cs->selection().elements()) {
+                  if (!e->isNote()) {
                         samePitch = false;
                         break;
                         }
-
-                  const auto& note = static_cast<Note*>(element);
-                  if (i == 0) {
+                  Note* note = toNote(e);
+                  if (pitch == -1) {
                         pitch = note->ppitch();
                         tuning = note->tuning();
                         }
@@ -4034,46 +5154,62 @@ void MuseScore::endCmd()
                         break;
                         }
                   }
-            if (samePitch && !cs->selection().elements().empty())
+            if (samePitch && pitch >= 0)
                   e = cs->selection().elements()[0];
 
-            if (e && (cs->playNote() || cs->playChord())) {
-                  if (cs->playChord() && preferences.playChordOnAddNote &&  e->type() == Element::Type::NOTE)
+            NoteEntryMethod entryMethod = cs->noteEntryMethod();
+            if (e && (cs->playNote() || cs->playChord())
+                        && entryMethod != NoteEntryMethod::REALTIME_AUTO
+                        && entryMethod != NoteEntryMethod::REALTIME_MANUAL) {
+                  if (cs->playChord() && preferences.getBool(PREF_SCORE_CHORD_PLAYONADDNOTE) &&  e->type() == ElementType::NOTE)
                         play(static_cast<Note*>(e)->chord());
                   else
                         play(e);
                   cs->setPlayNote(false);
                   cs->setPlayChord(false);
                   }
-            if (cs->rootScore()->excerptsChanged()) {
-                  //Q_ASSERT(cs == cs->rootScore());
-                  excerptsChanged(cs->rootScore());
-                  cs->rootScore()->setExcerptsChanged(false);
+            MasterScore* ms = cs->masterScore();
+            if (ms->excerptsChanged()) {
+                  if (tab2) {
+//                      ScoreView* v = tab2->view();
+//                      if (v && v->score() == ms) {
+                              tab2->updateExcerpts();
+//                            }
+                        }
+                  if (tab1) {
+                        ScoreView* v = tab1->view();
+                        if (v && v->score()->masterScore() == ms) {
+                              tab1->updateExcerpts();
+                              }
+                        else if (v == 0) {
+                              tab1->setExcerpt(0);
+                              tab1->updateExcerpts();
+                              }
+                        }
+                  ms->setExcerptsChanged(false);
                   }
-            if (cs->instrumentsChanged()) {
+            if (ms->instrumentsChanged()) {
                   if (!noSeq && (seq && seq->isRunning()))
                         seq->initInstruments();
                   instrumentChanged();                // update mixer
-                  cs->setInstrumentsChanged(false);
+                  ms->setInstrumentsChanged(false);
                   }
             if (cs->selectionChanged()) {
                   cs->setSelectionChanged(false);
                   SelState ss = cs->selection().state();
                   selectionChanged(ss);
                   }
-            getAction("concert-pitch")->setChecked(cs->styleB(StyleIdx::concertPitch));
+            getAction("concert-pitch")->setChecked(cs->styleB(Sid::concertPitch));
 
             if (e == 0 && cs->noteEntryMode())
                   e = cs->inputState().cr();
             updateViewModeCombo();
-            cs->end();
             ScoreAccessibility::instance()->updateAccessibilityInfo();
             }
       else {
-            if (_inspector)
-                  _inspector->setElement(0);
             selectionChanged(SelState::NONE);
             }
+      updateInspector();
       }
 
 //---------------------------------------------------------
@@ -4083,9 +5219,21 @@ void MuseScore::endCmd()
 void MuseScore::updateUndoRedo()
       {
       QAction* a = getAction("undo");
-      a->setEnabled(cs ? cs->undo()->canUndo() : false);
+      a->setEnabled(cs ? cs->undoStack()->canUndo() : false);
       a = getAction("redo");
-      a->setEnabled(cs ? cs->undo()->canRedo() : false);
+      a->setEnabled(cs ? cs->undoStack()->canRedo() : false);
+      }
+
+
+void MuseScore::setPlayRepeats(bool repeat)
+      {
+      getAction("repeat")->setChecked(repeat);
+      preferences.setPreference(PREF_APP_PLAYBACK_PLAYREPEATS, repeat);
+      MScore::playRepeats = repeat;
+      if (cs) {
+            cs->updateRepeatList(repeat);
+            emit cs->playlistChanged();
+            }
       }
 
 //---------------------------------------------------------
@@ -4097,7 +5245,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       if (cmd == "instruments") {
             editInstrList();
             if (mixer)
-                  mixer->updateAll(cs);
+                  mixer->updateAll(cs->masterScore());
             }
       else if (cmd == "rewind") {
             seq->rewindStart();
@@ -4145,15 +5293,14 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "masterpalette")
             showMasterPalette();
       else if (cmd == "key-signatures")
-            showMasterPalette(tr("Key Signatures"));
+            showMasterPalette(qApp->translate("Palette", "Key Signatures"));
       else if (cmd == "time-signatures")
-            showMasterPalette(tr("Time Signatures"));
+            showMasterPalette(qApp->translate("Palette", "Time Signatures"));
       else if (cmd == "symbols")
-            showMasterPalette(tr("Symbols"));
+            showMasterPalette(qApp->translate("MasterPalette", "Symbols"));
       else if (cmd == "toggle-statusbar") {
-            preferences.showStatusBar = a->isChecked();
-            _statusBar->setVisible(preferences.showStatusBar);
-            preferences.write();
+            preferences.setPreference(PREF_UI_APP_SHOWSTATUSBAR, a->isChecked());
+            _statusBar->setVisible(a->isChecked());
             }
       else if (cmd == "append-measures")
             cmdAppendMeasures();
@@ -4205,6 +5352,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showPlayPanel(a->isChecked());
       else if (cmd == "toggle-navigator")
             showNavigator(a->isChecked());
+      else if (cmd == "toggle-timeline")
+            showTimeline(a->isChecked());
       else if (cmd == "toggle-midiimportpanel")
             importmidiPanel->setVisible(a->isChecked());
       else if (cmd == "toggle-mixer")
@@ -4215,14 +5364,20 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showSelectionWindow(a->isChecked());
       else if (cmd == "show-keys")
             ;
-//      else if (cmd == "toggle-transport")
-//            transportTools->setVisible(!transportTools->isVisible());
-//      else if (cmd == "toggle-noteinput")
-//            entryTools->setVisible(!entryTools->isVisible());
-      else if (cmd == "local-help")
+      else if (cmd == "toggle-fileoperations")
+            fileTools->setVisible(!fileTools->isVisible());
+      else if (cmd == "toggle-transport")
+            transportTools->setVisible(!transportTools->isVisible());
+      else if (cmd == "toggle-concertpitch")
+            cpitchTools->setVisible(!cpitchTools->isVisible());
+      else if (cmd == "toggle-imagecapture")
+            fotoTools->setVisible(!fotoTools->isVisible());
+      else if (cmd == "toggle-noteinput")
+            entryTools->setVisible(!entryTools->isVisible());
+      else if (cmd == "help")
             showContextHelp();
       else if (cmd == "follow")
-            preferences.followSong = a->isChecked();
+            preferences.setPreference(PREF_APP_PLAYBACK_FOLLOWSONG, a->isChecked());
       else if (cmd == "split-h")
             splitWindow(true);
       else if (cmd == "split-v")
@@ -4273,7 +5428,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             if (!name.isEmpty()) {
                   if (!cs->saveStyle(name)) {
                         QMessageBox::critical(this,
-                           tr("MuseScore: Save Style"), MScore::lastError);
+                           tr("Save Style"), MScore::lastError);
                         }
                   }
             }
@@ -4283,7 +5438,7 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
                   cs->startCmd();
                   if (!cs->loadStyle(name)) {
                         QMessageBox::critical(this,
-                           tr("MuseScore: Load Style"), MScore::lastError);
+                           tr("Load Style"), MScore::lastError);
                         }
                   cs->endCmd();
                   }
@@ -4292,23 +5447,14 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             EditStyle es(cs, this);
             es.exec();
             }
-      else if (cmd == "edit-text-style") {
-            TextStyleDialog es(0, cs);
-            es.exec();
-            }
       else if (cmd == "edit-info") {
             MetaEditDialog med(cs, 0);
             med.exec();
             }
       else if (cmd == "print")
             printFile();
-      else if (cmd == "repeat") {
-            MScore::playRepeats = a->isChecked();
-            if (cs) {
-                  cs->updateRepeatList(MScore::playRepeats);
-                  emit cs->playlistChanged();
-                  }
-            }
+      else if (cmd == "repeat")
+            setPlayRepeats(a->isChecked());
       else if (cmd == "pan")
             MScore::panPlayback = !MScore::panPlayback;
       else if (cmd == "show-invisible")
@@ -4316,9 +5462,11 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
       else if (cmd == "show-unprintable")
             cs->setShowUnprintable(a->isChecked());
       else if (cmd == "show-frames")
-            cs->setShowFrames(getAction(cmd.toLatin1().data())->isChecked());
+            cs->setShowFrames(a->isChecked());
       else if (cmd == "show-pageborders")
-            cs->setShowPageborders(getAction(cmd.toLatin1().data())->isChecked());
+            cs->setShowPageborders(a->isChecked());
+      else if (cmd == "mark-irregular")
+            cs->setMarkIrregularMeasures(a->isChecked());
       else if (cmd == "tempo")
             addTempo();
       else if (cmd == "loop") {
@@ -4359,22 +5507,73 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             if (_textTools)
                   _textTools->toggleUnderline();
             }
+      else if (cmd == "edit-toolbars")
+            showToolbarEditor();
       else if (cmd == "viewmode") {
             if (cs) {
-                  int mode;
                   if (cs->layoutMode() == LayoutMode::PAGE)
-                        mode = 1;
+                        switchLayoutMode(LayoutMode::LINE);
                   else
-                        mode = 0;
-                  switchLayoutMode(mode);
+                        switchLayoutMode(LayoutMode::PAGE);
                   }
             }
+#ifndef NDEBUG
+      else if (cmd == "no-horizontal-stretch") {
+            MScore::noHorizontalStretch = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd == "no-vertical-stretch") {
+            MScore::noVerticalStretch = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd == "show-segment-shapes") {
+            MScore::showSegmentShapes = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd == "show-measure-shapes") {
+            MScore::showMeasureShapes = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd == "show-bounding-rect") {
+            MScore::showBoundingRect = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd == "show-corrupted-measures") {
+            MScore::showCorruptedMeasures = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+      else if (cmd == "autoplace-slurs") {
+            MScore::autoplaceSlurs = a->isChecked();
+            if (cs) {
+                  cs->setLayoutAll();
+                  cs->update();
+                  }
+            }
+#endif
       else {
             if (cv) {
                   //isAncestorOf is called to see if a widget from inspector has focus
                   //if so, the focus doesn't get shifted to the score, unless escape is
                   //pressed, or the user clicks in the score
-                  if(!inspector()->isAncestorOf(qApp->focusWidget()) || cmd == "escape")
+                  if (!inspector()->isAncestorOf(qApp->focusWidget()) || cmd == "escape")
                         cv->setFocus();
                   cv->cmd(a);
                   }
@@ -4401,6 +5600,21 @@ void MuseScore::openExternalLink(const QString& url)
 Navigator* MuseScore::navigator() const
       {
       return _navigator ? static_cast<Navigator*>(_navigator->widget()) : 0;
+      }
+
+//---------------------------------------------------------
+//   timeline
+//---------------------------------------------------------
+
+Timeline* MuseScore::timeline() const
+      {
+      if (_timeline) {
+            QSplitter* s = static_cast<QSplitter *>(_timeline->widget());
+            if (s && s->count() > 0)
+                  return _timeline ? static_cast<Timeline*>(s->widget(1)) : 0;
+            return 0;
+            }
+      return 0;
       }
 
 //---------------------------------------------------------
@@ -4456,7 +5670,7 @@ void MuseScore::closeScore(Score* score)
       // Let's compute maximum count of ports in remaining scores
       if (seq)
             seq->recomputeMaxMidiOutPort();
-      removeTab(scoreList.indexOf(score->rootScore()));
+      removeTab(scoreList.indexOf(score->masterScore()));
       }
 
 //---------------------------------------------------------
@@ -4465,7 +5679,7 @@ void MuseScore::closeScore(Score* score)
 
 void MuseScore::noteTooShortForTupletDialog()
       {
-      QMessageBox::warning(this, tr("MuseScore: Warning"),
+      QMessageBox::warning(this, tr("Warning"),
         tr("Cannot create tuplet: Note value is too short")
         );
       }
@@ -4477,7 +5691,7 @@ void MuseScore::noteTooShortForTupletDialog()
 void MuseScore::instrumentChanged()
       {
       if (mixer)
-            mixer->updateAll(cs);
+            mixer->updateAll(cs->masterScore());
       }
 
 //---------------------------------------------------------
@@ -4520,20 +5734,23 @@ void MuseScore::switchLayoutMode(int val)
       {
       if (!cs)
             return;
+      switchLayoutMode(static_cast<LayoutMode>(viewModeCombo->itemData(val).toInt()));
+      }
 
-      cs->startCmd();
-
+void MuseScore::switchLayoutMode(LayoutMode mode)
+      {
       // find a measure to use as reference, if possible
       QRectF view = cv->toLogical(QRect(0.0, 0.0, width(), height()));
       Measure* m = cs->firstMeasure();
       while (m && !view.intersects(m->canvasBoundingRect()))
             m = m->nextMeasureMM();
 
-      LayoutMode mode = static_cast<LayoutMode>(viewModeCombo->itemData(val).toInt());
-      cs->ScoreElement::undoChangeProperty(P_ID::LAYOUT_MODE, int(mode));
-
       cv->loopUpdate(getAction("loop")->isChecked());
-      cs->endCmd();
+
+      if (mode != cs->layoutMode()) {
+            cs->setLayoutMode(mode);
+            cs->doLayout();
+            }
 
       // adjustCanvasPosition often tries to preserve Y position
       // but this doesn't make sense when switching modes
@@ -4555,6 +5772,8 @@ void MuseScore::showDrumTools(const Drumset* drumset, Staff* staff)
                   _drumTools = new DrumTools(this);
                   addDockWidget(Qt::BottomDockWidgetArea, _drumTools);
                   }
+            if (timelineScrollArea())
+                  splitDockWidget(_drumTools, timelineScrollArea(), Qt::Vertical);
             _drumTools->setDrumset(cs, staff, drumset);
             _drumTools->show();
             }
@@ -4615,8 +5834,7 @@ void MuseScore::showSearchDialog()
 
             qDebug("Line edit %p", searchCombo->lineEdit());
 
-            // does not work: connect(searchCombo->lineEdit(), SIGNAL(returnPressed()), SLOT(endSearch()));
-            connect(searchCombo->lineEdit(), SIGNAL(editingFinished()), SLOT(endSearch()));
+            connect(searchCombo->lineEdit(), SIGNAL(returnPressed()), SLOT(endSearch()));
             }
 
       searchCombo->clearEditText();
@@ -4624,12 +5842,56 @@ void MuseScore::showSearchDialog()
       _searchDialog->show();
       }
 
+
+
 #ifndef SCRIPT_INTERFACE
 void MuseScore::pluginTriggered(int) {}
 void MuseScore::loadPlugins() {}
 bool MuseScore::loadPlugin(const QString&) { return false;}
 void MuseScore::unloadPlugins() {}
 #endif
+
+
+void MuseScore::saveGeometry(QWidget const*const qw)
+      {
+      QSettings settings;
+      QString objectName = qw->objectName();
+      Q_ASSERT(!objectName.isEmpty());
+      settings.beginGroup("Geometries");
+      settings.setValue(objectName, qw->saveGeometry());
+      settings.endGroup();
+      }
+
+void MuseScore::restoreGeometry(QWidget *const qw)
+      {
+      if (!useFactorySettings) {
+            QSettings settings;
+            QString objectName = qw->objectName();
+            Q_ASSERT(!objectName.isEmpty());
+            settings.beginGroup("Geometries");
+            qw->restoreGeometry(settings.value(objectName).toByteArray());
+            settings.endGroup();
+            }
+      }
+
+void MuseScore::updateWindowTitle(Score* score)
+      {
+#ifdef Q_OS_MAC
+      if (!cs->isMaster())
+            setWindowTitle(cs->masterScore()->title() + "-" + cs->title());
+      else
+            setWindowTitle(cs->title());
+      if (score->masterScore()->created())
+            setWindowFilePath(QString());
+      else
+            setWindowFilePath(score->masterScore()->fileInfo()->absoluteFilePath());
+#else
+      if (!cs->isMaster())
+            setWindowTitle(MUSESCORE_NAME_VERSION ": " + cs->masterScore()->title() + "-" + cs->title() + "[*]");
+      else
+            setWindowTitle(MUSESCORE_NAME_VERSION ": " + score->title() + "[*]");
+#endif
+      }
 
 //---------------------------------------------------------
 //   recentScores
@@ -4648,7 +5910,7 @@ QFileInfoList MuseScore::recentScores() const
             bool alreadyLoaded = false;
             QString fp = fi.canonicalFilePath();
             for (Score* s : mscore->scores()) {
-                  if ((s->fileInfo()->canonicalFilePath() == fp) || (s->importedFilePath() == fp)) {
+                  if ((s->masterScore()->fileInfo()->canonicalFilePath() == fp) || (s->importedFilePath() == fp)) {
                         alreadyLoaded = true;
                         break;
                         }
@@ -4659,6 +5921,370 @@ QFileInfoList MuseScore::recentScores() const
       return fil;
       }
 
+//---------------------------------------------------------
+//   createPopupMenu
+//---------------------------------------------------------
+
+QMenu* MuseScore::createPopupMenu()
+      {
+      QMenu* m = QMainWindow::createPopupMenu();
+      QList<QAction*> al = m->actions();
+      for (QAction* a : al) {
+            // textTool visibility is handled differentlyr
+            if (_textTools && a->text() == _textTools->windowTitle())
+                  m->removeAction(a);
+            }
+      return m;
+      }
+
+//---------------------------------------------------------
+//   synthesizerState
+//---------------------------------------------------------
+
+SynthesizerState MuseScore::synthesizerState()
+      {
+      SynthesizerState state;
+      return synti ? synti->state() : state;
+      }
+
+//---------------------------------------------------------
+//   canSaveMp3
+//---------------------------------------------------------
+
+bool MuseScore::canSaveMp3()
+      {
+#ifndef USE_LAME
+      return false;
+#else
+      MP3Exporter exporter;
+      if (!exporter.loadLibrary(MP3Exporter::AskUser::NO)) {
+            qDebug("Could not open MP3 encoding library!");
+            return false;
+            }
+
+      if (!exporter.validLibraryLoaded()) {
+            qDebug("Not a valid or supported MP3 encoding library!");
+            return false;
+            }
+      return true;
+#endif
+      }
+
+//---------------------------------------------------------
+//   saveMp3
+//---------------------------------------------------------
+
+bool MuseScore::saveMp3(Score* score, const QString& name)
+      {
+#ifndef USE_LAME
+      return false;
+#else
+      EventMap events;
+      score->renderMidi(&events);
+      if(events.size() == 0)
+            return false;
+
+      MP3Exporter exporter;
+      if (!exporter.loadLibrary(MP3Exporter::AskUser::MAYBE)) {
+            QSettings settings;
+            settings.setValue("/Export/lameMP3LibPath", "");
+            if(!MScore::noGui)
+                  QMessageBox::warning(0,
+                               tr("Error Opening LAME library"),
+                               tr("Could not open MP3 encoding library!"),
+                               QString::null, QString::null);
+            qDebug("Could not open MP3 encoding library!");
+            return false;
+            }
+
+      if (!exporter.validLibraryLoaded()) {
+            QSettings settings;
+            settings.setValue("/Export/lameMP3LibPath", "");
+            if(!MScore::noGui)
+                  QMessageBox::warning(0,
+                               tr("Error Opening LAME library"),
+                               tr("Not a valid or supported MP3 encoding library!"),
+                               QString::null, QString::null);
+            qDebug("Not a valid or supported MP3 encoding library!");
+            return false;
+            }
+
+      // Retrieve preferences
+//      int highrate = 48000;
+//      int lowrate = 8000;
+//      int bitrate = 64;
+//      int brate = 128;
+//      int rmode = MODE_CBR;
+//      int vmode = ROUTINE_FAST;
+//      int cmode = CHANNEL_STEREO;
+
+      int channels = 2;
+
+      int oldSampleRate = MScore::sampleRate;
+      int sampleRate = preferences.getInt(PREF_EXPORT_AUDIO_SAMPLERATE);
+      exporter.setBitrate(preferences.getInt(PREF_EXPORT_MP3_BITRATE));
+
+      int inSamples = exporter.initializeStream(channels, sampleRate);
+      if (inSamples < 0) {
+            if (!MScore::noGui) {
+                  QMessageBox::warning(0, tr("Encoding Error"),
+                     tr("Unable to initialize MP3 stream"),
+                     QString::null, QString::null);
+                  }
+            qDebug("Unable to initialize MP3 stream");
+            MScore::sampleRate = oldSampleRate;
+            return false;
+            }
+
+      QFile file(name);
+      if (!file.open(QIODevice::WriteOnly)) {
+            if (!MScore::noGui) {
+                  QMessageBox::warning(0,
+                     tr("Encoding Error"),
+                     tr("Unable to open target file for writing"),
+                     QString::null, QString::null);
+                  }
+            MScore::sampleRate = oldSampleRate;
+            return false;
+            }
+
+      int bufferSize   = exporter.getOutBufferSize();
+      uchar* bufferOut = new uchar[bufferSize];
+      MasterSynthesizer* synti = synthesizerFactory();
+      synti->init();
+      synti->setSampleRate(sampleRate);
+      if (MScore::noGui) { // use score settings if possible
+            bool r = synti->setState(score->synthesizerState());
+            if (!r)
+                  synti->init();
+            }
+      else { // use current synth settings
+            bool r = synti->setState(mscore->synthesizerState());
+            if (!r)
+                  synti->init();
+            }
+
+      MScore::sampleRate = sampleRate;
+
+      QProgressDialog progress(this);
+      progress.setWindowFlags(Qt::WindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint));
+      progress.setWindowModality(Qt::ApplicationModal);
+      //progress.setCancelButton(0);
+      progress.setCancelButtonText(tr("Cancel"));
+      progress.setLabelText(tr("Exporting..."));
+      if (!MScore::noGui)
+            progress.show();
+
+      static const int FRAMES = 512;
+      float bufferL[FRAMES];
+      float bufferR[FRAMES];
+
+      float  peak = 0.0;
+      double gain = 1.0;
+      EventMap::const_iterator endPos = events.cend();
+      --endPos;
+      const int et = (score->utick2utime(endPos->first) + 1) * MScore::sampleRate;
+      const int maxEndTime = (score->utick2utime(endPos->first) + 3) * MScore::sampleRate;
+      progress.setRange(0, et);
+
+      for (int pass = 0; pass < 2; ++pass) {
+            EventMap::const_iterator playPos;
+            playPos = events.cbegin();
+            synti->allSoundsOff(-1);
+
+            //
+            // init instruments
+            //
+            foreach(Part* part, score->parts()) {
+                  const InstrumentList* il = part->instruments();
+                  for(auto i = il->begin(); i!= il->end(); i++) {
+                        foreach(const Channel* a, i->second->channel()) {
+                              a->updateInitList();
+                              foreach(MidiCoreEvent e, a->init) {
+                                    if (e.type() == ME_INVALID)
+                                          continue;
+                                    e.setChannel(a->channel);
+                                    int syntiIdx= synti->index(score->masterScore()->midiMapping(a->channel)->articulation->synti);
+                                    synti->play(e, syntiIdx);
+                                    }
+                              }
+                        }
+                  }
+
+            int playTime = 0.0;
+
+            for (;;) {
+                  unsigned frames = FRAMES;
+                  float max = 0;
+                  //
+                  // collect events for one segment
+                  //
+                  memset(bufferL, 0, sizeof(float) * FRAMES);
+                  memset(bufferR, 0, sizeof(float) * FRAMES);
+                  double endTime = playTime + frames;
+
+                  float* l = bufferL;
+                  float* r = bufferR;
+
+                  for (; playPos != events.cend(); ++playPos) {
+                        double f = score->utick2utime(playPos->first) * MScore::sampleRate;
+                        if (f >= endTime)
+                              break;
+                        int n = f - playTime;
+                        if (n) {
+                              float bu[n * 2];
+                              memset(bu, 0, sizeof(float) * 2 * n);
+
+                              synti->process(n, bu);
+                              float* sp = bu;
+                              for (int i = 0; i < n; ++i) {
+                                    *l++ = *sp++;
+                                    *r++ = *sp++;
+                                    }
+                              playTime  += n;
+                              frames    -= n;
+                              }
+                        const NPlayEvent& e = playPos->second;
+                        if (e.isChannelEvent()) {
+                              int channelIdx = e.channel();
+                              Channel* c = score->masterScore()->midiMapping(channelIdx)->articulation;
+                              if (!c->mute) {
+                                    synti->play(e, synti->index(c->synti));
+                                    }
+                              }
+                        }
+                  if (frames) {
+                        float bu[frames * 2];
+                        memset(bu, 0, sizeof(float) * 2 * frames);
+                        synti->process(frames, bu);
+                        float* sp = bu;
+                        for (unsigned i = 0; i < frames; ++i) {
+                              *l++ = *sp++;
+                              *r++ = *sp++;
+                              }
+                        playTime += frames;
+                        }
+
+                  if (pass == 1) {
+                        for (int i = 0; i < FRAMES; ++i) {
+                              max = qMax(max, qAbs(bufferL[i]));
+                              max = qMax(max, qAbs(bufferR[i]));
+                              bufferL[i] *= gain;
+                              bufferR[i] *= gain;
+                              }
+                        long bytes;
+                        if (FRAMES < inSamples)
+                              bytes = exporter.encodeRemainder(bufferL, bufferR,  FRAMES , bufferOut);
+                        else
+                              bytes = exporter.encodeBuffer(bufferL, bufferR, bufferOut);
+                        if (bytes < 0) {
+                              if (MScore::noGui)
+                                    qDebug("exportmp3: error from encoder: %ld", bytes);
+                              else
+                                    QMessageBox::warning(0,
+                                       tr("Encoding Error"),
+                                       tr("Error %1 returned from MP3 encoder").arg(bytes),
+                                       QString::null, QString::null);
+                              break;
+                              }
+                        else
+                              file.write((char*)bufferOut, bytes);
+                        }
+                  else {
+                        for (int i = 0; i < FRAMES; ++i) {
+                              max = qMax(max, qAbs(bufferL[i]));
+                              max = qMax(max, qAbs(bufferR[i]));
+                              peak = qMax(peak, qAbs(bufferL[i]));
+                              peak = qMax(peak, qAbs(bufferR[i]));
+                              }
+                        }
+                  playTime = endTime;
+                  if (!MScore::noGui) {
+                        if (progress.wasCanceled())
+                              break;
+                        progress.setValue((pass * et + playTime) / 2);
+                        qApp->processEvents();
+                        }
+                  if (playTime >= et)
+                        synti->allNotesOff(-1);
+                  // create sound until the sound decays
+                  if (playTime >= et && max * peak < 0.000001)
+                        break;
+                  // hard limit
+                  if (playTime > maxEndTime)
+                        break;
+                  }
+            if (progress.wasCanceled())
+                  break;
+            if (pass == 0 && peak == 0.0) {
+                  qDebug("song is empty");
+                  break;
+                  }
+            gain = 0.99 / peak;
+            }
+
+      long bytes = exporter.finishStream(bufferOut);
+      if (bytes > 0L)
+            file.write((char*)bufferOut, bytes);
+
+      bool wasCanceled = progress.wasCanceled();
+      progress.close();
+      delete synti;
+      delete[] bufferOut;
+      file.close();
+      if (wasCanceled)
+            file.remove();
+      MScore::sampleRate = oldSampleRate;
+      return true;
+#endif
+      }
+
+void MuseScore::updateUiStyleAndTheme()
+      {
+      // set UI Theme
+      QApplication::setStyle(QStyleFactory::create("Fusion"));
+
+      QString wd      = QString("%1/%2").arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).arg(QCoreApplication::applicationName());
+      // set UI Color Palette
+      QPalette p(QApplication::palette());
+      QString jsonPaletteFilename = preferences.isThemeDark() ? "palette_dark_fusion.json" : "palette_light_fusion.json";;
+      QFile jsonPalette(QString(":/themes/%1").arg(jsonPaletteFilename));
+      // read from Documents TODO: remove this
+      if (QFile::exists(QString("%1/%2").arg(wd, "ms_palette.json")))
+            jsonPalette.setFileName(QString("%1/%2").arg(wd, "ms_palette.json"));
+      if (jsonPalette.open(QFile::ReadOnly | QFile::Text)) {
+            QJsonDocument d = QJsonDocument::fromJson(jsonPalette.readAll());
+            QJsonObject o = d.object();
+            QMetaEnum metaEnum = QMetaEnum::fromType<QPalette::ColorRole>();
+            for (int i = 0; i < metaEnum.keyCount(); ++i) {
+                  QJsonValue v = o.value(metaEnum.valueToKey(i));
+                  if (!v.isUndefined())
+                        p.setColor(static_cast<QPalette::ColorRole>(metaEnum.value(i)), QColor(v.toString()));
+                  }
+            }
+      QApplication::setPalette(p);
+
+      // set UI Style
+      QString css;
+      QString styleFilename = preferences.isThemeDark() ? "style_dark_fusion.css" : "style_light_fusion.css";
+      QFile fstyle(QString(":/themes/%1").arg(styleFilename));
+      // read from Documents TODO: remove this
+      if (QFile::exists(QString("%1/%2").arg(wd, "ms_style.css")))
+            fstyle.setFileName(QString("%1/%2").arg(wd, "ms_style.css"));
+      if (fstyle.open(QFile::ReadOnly | QFile::Text)) {
+            QTextStream in(&fstyle);
+            css = in.readAll();
+            }
+
+      css.replace("$voice1-bgcolor", MScore::selectColor[0].name(QColor::HexRgb));
+      css.replace("$voice2-bgcolor", MScore::selectColor[1].name(QColor::HexRgb));
+      css.replace("$voice3-bgcolor", MScore::selectColor[2].name(QColor::HexRgb));
+      css.replace("$voice4-bgcolor", MScore::selectColor[3].name(QColor::HexRgb));
+      qApp->setStyleSheet(css);
+
+      genIcons();
+      Shortcut::refreshIcons();
+      }
 }
 
 using namespace Ms;
@@ -4669,28 +6295,45 @@ using namespace Ms;
 
 int main(int argc, char* av[])
       {
+#ifndef NDEBUG
+      qSetMessagePattern("%{file}:%{function}: %{message}");
+      Ms::checkStyles();
+#endif
+
       QApplication::setDesktopSettingsAware(true);
+      QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+      QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #if defined(QT_DEBUG) && defined(Q_OS_WIN)
       qInstallMessageHandler(mscoreMessageHandler);
 #endif
+
+      qRegisterMetaTypeStreamOperators<SessionStart>("SessionStart");
+      qRegisterMetaTypeStreamOperators<MusicxmlExportBreaks>("MusicxmlExportBreaks");
+      qRegisterMetaTypeStreamOperators<MuseScoreStyleType>("MuseScoreStyleType");
 
       QFile f(":/revision.h");
       f.open(QIODevice::ReadOnly);
       revision = QString(f.readAll()).trimmed();
       f.close();
 
-      MuseScoreApplication* app;
+      const char* appName;
+      const char* appName2;
       if (MuseScore::unstable()) {
-            app = new MuseScoreApplication("mscore-dev", argc, av);
-            QCoreApplication::setApplicationName("MuseScoreDevelopment");
+            appName2 = "mscore-dev3";
+            appName  = "MuseScoreDevelopment";
             }
       else {
-            app = new MuseScoreApplication("mscore2", argc, av);
-            QCoreApplication::setApplicationName("MuseScore2");
+            appName2 = "mscore3";
+            appName  = "MuseScore3";
             }
+
+      MuseScoreApplication* app = new MuseScoreApplication(appName2, argc, av);
+      QCoreApplication::setApplicationName(appName);
+
       QCoreApplication::setOrganizationName("MuseScore");
       QCoreApplication::setOrganizationDomain("musescore.org");
       QCoreApplication::setApplicationVersion(VERSION);
+
       QAccessible::installFactory(AccessibleScoreView::ScoreViewFactory);
       QAccessible::installFactory(AccessibleSearchBox::SearchBoxFactory);
       QAccessible::installFactory(Awl::AccessibleAbstractSlider::AbstractSliderFactory);
@@ -4709,29 +6352,35 @@ int main(int argc, char* av[])
     //parser.addOption(QCommandLineOption({"v", "version"}, "Print version")); // see above
       parser.addOption(QCommandLineOption(      "long-version", "Print detailed version information"));
       parser.addOption(QCommandLineOption({"d", "debug"}, "Debug mode"));
-      parser.addOption(QCommandLineOption({"L", "layout-debug"}, "Layout debug"));
+      parser.addOption(QCommandLineOption({"L", "layout-debug"}, "Layout debug mode"));
       parser.addOption(QCommandLineOption({"s", "no-synthesizer"}, "No internal synthesizer"));
-      parser.addOption(QCommandLineOption({"m", "no-midi"}, "No midi"));
+      parser.addOption(QCommandLineOption({"m", "no-midi"}, "No MIDI"));
       parser.addOption(QCommandLineOption({"a", "use-audio"}, "Use audio driver: jack, alsa, pulse, or portaudio", "driver"));
       parser.addOption(QCommandLineOption({"n", "new-score"}, "Start with new score"));
       parser.addOption(QCommandLineOption({"I", "dump-midi-in"}, "Dump midi input"));
       parser.addOption(QCommandLineOption({"O", "dump-midi-out"}, "Dump midi output"));
-      parser.addOption(QCommandLineOption({"o", "export-to"}, "Export to 'file'; format depends on file extension", "file"));
-      parser.addOption(QCommandLineOption({"r", "image-resolution"}, "Set output resolution for image export", "dpi"));
-      parser.addOption(QCommandLineOption({"T", "trim-image"}, "Trim exported image with specified margin (in pixels)", "margin"));
+      parser.addOption(QCommandLineOption({"o", "export-to"}, "Export to 'file'. Format depends on file's extension", "file"));
+      parser.addOption(QCommandLineOption({"r", "image-resolution"}, "Used with '-o <file>.png'. Set output resolution for image export", "DPI"));
+      parser.addOption(QCommandLineOption({"T", "trim-image"}, "Used with '-o <file>.png' and '-o <file.svg>'. Trim exported image with specified margin (in pixels)", "margin"));
       parser.addOption(QCommandLineOption({"x", "gui-scaling"}, "Set scaling factor for GUI elements", "factor"));
+      parser.addOption(QCommandLineOption({"D", "monitor-resolution"}, "Specify monitor resolution", "DPI"));
       parser.addOption(QCommandLineOption({"S", "style"}, "Load style file", "style"));
-      parser.addOption(QCommandLineOption({"p", "plugin"}, "Execure named plugin", "name"));
+      parser.addOption(QCommandLineOption({"p", "plugin"}, "Execute named plugin", "name"));
       parser.addOption(QCommandLineOption(      "template-mode", "Save template mode, no page size"));
       parser.addOption(QCommandLineOption({"F", "factory-settings"}, "Use factory settings"));
       parser.addOption(QCommandLineOption({"R", "revert-settings"}, "Revert to default preferences"));
       parser.addOption(QCommandLineOption({"i", "load-icons"}, "Load icons from INSTALLPATH/icons"));
+      parser.addOption(QCommandLineOption({"j", "job"}, "Process a conversion job", "file"));
       parser.addOption(QCommandLineOption({"e", "experimental"}, "Enable experimental features"));
-      parser.addOption(QCommandLineOption({"c", "config-folder"}, "Override config/settings folder", "dir"));
-      parser.addOption(QCommandLineOption({"t", "test-mode"}, "Set testMode flag for all files"));
+      parser.addOption(QCommandLineOption({"c", "config-folder"}, "Override configuration and settings folder", "dir"));
+      parser.addOption(QCommandLineOption({"t", "test-mode"}, "Set test mode flag for all files"));
       parser.addOption(QCommandLineOption({"M", "midi-operations"}, "Specify MIDI import operations file", "file"));
       parser.addOption(QCommandLineOption({"w", "no-webview"}, "No web view in start center"));
-      parser.addOption(QCommandLineOption({"P", "export-score-parts"}, "used with -o <file>.pdf, export score + parts"));
+      parser.addOption(QCommandLineOption({"P", "export-score-parts"}, "Used with '-o <file>.pdf', export score and parts"));
+      parser.addOption(QCommandLineOption(      "no-fallback-font", "Don't use Bravura as fallback musical font"));
+      parser.addOption(QCommandLineOption({"f", "force"}, "Used with '-o <file>', ignore warnings reg. score being corrupted or from wrong version"));
+      parser.addOption(QCommandLineOption({"b", "bitrate"}, "Used with '-o <file>.mp3', sets bitrate, in kbps", "bitrate"));
+      parser.addOption(QCommandLineOption({"E", "install-extension"}, "Install an extension, load soundfont as default unless if -e is passed too", "extension file"));
 
       parser.addPositionalArgument("scorefiles", "The files to open", "[scorefile...]");
 
@@ -4743,7 +6392,7 @@ int main(int argc, char* av[])
             return EXIT_SUCCESS;
             }
       MScore::debugMode = parser.isSet("d");
-      MScore::layoutDebug = parser.isSet("L");
+      MScore::noHorizontalStretch = MScore::noVerticalStretch = parser.isSet("L");
       noSeq = parser.isSet("s");
       noMidi = parser.isSet("m");
       if (parser.isSet("a")) {
@@ -4755,11 +6404,22 @@ int main(int argc, char* av[])
       externalIcons = parser.isSet("i");
       midiInputTrace = parser.isSet("I");
       midiOutputTrace = parser.isSet("O");
+      MScore::useFallbackFont = !parser.isSet("no-fallback-font");
+
       if ((converterMode = parser.isSet("o"))) {
             MScore::noGui = true;
             outFileName = parser.value("o");
             if (outFileName.isEmpty())
                   parser.showHelp(EXIT_FAILURE);
+            }
+      if ((processJob = parser.isSet("j"))) {
+            MScore::noGui = true;
+            converterMode = true;
+            jsonFileName = parser.value("j");
+            if (jsonFileName.isEmpty()) {
+                  fprintf(stderr, "json file name missing\n");
+                  parser.showHelp(EXIT_FAILURE);
+                  }
             }
       if ((pluginMode = parser.isSet("p"))) {
             MScore::noGui = true;
@@ -4767,24 +6427,54 @@ int main(int argc, char* av[])
             if (pluginName.isEmpty())
                   parser.showHelp(EXIT_FAILURE);
             }
+      if (parser.isSet("E")) {
+            MScore::noGui = true;
+            extensionName = parser.value("E");
+            }
       MScore::saveTemplateMode = parser.isSet("template-mode");
       if (parser.isSet("r")) {
             QString temp = parser.value("r");
             if (temp.isEmpty())
                    parser.showHelp(EXIT_FAILURE);
-            converterDpi = temp.toDouble();
+            bool ok = false;
+            double res = temp.toDouble(&ok);
+            if (ok)
+                  preferences.setTemporaryPreference(PREF_EXPORT_PNG_RESOLUTION, res);
+            else
+                  fprintf(stderr, "PNG resolution value '%s' not recognized, using default setting from preferences instead.\n", qPrintable(temp));
             }
       if (parser.isSet("T")) {
             QString temp = parser.value("T");
             if (temp.isEmpty())
                    parser.showHelp(EXIT_FAILURE);
-            trimMargin = temp.toInt(); // ToDo: check whether conversion went OK, set to -1 if not
+            bool ok = false;
+            trimMargin = temp.toInt(&ok);
+            if (!ok) {
+                  fprintf(stderr, "Trim margin value '%s' not recognized, so no trimming will be done.\n", qPrintable(temp));
+                  trimMargin = -1;
+                  }
            }
       if (parser.isSet("x")) {
             QString temp = parser.value("x");
             if (temp.isEmpty())
                    parser.showHelp(EXIT_FAILURE);
-            guiScaling = temp.toDouble(); // ToDo: check whether conversion went OK, set to 1.0 if not
+            bool ok = false;
+            guiScaling = temp.toDouble(&ok);
+            if (!ok) {
+                  fprintf(stderr, "GUI scaling value '%s' not recognized, so the values detected by Qt are taken.\n", qPrintable(temp));
+                  guiScaling = 0.0;
+                  }
+            }
+      if (parser.isSet("D")) {
+            QString temp = parser.value("D");
+            if (temp.isEmpty())
+                   parser.showHelp(EXIT_FAILURE);
+            bool ok = false;
+            userDPI = temp.toDouble(&ok);
+            if (!ok) {
+                  fprintf(stderr, "DPI value '%s' not recognized, so the values detected by Qt are taken.\n", qPrintable(temp));
+                  userDPI = 0.0;
+                  }
             }
       if (parser.isSet("S")) {
             styleFile = parser.value("S");
@@ -4805,17 +6495,29 @@ int main(int argc, char* av[])
                   dataPath = path;
                   }
             }
-      enableTestMode = parser.isSet("t");
+      MScore::testMode = parser.isSet("t");
       if (parser.isSet("M")) {
             QString temp = parser.value("M");
             if (temp.isEmpty())
                   parser.showHelp(EXIT_FAILURE);
-            preferences.midiImportOperations.setOperationsFile(temp);
+            midiImportOperations.setOperationsFile(temp);
             }
       noWebView = parser.isSet("w");
       exportScoreParts = parser.isSet("export-score-parts");
       if (exportScoreParts && !converterMode)
             parser.showHelp(EXIT_FAILURE);
+      ignoreWarnings = parser.isSet("f");
+      if (parser.isSet("b")) {
+            QString temp = parser.value("b");
+            if (temp.isEmpty())
+                   parser.showHelp(EXIT_FAILURE);
+            bool ok = false;
+            int rate = temp.toInt(&ok);
+            if (ok)
+                  preferences.setTemporaryPreference(PREF_EXPORT_MP3_BITRATE, rate);
+            else
+                  fprintf(stderr, "MP3 bitrate value '%s' not recognized, using default setting from preferences instead.\n", qPrintable(temp));
+           }
 
       QStringList argv = parser.positionalArguments();
 
@@ -4825,12 +6527,13 @@ int main(int argc, char* av[])
       if (!converterMode && !pluginMode) {
             if (!argv.isEmpty()) {
                   int ok = true;
-                  foreach(QString message, argv) {
+                  for (const QString& message : argv) {
                         QFileInfo fi(message);
                         if (!app->sendMessage(fi.absoluteFilePath())) {
                               ok = false;
                               break;
                               }
+
                         }
                   if (ok)
                         return 0;
@@ -4841,7 +6544,7 @@ int main(int argc, char* av[])
             }
 
       if (dataPath.isEmpty())
-            dataPath = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+            dataPath = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
 
       if (deletePreferences) {
             QDir(dataPath).removeRecursively();
@@ -4858,14 +6561,13 @@ int main(int argc, char* av[])
       if (MScore::debugMode)
             qDebug("global share: <%s>", qPrintable(mscoreGlobalShare));
 
-      // set translator before preferences are read to get
-      //    translations for all shortcuts
-      //
+      // set translator before Shortcut are initialized to get translations for all shortcuts
+      // can not use preferences to retrieve these values as it needs to be initialized after translator is set
       if (useFactorySettings)
             localeName = "system";
       else {
             QSettings s;
-            localeName = s.value("language", "system").toString();
+            localeName = s.value(PREF_UI_APP_LANGUAGE, "system").toString();
             }
 
       setMscoreLocale(localeName);
@@ -4875,18 +6577,26 @@ int main(int argc, char* av[])
 
       QNetworkProxyFactory::setUseSystemConfiguration(true);
 
-      MScore::init();                                      // initialize libmscore
+      MScore::init();         // initialize libmscore
+      updateExternalValuesFromPreferences();
+
+      // initialize current page size from default printer
+#ifndef QT_NO_PRINTER
       if (!MScore::testMode) {
-            QSizeF psf = QPrinter().paperSize(QPrinter::Inch);
-            PaperSize ps("system", psf.width(), psf.height());
-            PageFormat pf;
-            pf.setSize(&ps);
-            pf.setPrintableWidth(psf.width() - 20.0 / INCH);
-            MScore::defaultStyle()->setPageFormat(pf);
+            QPrinter p;
+            if (p.isValid()) {
+//                  qDebug("set paper size from default printer");
+                  QRectF psf = p.paperRect(QPrinter::Inch);
+                  MScore::defaultStyle().set(Sid::pageWidth,  psf.width());
+                  MScore::defaultStyle().set(Sid::pageHeight, psf.height());
+                  MScore::defaultStyle().set(Sid::pagePrintableWidth, psf.width()-20.0/INCH);
+                  }
             }
+#endif
 
 #ifdef SCRIPT_INTERFACE
-      qmlRegisterType<QmlPlugin>  ("MuseScore", 1, 0, "MuseScore");
+      if (-1 == qmlRegisterType<QmlPlugin>  ("MuseScore", 3, 0, "MuseScore"))
+            qDebug("qmlRegisterType failed: MuseScore");
 #endif
       if (MScore::debugMode) {
             qDebug("DPI %f", DPI);
@@ -4912,115 +6622,23 @@ int main(int argc, char* av[])
             qDebug() << "  Virtual size:" << screen->virtualSize().width() << "x" << screen->virtualSize().height();
             }
 
-      if (!useFactorySettings)
-            preferences.read();
-
-      preferences.readDefaultStyle();
-
-      if (converterDpi == 0)
-            converterDpi = preferences.pngResolution;
+      if (!MScore::testMode)
+            MScore::readDefaultStyle(preferences.getString(PREF_SCORE_STYLE_DEFAULTSTYLEFILE));
 
       QSplashScreen* sc = 0;
-      QTimer* stimer = 0;
-      if (!MScore::noGui && preferences.showSplashScreen) {
+      if (!MScore::noGui && preferences.getBool(PREF_UI_APP_STARTUP_SHOWSPLASHSCREEN)) {
             QPixmap pm(":/data/splash.png");
             sc = new QSplashScreen(pm);
             sc->setWindowTitle(QString("MuseScore Startup"));
 #ifdef Q_OS_MAC // to have session dialog on top of splashscreen on mac
             sc->setWindowFlags(Qt::FramelessWindowHint);
 #endif
-            // show splash screen for 5 sec
-            stimer = new QTimer(0);
-            qApp->connect(stimer, SIGNAL(timeout()), sc, SLOT(close()));
-            stimer->start(5000);
             sc->show();
             qApp->processEvents();
             }
 
-      if (!converterMode && !pluginMode) {
-            struct PaletteItem {
-                  QPalette::ColorRole role;
-                  const char* name;
-                  const char* color;
-                  };
-            MgStyle* st = new MgStyle;
-            QApplication::setStyle(st);
-            QPalette p(QApplication::palette());
-            QSettings s;
-
-            switch (preferences.globalStyle) {
-                  case MuseScoreStyleType::DARK: {
-                        static const PaletteItem pi[] = {
-                              { QPalette::Window,          "WindowColor",          "#525252" },
-                              { QPalette::WindowText,      "WindowTextColor",      "#FFFFFF" },
-                              { QPalette::Base,            "BaseColor",            "#424242" },
-                              { QPalette::AlternateBase,   "AlternateBaseColor",   "#626262" },
-                              { QPalette::Text,            "TextColor",            "#FFFFFF" },
-                              { QPalette::Button,          "ButtonColor",          "#525252" },
-                              { QPalette::ButtonText,      "ButtonTextColor",      "#FFFFFF" },
-                              { QPalette::BrightText,      "BrightTextColor",      "#000000" },
-
-//                            { QPalette::Light,           "LightColor",           "#00FF00" },
-//                            { QPalette::Midlight,        "MidlightTextColor",    "#00FF00" },
-//                            { QPalette::Dark,            "DarkTextColor",        "#00FF00" },
-//                            { QPalette::Mid,             "MidColor",             "#00FF00" },
-//                            { QPalette::Shadow,          "ShadowColor",          "#00FF00" },
-                              { QPalette::Highlight,       "HighlightColor",       "#88bff6" },
-//                            { QPalette::HighlightedText, "HighlightedTextColor", "#00FF00" },
-                              { QPalette::Link,            "HighlightedTextColor", "#00ffff" },
-                              { QPalette::LinkVisited,     "HighlightedTextColor", "#00ffff" },
-                              { QPalette::ToolTipBase,     "ToolTipBaseColor",     "#808080" },
-                              { QPalette::ToolTipText,     "ToolTipTextColor",     "#000000" },
-                              };
-                        for (auto i : pi)
-                              p.setColor(i.role, s.value(i.name, i.color).value<QColor>());
-                        break;
-                        }
-                  case MuseScoreStyleType::LIGHT:
-                        static const PaletteItem pi[] = {
-                              { QPalette::Window,        "WindowColor",        "#e3e3e3"  },
-                              { QPalette::WindowText,    "WindowTextColor",    "#333333"  },
-                              { QPalette::Base,          "BaseColor",          "#f9f9f9"  },
-                              { QPalette::AlternateBase, "AlternateBaseColor", "#eeeeee"  },
-                              { QPalette::Text,          "TextColor",          "#333333"  },
-                              { QPalette::Button,        "ButtonColor",        "#c9c9c9"  },
-                              { QPalette::ButtonText,    "ButtonTextColor",    "#333333"  },
-                              { QPalette::BrightText,    "BrightTextColor",    "#000000"  },
-                              { QPalette::ToolTipBase,   "ToolTipBaseColor",   "#fefac2"  },
-                              { QPalette::ToolTipText,   "ToolTipTextColor",   "#000000"  },
-                              { QPalette::Link,          "LinkColor",          "#3a80c6"  },
-                              { QPalette::LinkVisited,   "LinkVisitedColor",   "#3a80c6"  },
-                              };
-                        for (auto i : pi)
-                              p.setColor(i.role, s.value(i.name, i.color).value<QColor>());
-                        break;
-                  }
-            QApplication::setPalette(p);
-
-            qApp->setStyleSheet(
-                  "*:disabled {\n"
-                  "   color: gray\n"
-                  "}\n"
-                  "QGroupBox {\n"
-                  "font-weight: bold;\n"
-                  "}\n"
-                  "QGroupBox::title {\n"
-                  "   subcontrol-origin: margin; subcontrol-position: top left; padding: 5px 5px;\n"
-                  "}\n"
-                  "QDockWidget {\n"
-                  "   border: 1px solid lightgray;\n"
-                  "   titlebar-close-icon: url(:/data/icons/png/window-close.png);\n"
-                  "   titlebar-normal-icon: url(:/data/icons/png/window-float.png);\n"
-                  "   }\n"
-                  "QTabBar::close-button {\n"
-                  "   image: url(:/data/icons/png/window-close.png);\n"
-              "   }\n"
-                  "QTabBar::close-button:hover {\n"
-              "   image: url(:/data/icons/png/window-close-hover.png);\n"
-              "   }");
-            MgStyleConfigData::animationsEnabled = preferences.animations;
-            qApp->setAttribute(Qt::AA_UseHighDpiPixmaps);
-            }
+      if (!MScore::noGui)
+            MuseScore::updateUiStyleAndTheme();
       else
             noSeq = true;
 
@@ -5052,7 +6670,7 @@ int main(int argc, char* av[])
             seq         = 0;
             MScore::seq = 0;
             }
-
+//---
       //
       // avoid font problems by overriding the environment
       //    fall back to "C" locale
@@ -5081,10 +6699,12 @@ int main(int argc, char* av[])
             }
 
       mscore = new MuseScore();
-
       // create a score for internal use
-      gscore = new Score(MScore::baseStyle());
-      gscore->style()->set(StyleIdx::MusicalTextFont, QString("Bravura Text"));
+      gscore = new MasterScore();
+      gscore->setMovements(new Movements());
+      gscore->setStyle(MScore::baseStyle());
+
+      gscore->style().set(Sid::MusicalTextFont, QString("Bravura Text"));
       ScoreFont* scoreFont = ScoreFont::fontFactory("Bravura");
       gscore->setScoreFont(scoreFont);
       gscore->setNoteHeadWidth(scoreFont->width(SymId::noteheadBlack, gscore->spatium()) / SPATIUM20);
@@ -5097,10 +6717,30 @@ int main(int argc, char* av[])
       //read languages list
       mscore->readLanguages(mscoreGlobalShare + "locale/languages.xml");
 
+      if (!MScore::noGui) {
+            if (preferences.getBool(PREF_APP_STARTUP_FIRSTSTART)) {
+                  StartupWizard* sw = new StartupWizard;
+                  sw->exec();
+                  preferences.setPreference(PREF_APP_STARTUP_FIRSTSTART, false);
+                  preferences.setPreference(PREF_APP_KEYBOARDLAYOUT, sw->keyboardLayout());
+                  preferences.setPreference(PREF_UI_APP_LANGUAGE, sw->language());
+                  setMscoreLocale(sw->language());
+                  for (auto ws : Workspace::workspaces()) {
+                        if (ws->name().compare(sw->workspace()) == 0) {
+                              mscore->changeWorkspace(ws);
+                              preferences.setPreference(PREF_APP_WORKSPACE, ws->name());
+                              mscore->getPaletteBox()->updateWorkspaces();
+                              }
+                        }
+                  delete sw;
+                  }
+            QString keyboardLayout = preferences.getString(PREF_APP_KEYBOARDLAYOUT);
+            StartupWizard::autoSelectShortcuts(keyboardLayout);
+            }
+
       QApplication::instance()->installEventFilter(mscore);
 
       mscore->setRevision(revision);
-
       int files = 0;
       bool restoredSession = false;
       if (MScore::noGui) {
@@ -5108,8 +6748,7 @@ int main(int argc, char* av[])
             // see issue #28706: Hangup in converter mode with MusicXML source
             qApp->processEvents();
 #endif
-            loadScores(argv);
-            exit(processNonGui() ? 0 : EXIT_FAILURE);
+            exit(processNonGui(argv) ? 0 : EXIT_FAILURE);
             }
       else {
             mscore->readSettings();
@@ -5123,7 +6762,7 @@ int main(int argc, char* av[])
                   if (!name.isEmpty())
                         ++files;
                   }
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
             // app->paths contains files requested to be loaded by OS X
             // append these to argv and update file count
             foreach(const QString& name, app->paths) {
@@ -5136,11 +6775,13 @@ int main(int argc, char* av[])
             //
             // TODO: delete old session backups
             //
-            restoredSession = mscore->restoreSession((preferences.sessionStart == SessionStart::LAST && (files == 0)));
+            restoredSession = mscore->restoreSession((preferences.sessionStart() == SessionStart::LAST && (files == 0)));
             if (!restoredSession || files)
                   loadScores(argv);
             }
+
       errorMessage = new QErrorMessage(mscore);
+      mscore->getPluginManager()->readPluginList();
       mscore->loadPlugins();
       mscore->writeSessionFile(false);
 
@@ -5148,15 +6789,23 @@ int main(int argc, char* av[])
       // there's a bug in Qt showing the toolbar unified after switching showFullScreen(), showMaximized(),
       // showNormal()...
       mscore->setUnifiedTitleAndToolBarOnMac(false);
+
+      // don't let macOS add "Show Tab Bar" to "View" Menu
+      CocoaBridge::setAllowsAutomaticWindowTabbing(false);
 #endif
 
       mscore->changeState(mscore->noScore() ? STATE_DISABLED : STATE_NORMAL);
       mscore->show();
 
+#ifndef MSCORE_NO_UPDATE_CHECKER
       if (mscore->hasToCheckForUpdate())
             mscore->checkForUpdate();
+#endif
 
-      if (!scoresOnCommandline && preferences.showStartcenter && (!restoredSession || mscore->scores().size() == 0)) {
+      if (mscore->hasToCheckForExtensionsUpdate())
+            mscore->checkForExtensionsUpdate();
+
+      if (!scoresOnCommandline && preferences.getBool(PREF_UI_APP_STARTUP_SHOWSTARTCENTER) && (!restoredSession || mscore->scores().size() == 0)) {
 #ifdef Q_OS_MAC
 // ugly, but on mac we get an event when a file is open.
 // We can't get the event when the startcenter is shown.
@@ -5178,7 +6827,12 @@ int main(int argc, char* av[])
 #endif
             }
 
-      mscore->showPlayPanel(preferences.showPlayPanel);
+      if (sc) {
+            sc->close();
+            qApp->processEvents();
+            }
+
+      mscore->showPlayPanel(preferences.getBool(PREF_UI_APP_STARTUP_SHOWPLAYPANEL));
       QSettings settings;
       if (settings.value("synthControlVisible", false).toBool())
             mscore->showSynthControl(true);

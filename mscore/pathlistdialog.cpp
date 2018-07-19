@@ -19,6 +19,7 @@
 
 #include "pathlistdialog.h"
 #include "preferences.h"
+#include "musescore.h"
 
 namespace Ms {
 
@@ -29,10 +30,14 @@ namespace Ms {
 PathListDialog::PathListDialog(QWidget* parent)
    : QDialog(parent)
       {
+      setObjectName("PathListDialog");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
       connect(add, SIGNAL(clicked()), SLOT(addClicked()));
       connect(remove, SIGNAL(clicked()), SLOT(removeClicked()));
+
+      MuseScore::restoreGeometry(this);
       }
 
 
@@ -45,8 +50,8 @@ void PathListDialog::addClicked()
       QString newPath = QFileDialog::getExistingDirectory(
          this,
          tr("Choose a directory"),
-         QString("%1/%2").arg(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).arg(QCoreApplication::applicationName()),
-         QFileDialog::ShowDirsOnly | (preferences.nativeDialogs ? QFileDialog::Options() : QFileDialog::DontUseNativeDialog)
+         QString("%1/%2").arg(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).arg(QCoreApplication::applicationName()),
+         QFileDialog::ShowDirsOnly | (preferences.getBool(PREF_UI_APP_USENATIVEDIALOGS) ? QFileDialog::Options() : QFileDialog::DontUseNativeDialog)
          );
       if (!newPath.isEmpty()) {
             newPath = QDir(newPath).absolutePath();
@@ -88,6 +93,16 @@ void PathListDialog::setPath(QString path)
       {
       QStringList pl = path.split(";");
       files->addItems(pl);
+      }
+
+//---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void PathListDialog::hideEvent(QHideEvent* event)
+      {
+      MuseScore::saveGeometry(this);
+      QWidget::hideEvent(event);
       }
 
 }

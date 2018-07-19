@@ -31,22 +31,15 @@
 //   #define USE_FONT_DASH_TICKNESS
 #endif
 
-//class QPainter;
-
 namespace Ms {
 
 //---------------------------------------------------------
-//   @@ Lyrics
-//   @P syllabic  enum (Lyrics.SINGLE, Lyrics.BEGIN, Lyrics.END, Lyrics.MIDDLE)
+//   Lyrics
 //---------------------------------------------------------
 
 class LyricsLine;
 
-class Lyrics : public Text {
-      Q_OBJECT
-      Q_PROPERTY(Ms::Lyrics::Syllabic syllabic READ syllabic WRITE setSyllabic)
-      Q_ENUMS(Syllabic)
-
+class Lyrics final : public TextBase {
    public:
       enum class Syllabic : char { SINGLE, BEGIN, END, MIDDLE };
       // MELISMA FIRST UNDERSCORE:
@@ -55,30 +48,33 @@ class Lyrics : public Text {
       // it should be cleared to 0 at some point, so that it will not be carried over
       // if the melisma is not extended beyond a single chord, but no suitable place to do this
       // has been identified yet.
-      static const int  TEMP_MELISMA_TICKS      = 1;
 
       // metrics for dashes and melisma; all in sp. units:
-      static constexpr qreal  MELISMA_DEFAULT_LINE_THICKNESS      = 0.10;     // for melisma line only;
+      static const int  TEMP_MELISMA_TICKS      = 1;
       static constexpr qreal  MELISMA_DEFAULT_PAD                 = 0.10;     // the empty space before a melisma line
-      static constexpr qreal  LYRICS_DASH_DEFAULT_STEP            = 16.0;     // the max. distance between dashes
       static constexpr qreal  LYRICS_DASH_DEFAULT_PAD             = 0.05;     // the min. empty space before and after a dash
 // WORD_MIN_DISTANCE has never been implemented
 //      static constexpr qreal  LYRICS_WORD_MIN_DISTANCE            = 0.33;     // min. distance between lyrics from different words
       // These values are used when USE_FONT_DASH_METRIC is not defined
 #if !defined(USE_FONT_DASH_METRIC)
       static constexpr qreal  LYRICS_DASH_DEFAULT_LINE_THICKNESS  = 0.15;     // in sp. units
-      static constexpr qreal  LYRICS_DASH_Y_POS_RATIO             = 0.25;     // the fraction of lyrics font tot. height to
+      static constexpr qreal  LYRICS_DASH_Y_POS_RATIO             = 0.67;     // the fraction of lyrics font x-height to
                                                                               // raise the dashes above text base line;
-#endif                                                                        // this usually raises at about 2/3 of x-height
+#endif
 
    private:
       int _ticks;             ///< if > 0 then draw an underline to tick() + _ticks
                               ///< (melisma)
       Syllabic _syllabic;
       LyricsLine* _separator;
+      std::vector<StyledProperty> _styledProperties;
+
+      bool isMelisma() const;
+      virtual void undoChangeProperty(Pid id, const QVariant&, PropertyFlags ps) override;
 
    protected:
       int _no;                ///< row index
+      bool _even;
 #if defined(USE_FONT_DASH_METRIC)
       qreal _dashY;           // dash dimensions for lyrics line dashes
       qreal _dashLength;
@@ -92,35 +88,37 @@ class Lyrics : public Text {
       Lyrics(const Lyrics&);
       ~Lyrics();
       virtual Lyrics* clone() const override          { return new Lyrics(*this); }
-      virtual Element::Type type() const override     { return Element::Type::LYRICS; }
+      virtual ElementType type() const override       { return ElementType::LYRICS; }
       virtual void scanElements(void* data, void (*func)(void*, Element*), bool all=true) override;
-      virtual bool acceptDrop(const DropData&) const override;
-      virtual Element* drop(const DropData&) override;
+      virtual bool acceptDrop(EditData&) const override;
+      virtual Element* drop(EditData&) override;
 
-      Segment* segment() const                        { return (Segment*)parent()->parent(); }
-      Measure* measure() const                        { return (Measure*)parent()->parent()->parent(); }
-      ChordRest* chordRest() const                    { return (ChordRest*)parent(); }
+      virtual const StyledProperty* styledProperties() const override { return _styledProperties.data(); }
+
+      Segment* segment() const                        { return toSegment(parent()->parent()); }
+      Measure* measure() const                        { return toMeasure(parent()->parent()->parent()); }
+      ChordRest* chordRest() const                    { return toChordRest(parent()); }
 
       virtual void layout() override;
-      virtual void layout1() override;
+      void layout2(int);
 
-      virtual void write(Xml& xml) const override;
+      virtual void write(XmlWriter& xml) const override;
       virtual void read(XmlReader&) override;
+      virtual bool readProperties(XmlReader&);
       virtual int subtype() const override            { return _no; }
-      virtual QString subtypeName() const override    { return tr("Verse %1").arg(_no + 1); }
-      void setNo(int n);
+      virtual QString subtypeName() const override    { return QObject::tr("Verse %1").arg(_no + 1); }
+      void setNo(int n)                               { _no = n; }
       int no() const                                  { return _no; }
+      bool isEven() const                             { return _no % 1; }
       void setSyllabic(Syllabic s)                    { _syllabic = s; }
       Syllabic syllabic() const                       { return _syllabic; }
       virtual void add(Element*) override;
       virtual void remove(Element*) override;
-//      virtual void draw(QPainter*) const override;
-      virtual void endEdit() override;
+      virtual void endEdit(EditData&) override;
 
       int ticks() const                               { return _ticks;    }
       void setTicks(int tick)                         { _ticks = tick;    }
       int endTick() const;
-      bool isMelisma() const;
       void removeFromScore();
 
 #if defined(USE_FONT_DASH_METRIC)
@@ -131,59 +129,57 @@ class Lyrics : public Text {
    #endif
 #endif
 
-      using Text::paste;
-      void paste(MuseScoreView * scoreview);
+      using ScoreElement::undoChangeProperty;
+      using TextBase::paste;
+      virtual void paste(EditData&) override;
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID id) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid id) const override;
       };
 
 //---------------------------------------------------------
 //   LyricsLine
 //---------------------------------------------------------
 
-class LyricsLine : public SLine {
-      Q_OBJECT
-
+class LyricsLine final : public SLine {
    protected:
-      Lyrics*     _nextLyrics;
+      Lyrics* _nextLyrics;
 
    public:
       LyricsLine(Score* s);
       LyricsLine(const LyricsLine&);
 
-      virtual LyricsLine* clone() const override     { return new LyricsLine(*this); }
-      virtual Element::Type type() const override     { return Element::Type::LYRICSLINE; }
+      virtual LyricsLine* clone() const override      { return new LyricsLine(*this); }
+      virtual ElementType type() const override       { return ElementType::LYRICSLINE; }
       virtual void layout() override;
       virtual LineSegment* createLineSegment() override;
       virtual void removeUnmanaged() override;
 
-      Lyrics*     lyrics() const                      { return (Lyrics*)parent();   }
-      Lyrics*     nextLyrics() const                  { return _nextLyrics;         }
-      virtual bool setProperty(P_ID propertyId, const QVariant& v) override;
+      Lyrics* lyrics() const                          { return toLyrics(parent());   }
+      Lyrics* nextLyrics() const                      { return _nextLyrics;         }
+      virtual bool setProperty(Pid propertyId, const QVariant& v) override;
       };
 
 //---------------------------------------------------------
 //   LyricsLineSegment
 //---------------------------------------------------------
 
-class LyricsLineSegment : public LineSegment {
-      Q_OBJECT
-
+class LyricsLineSegment final : public LineSegment {
    protected:
-      int         _numOfDashes;
-      qreal       _dashLength;
+      int   _numOfDashes;
+      qreal _dashLength;
 
-public:
+   public:
       LyricsLineSegment(Score* s);
 
       virtual LyricsLineSegment* clone() const override     { return new LyricsLineSegment(*this); }
-      virtual Element::Type type() const override           { return Element::Type::LYRICSLINE_SEGMENT; }
-      LyricsLine* lyricsLine() const                        { return (LyricsLine*)spanner(); }
+      virtual ElementType type() const override             { return ElementType::LYRICSLINE_SEGMENT; }
       virtual void draw(QPainter*) const override;
-
       virtual void layout() override;
+      // helper functions
+      LyricsLine* lyricsLine() const                        { return toLyricsLine(spanner()); }
+      Lyrics* lyrics() const                                { return lyricsLine()->lyrics(); }
       };
 
 }     // namespace Ms

@@ -44,10 +44,27 @@ void MuseScore::showNavigator(bool visible)
 NScrollArea::NScrollArea(QWidget* w)
    : QScrollArea(w)
       {
-
+      setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+      setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
       setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
       setMinimumHeight(40);
       setLineWidth(0);
+      }
+
+//---------------------------------------------------------
+//   orientationChanged
+//---------------------------------------------------------
+
+void NScrollArea::orientationChanged()
+      {
+      if (MScore::verticalOrientation()) {
+            setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+            setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+            }
+      else {
+            setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+            setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+            }
       }
 
 //---------------------------------------------------------
@@ -333,11 +350,20 @@ void Navigator::paintEvent(QPaintEvent* ev)
 
       if (!_score)
             return;
+      if (_score->pages().size() <= 0)
+            return;
+
+      // compute optimal size of page number
+      QFont font("FreeSans", 4000);
+      QFontMetrics fm (font);
+      Page* firstPage = _score->pages()[0];
+      qreal factor = (firstPage->width() * 0.5) / fm.width(QString::number(_score->pages().size()));
+      font.setPointSizeF(font.pointSizeF() * factor);
 
       p.setTransform(matrix);
       QRectF fr = matrix.inverted().mapRect(QRectF(r));
       int i = 0;
-      foreach (Page* page, _score->pages()) {
+      for (Page* page : _score->pages()) {
             QPointF pos(page->pos());
             if (_previewOnly)
                   pos = QPointF(i*page->width(), 0);
@@ -349,13 +375,13 @@ void Navigator::paintEvent(QPaintEvent* ev)
 
             p.fillRect(pr, Qt::white);
             p.translate(pos);
-            foreach(System* s, *page->systems()) {
-                  foreach(MeasureBase* m, s->measures())
+            for (System* s  : page->systems()) {
+                  for (MeasureBase* m : s->measures())
                         m->scanElements(&p, paintElement, false);
                   }
             page->scanElements(&p, paintElement, false);
             if (page->score()->layoutMode() == LayoutMode::PAGE) {
-                  p.setFont(QFont("FreeSans", 400));  // !!
+                  p.setFont(font);
                   p.setPen(MScore::layoutBreakColor);
                   p.drawText(page->bbox(), Qt::AlignCenter, QString("%1").arg(page->no() + 1 + _score->pageNumberOffset()));
                   }

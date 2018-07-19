@@ -24,7 +24,9 @@ namespace Ms {
 class LoginManager : public QObject
       {
       Q_OBJECT
-      
+
+      static const int MAX_UPLOAD_TRY_COUNT = 5;
+
       KQOAuthManager* _oauthManager;
       QString _consumerKey = 0;
       QString _consumerSecret = 0;
@@ -32,6 +34,12 @@ class LoginManager : public QObject
       QString _accessTokenSecret = 0;
       QString _userName = 0;
       int _uid = -1;
+
+      QString _mediaUrl;
+      QFile* _mp3File;
+      int _uploadTryCount = 0;
+
+      QProgressDialog* _progressDialog;
 
    signals:
       void loginError(const QString& error);
@@ -41,8 +49,9 @@ class LoginManager : public QObject
       void getScoreError(const QString& error);
       void getScoreSuccess(const QString &title, const QString &description, bool priv, const QString& license, const QString& tags, const QString& url);
       void uploadError(const QString& error);
-      void uploadSuccess(const QString& url);
+      void uploadSuccess(const QString& url, const QString& nid, const QString& vid);
       void tryLoginSuccess();
+      void displaySuccess();
 
    private slots:
       void onAccessTokenRequestReady(QByteArray ba);
@@ -51,20 +60,26 @@ class LoginManager : public QObject
       void onGetScoreRequestReady(QByteArray ba);
       void onAuthorizedRequestDone();
       void onUploadRequestReady(QByteArray ba);
+      void onGetMediaUrlRequestReady(QByteArray ba);
+
+      void uploadMedia();
+      void mediaUploadFinished();
+      void mediaUploadProgress(qint64, qint64);
 
       void onTryLoginSuccess();
       void onTryLoginError(const QString&);
 
    public slots:
       void tryLogin();
-   
+
    public:
       LoginManager(QObject* parent = 0);
       void login(QString login, QString password);
-      void upload(const QString& path, int nid, const QString& title, const QString& description, const QString& priv, const QString& license, const QString& tags);
+      void upload(const QString& path, int nid, const QString& title, const QString& description, const QString& priv, const QString& license, const QString& tags, const QString& changes);
       bool hasAccessToken();
       void getUser();
       void getScore(int nid);
+      void getMediaUrl(const QString& nid, const QString& vid, const QString& format);
 
       bool save();
       bool load();

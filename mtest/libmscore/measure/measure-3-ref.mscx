@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,28 +22,18 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle">Test</metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <bracket type="1" span="2"/>
-        <barLineSpan>2</barLineSpan>
+        <bracket type="1" span="2" col="0"/>
+        <barLineSpan>1</barLineSpan>
         </Staff>
       <Staff id="2">
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <bracket type="-1" span="0"/>
-        <barLineSpan>0</barLineSpan>
         </Staff>
       <trackName>Piano</trackName>
       <Instrument>
@@ -95,7 +69,6 @@
         <StaffType group="pitched">
           <name>stdNormal</name>
           </StaffType>
-        <bracket type="-1" span="0"/>
         </Staff>
       <trackName>Flute</trackName>
       <Instrument>
@@ -147,26 +120,25 @@
           <lid>1</lid>
           <sigN>2</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Tempo>
           <tempo>1.66667</tempo>
           <text>𝅘𝅥 = 100</text>
           </Tempo>
         <Chord>
-          <lid>20</lid>
+          <lid>13</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>21</lid>
+            <lid>14</lid>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
         <Chord>
-          <lid>22</lid>
+          <lid>15</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>23</lid>
+            <lid>16</lid>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
@@ -174,19 +146,19 @@
         </Measure>
       <Measure number="2">
         <Chord>
-          <lid>24</lid>
+          <lid>17</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>25</lid>
+            <lid>18</lid>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
           </Chord>
         <Chord>
-          <lid>26</lid>
+          <lid>19</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>27</lid>
+            <lid>20</lid>
             <pitch>67</pitch>
             <tpc>15</tpc>
             </Note>
@@ -194,26 +166,26 @@
         </Measure>
       <Measure number="3">
         <Rest>
-          <lid>6</lid>
+          <lid>5</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="4">
         <Chord>
-          <lid>28</lid>
+          <lid>21</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>29</lid>
+            <lid>22</lid>
             <pitch>65</pitch>
             <tpc>13</tpc>
             </Note>
           </Chord>
         <Chord>
-          <lid>30</lid>
+          <lid>23</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>31</lid>
+            <lid>24</lid>
             <pitch>65</pitch>
             <tpc>13</tpc>
             </Note>
@@ -223,12 +195,8 @@
         <Rest>
           <lid>179</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>2</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Staff id="2">
@@ -241,40 +209,39 @@
           <lid>2</lid>
           <sigN>2</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Rest>
           <lid>3</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="2">
         <Rest>
-          <lid>5</lid>
+          <lid>4</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="3">
         <Rest>
-          <lid>8</lid>
+          <lid>6</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="4">
         <Rest>
-          <lid>10</lid>
+          <lid>7</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="5">
         <Rest>
           <lid>180</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       </Staff>
@@ -285,48 +252,43 @@
           <transposingClefType>G</transposingClefType>
           </Clef>
         <TimeSig>
-          <lid>11</lid>
+          <lid>8</lid>
           <sigN>2</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Rest>
-          <lid>12</lid>
+          <lid>9</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="2">
         <Rest>
-          <lid>14</lid>
+          <lid>10</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="3">
         <Rest>
-          <lid>16</lid>
+          <lid>11</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="4">
         <Rest>
-          <lid>18</lid>
+          <lid>12</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
         </Measure>
       <Measure number="5">
         <Rest>
           <lid>181</lid>
           <durationType>measure</durationType>
-          <duration z="2" n="4"/>
+          <duration>2/4</duration>
           </Rest>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Score>
@@ -335,22 +297,6 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
@@ -363,30 +309,20 @@
       <metaTag name="source"></metaTag>
       <metaTag name="workNumber"></metaTag>
       <metaTag name="workTitle"></metaTag>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>1</linkedTo>
           <StaffType group="pitched">
             <name>stdNormal</name>
             </StaffType>
-          <bracket type="1" span="2"/>
-          <barLineSpan>2</barLineSpan>
+          <bracket type="1" span="2" col="0"/>
+          <barLineSpan>1</barLineSpan>
           </Staff>
         <Staff id="2">
           <linkedTo>2</linkedTo>
           <StaffType group="pitched">
             <name>stdNormal</name>
             </StaffType>
-          <bracket type="-1" span="0"/>
-          <barLineSpan>0</barLineSpan>
           </Staff>
         <trackName>Piano</trackName>
         <Instrument>
@@ -443,26 +379,25 @@
             <lid>1</lid>
             <sigN>2</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Tempo>
             <tempo>1.66667</tempo>
             <text>𝅘𝅥 = 100</text>
             </Tempo>
           <Chord>
-            <lid>20</lid>
+            <lid>13</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>21</lid>
+              <lid>14</lid>
               <pitch>67</pitch>
               <tpc>15</tpc>
               </Note>
             </Chord>
           <Chord>
-            <lid>22</lid>
+            <lid>15</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>23</lid>
+              <lid>16</lid>
               <pitch>67</pitch>
               <tpc>15</tpc>
               </Note>
@@ -470,19 +405,19 @@
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>24</lid>
+            <lid>17</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>25</lid>
+              <lid>18</lid>
               <pitch>67</pitch>
               <tpc>15</tpc>
               </Note>
             </Chord>
           <Chord>
-            <lid>26</lid>
+            <lid>19</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>27</lid>
+              <lid>20</lid>
               <pitch>67</pitch>
               <tpc>15</tpc>
               </Note>
@@ -490,26 +425,26 @@
           </Measure>
         <Measure number="3">
           <Rest>
-            <lid>6</lid>
+            <lid>5</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="4">
           <Chord>
-            <lid>28</lid>
+            <lid>21</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>29</lid>
+              <lid>22</lid>
               <pitch>65</pitch>
               <tpc>13</tpc>
               </Note>
             </Chord>
           <Chord>
-            <lid>30</lid>
+            <lid>23</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>31</lid>
+              <lid>24</lid>
               <pitch>65</pitch>
               <tpc>13</tpc>
               </Note>
@@ -519,12 +454,8 @@
           <Rest>
             <lid>179</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>2</span>
-            </BarLine>
           </Measure>
         </Staff>
       <Staff id="2">
@@ -537,40 +468,39 @@
             <lid>2</lid>
             <sigN>2</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Rest>
             <lid>3</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="2">
           <Rest>
-            <lid>5</lid>
+            <lid>4</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="3">
           <Rest>
-            <lid>8</lid>
+            <lid>6</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="4">
           <Rest>
-            <lid>10</lid>
+            <lid>7</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="5">
           <Rest>
             <lid>180</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         </Staff>
@@ -582,22 +512,6 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
@@ -610,21 +524,12 @@
       <metaTag name="source"></metaTag>
       <metaTag name="workNumber"></metaTag>
       <metaTag name="workTitle"></metaTag>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>3</linkedTo>
           <StaffType group="pitched">
             <name>stdNormal</name>
             </StaffType>
-          <bracket type="-1" span="0"/>
           </Staff>
         <trackName>Flute</trackName>
         <Instrument>
@@ -678,20 +583,19 @@
             <transposingClefType>G</transposingClefType>
             </Clef>
           <TimeSig>
-            <lid>11</lid>
+            <lid>8</lid>
             <sigN>2</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Tempo>
             <tempo>1.66667</tempo>
-            <lid>178</lid>
+            <lid>25</lid>
             <text>𝅘𝅥 = 100</text>
             </Tempo>
           <Rest>
-            <lid>12</lid>
+            <lid>9</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="1" len="10/4">
@@ -699,60 +603,44 @@
           <TimeSig>
             <sigN>2</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Tempo>
             <tempo>1.66667</tempo>
-            <lid>178</lid>
+            <lid>25</lid>
             <text>𝅘𝅥 = 100</text>
             </Tempo>
           <Rest>
             <durationType>measure</durationType>
-            <duration z="8" n="4"/>
+            <duration>8/4</duration>
             </Rest>
-          <tick>4800</tick>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
-        <tick>960</tick>
         <Measure number="2">
           <Rest>
-            <lid>14</lid>
+            <lid>10</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="3">
           <Rest>
-            <lid>16</lid>
+            <lid>11</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
           </Measure>
         <Measure number="4">
           <Rest>
-            <lid>18</lid>
+            <lid>12</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
-          <BarLine>
-            <subtype>normal</subtype>
-            <span>1</span>
-            <lid>19</lid>
-            </BarLine>
           </Measure>
         <Measure number="5">
           <Rest>
             <lid>181</lid>
             <durationType>measure</durationType>
-            <duration z="2" n="4"/>
+            <duration>2/4</duration>
             </Rest>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <name>Flute</name>

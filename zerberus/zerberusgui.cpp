@@ -13,6 +13,7 @@
 #include "zerberusgui.h"
 
 #include "mscore/preferences.h"
+#include "mscore/extension.h"
 
 //---------------------------------------------------------
 //   SfzListDialog
@@ -24,10 +25,22 @@ SfzListDialog::SfzListDialog(QWidget* parent)
       setWindowTitle(tr("SFZ Files"));
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
       list = new QListWidget;
+      list->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+      okButton = new QPushButton;
+      cancelButton = new QPushButton;
+      okButton->setText(tr("Load"));
+      cancelButton->setText(tr("Cancel"));
+
       QVBoxLayout* layout = new QVBoxLayout;
+      buttonBox = new QDialogButtonBox;
       layout->addWidget(list);
+      layout->addWidget(buttonBox);
+      buttonBox->addButton(okButton, QDialogButtonBox::AcceptRole);
+      buttonBox->addButton(cancelButton, QDialogButtonBox::RejectRole);
       setLayout(layout);
-      connect(list, SIGNAL(itemClicked(QListWidgetItem*)), SLOT(itemSelected(QListWidgetItem*)));
+      connect(okButton, SIGNAL(clicked()), SLOT(okClicked()));
+      connect(cancelButton, SIGNAL(clicked()), SLOT(cancelClicked()));
       }
 
 //---------------------------------------------------------
@@ -43,35 +56,24 @@ void SfzListDialog::add(const QString& name, const QString& path)
       }
 
 //---------------------------------------------------------
-//   itemSelected
+//   okClicked
 //---------------------------------------------------------
 
-void SfzListDialog::itemSelected(QListWidgetItem* item)
+void SfzListDialog::okClicked()
       {
-      _idx = list->row(item);
+      for (auto item : list->selectedItems()) {
+            _namePaths.push_back({item->text(), item->data(Qt::UserRole).toString()});
+            }
       accept();
       }
 
 //---------------------------------------------------------
-//   name
+//   cancelClicked
 //---------------------------------------------------------
 
-QString SfzListDialog::name()
+void SfzListDialog::cancelClicked()
       {
-      if (_idx == -1)
-            return QString();
-      return list->item(_idx)->text();
-      }
-
-//---------------------------------------------------------
-//   path
-//---------------------------------------------------------
-
-QString SfzListDialog::path()
-      {
-      if (_idx == -1)
-            return QString();
-      return list->item(_idx)->data(Qt::UserRole).toString();
+      reject();
       }
 
 //---------------------------------------------------------
@@ -93,8 +95,10 @@ ZerberusGui::ZerberusGui(Ms::Synthesizer* s)
    : SynthesizerGui(s)
       {
       setupUi(this);
-      connect(add, SIGNAL(clicked()), SLOT(addClicked()));
-      connect(remove, SIGNAL(clicked()), SLOT(removeClicked()));
+      connect(soundFontUp,     SIGNAL(clicked()), SLOT(soundFontUpClicked()));
+      connect(soundFontDown,   SIGNAL(clicked()), SLOT(soundFontDownClicked()));
+      connect(soundFontAdd, SIGNAL(clicked()), SLOT(soundFontAddClicked()));
+      connect(soundFontDelete, SIGNAL(clicked()), SLOT(soundFontDeleteClicked()));
       connect(&_futureWatcher, SIGNAL(finished()), this, SLOT(onSoundFontLoaded()));
       _progressDialog = new QProgressDialog(tr("Loading..."), tr("Cancel"), 0, 100, 0, Qt::FramelessWindowHint);
       _progressDialog->reset(); // required for Qt 5.5, see QTBUG-47042
@@ -103,6 +107,51 @@ ZerberusGui::ZerberusGui(Ms::Synthesizer* s)
       connect(_progressTimer, SIGNAL(timeout()), this, SLOT(updateProgress()));
       connect(files, SIGNAL(itemSelectionChanged()), this, SLOT(updateButtons()));
       updateButtons();
+      }
+
+void ZerberusGui::soundFontUpClicked()
+      {
+      int row = files->currentRow();
+      if (row <= 0)
+            return;
+
+      QStringList sfonts = zerberus()->soundFonts();
+      sfonts.swap(row, row-1);
+      zerberus()->removeSoundFonts(zerberus()->soundFonts());
+
+      loadSoundFontsAsync(sfonts);
+      files->setCurrentRow(row-1);
+      emit sfChanged();
+      }
+
+void ZerberusGui::soundFontDownClicked()
+      {
+      int rows = files->count();
+      int row = files->currentRow();
+      if (row + 1 >= rows)
+            return;
+
+      QStringList sfonts = zerberus()->soundFonts();
+      sfonts.swap(row, row + 1);
+      zerberus()->removeSoundFonts(zerberus()->soundFonts());
+
+      loadSoundFontsAsync(sfonts);
+      files->setCurrentRow(row + 1);
+      emit sfChanged();
+      }
+
+//---------------------------------------------------------
+//   loadSounfFontsAsync
+//---------------------------------------------------------
+
+void ZerberusGui::loadSoundFontsAsync(QStringList sfonts)
+      {
+      QFuture<bool> future = QtConcurrent::run(zerberus(), &Zerberus::loadSoundFonts, sfonts);
+      _futureWatcher.setFuture(future);
+      _progressTimer->start(1000);
+      _progressDialog->exec();
+
+      synthesizerChanged();
       }
 
 //---------------------------------------------------------
@@ -118,7 +167,7 @@ static void collectFiles(QFileInfoList* l, const QString& path)
             if (path == s.absoluteFilePath())
                   return;
 
-            if (s.isDir())
+            if (s.isDir() && !s.isHidden())
                   collectFiles(l, s.absoluteFilePath());
             else {
                   if (s.suffix().toLower() == "sfz")
@@ -135,8 +184,12 @@ QFileInfoList Zerberus::sfzFiles()
       {
       QFileInfoList l;
 
-      QStringList pl = Ms::preferences.mySoundfontsPath.split(";");
+      QStringList pl = Ms::preferences.getString(PREF_APP_PATHS_MYSOUNDFONTS).split(";");
       pl.prepend(QFileInfo(QString("%1%2").arg(Ms::mscoreGlobalShare).arg("sound")).absoluteFilePath());
+
+      // append extensions directory
+      QStringList extensionsDir = Ms::Extension::getDirectoriesByType(Ms::Extension::sfzsDir);
+      pl.append(extensionsDir);
 
       foreach (const QString& s, pl) {
             QString ss(s);
@@ -148,31 +201,26 @@ QFileInfoList Zerberus::sfzFiles()
       }
 
 //---------------------------------------------------------
-//   addClicked
+//   loadSfz
 //---------------------------------------------------------
 
-void ZerberusGui::addClicked()
-      {
-      zerberus()->setLoadWasCanceled(false);
+void ZerberusGui::loadSfz() {
 
-      QFileInfoList l = Zerberus::sfzFiles();
-
-      SfzListDialog ld(this);
-      foreach (const QFileInfo& fi, l)
-            ld.add(fi.fileName(), fi.absoluteFilePath());
-      if (!ld.exec())
+      if (_sfzToLoad.empty())
             return;
 
-      QString sfName = ld.name();
-      QString sfPath = ld.path();
+     struct SfNamePath item = _sfzToLoad.front();
+     QString sfName = item.name;
+     QString sfPath = item.path;
+     _sfzToLoad.pop_front();
 
-      QStringList sl;
-      for (int i = 0; i < files->count(); ++i) {
-            QListWidgetItem* item = files->item(i);
-            sl.append(item->text());
-            }
+     QStringList sl;
+     for (int i = 0; i < files->count(); ++i) {
+           QListWidgetItem* item = files->item(i);
+           sl.append(item->text());
+           }
 
-      if (sl.contains(sfPath)) {
+      if (sl.contains(sfName)) {
             QMessageBox::warning(this,
             tr("MuseScore"),
             tr("SoundFont %1 already loaded").arg(sfPath));
@@ -185,6 +233,28 @@ void ZerberusGui::addClicked()
             _progressTimer->start(1000);
             _progressDialog->exec();
             }
+      }
+
+//---------------------------------------------------------
+//   addClicked
+//---------------------------------------------------------
+
+void ZerberusGui::soundFontAddClicked()
+      {
+      zerberus()->setLoadWasCanceled(false);
+
+      QFileInfoList l = Zerberus::sfzFiles();
+
+      SfzListDialog ld(this);
+      foreach (const QFileInfo& fi, l)
+            ld.add(fi.fileName(), fi.absoluteFilePath());
+      if (!ld.exec())
+            return;
+
+      for (auto item : ld.getNamePaths()) {
+            _sfzToLoad.push_back(item);
+            }
+      loadSfz();
       }
 
 //---------------------------------------------------------
@@ -212,7 +282,9 @@ void ZerberusGui::updateProgress()
 void ZerberusGui::updateButtons()
       {
       int row = files->currentRow();
-      remove->setEnabled(row != -1);
+      soundFontDelete->setEnabled(row != -1);
+      soundFontUp->setEnabled(row != -1);
+      soundFontDown->setEnabled(row != -1);
       }
 
 //---------------------------------------------------------
@@ -229,7 +301,8 @@ void ZerberusGui::onSoundFontLoaded()
             QListWidgetItem* item = new QListWidgetItem;
             item->setText(_loadedSfName);
             item->setData(Qt::UserRole, _loadedSfPath);
-            files->insertItem(0, item);
+            //files->insertItem(0, item);
+            files->addItem(item);
             emit valueChanged();
             emit sfChanged();
             }
@@ -238,13 +311,14 @@ void ZerberusGui::onSoundFontLoaded()
             tr("MuseScore"),
             tr("Cannot load SoundFont %1").arg(_loadedSfPath));
             }
+      loadSfz();
       }
 
 //---------------------------------------------------------
 //   removeClicked
 //---------------------------------------------------------
 
-void ZerberusGui::removeClicked()
+void ZerberusGui::soundFontDeleteClicked()
       {
       int row = files->currentRow();
       if (row >= 0) {

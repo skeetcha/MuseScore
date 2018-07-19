@@ -40,6 +40,7 @@
 #include "libmscore/measure.h"
 #include "libmscore/timesig.h"
 #include "libmscore/segment.h"
+#include "libmscore/sym.h"
 
 namespace Ms {
 
@@ -75,7 +76,7 @@ void MuseData::musicalAttribute(QString s, Part* part)
                         Staff* staff = part->staff(0);
                         ts->setTrack(staff->idx() * VOICES);
                         Measure* measure = score->tick2measure(curTick);
-                        Segment* s = measure->getSegment(ts, curTick);
+                        Segment* s = measure->getSegment(SegmentType::TimeSig, curTick);
                         s->add(ts);
                         }
                   }
@@ -206,12 +207,12 @@ void MuseData::readNote(Part* part, const QString& s)
                   break;
                   }
             }
-      MScore::Direction dir = MScore::Direction::AUTO;
+      Direction dir = Direction::AUTO;
       if (s.size() >= 23) {
             if (s[22] == 'u')
-                  dir = MScore::Direction::UP;
+                  dir = Direction::UP;
             else if (s[22] == 'd')
-                  dir = MScore::Direction::DOWN;
+                  dir = Direction::DOWN;
             }
 
       int staffIdx = 0;
@@ -276,7 +277,7 @@ void MuseData::readNote(Part* part, const QString& s)
       d.setVal(ticks);
       chord->setDurationType(d);
 
-      Segment* segment = measure->getSegment(chord, tick);
+      Segment* segment = measure->getSegment(SegmentType::ChordRest, tick);
 
       voice = 0;
       for (; voice < VOICES; ++voice) {
@@ -319,39 +320,39 @@ void MuseData::readNote(Part* part, const QString& s)
                   closeSlur(3, tick, staff, voice);
             else if (an[i] == '.') {
                   Articulation* atr = new Articulation(score);
-                  atr->setArticulationType(ArticulationType::Staccato);
+                  atr->setSymId(SymId::articStaccatoAbove);
                   chord->add(atr);
                   }
             else if (an[i] == '_') {
                   Articulation* atr = new Articulation(score);
-                  atr->setArticulationType(ArticulationType::Tenuto);
+                  atr->setSymId(SymId::articTenutoAbove);
                   chord->add(atr);
                   }
             else if (an[i] == 'v') {
                   Articulation* atr = new Articulation(score);
-                  atr->setArticulationType(ArticulationType::Upbow);
+                  atr->setSymId(SymId::stringsUpBow);
                   chord->add(atr);
                   }
             else if (an[i] == 'n') {
                   Articulation* atr = new Articulation(score);
-                  atr->setArticulationType(ArticulationType::Downbow);
+                  atr->setSymId(SymId::stringsDownBow);
                   chord->add(atr);
                   }
             else if (an[i] == 't') {
                   Articulation* atr = new Articulation(score);
-                  atr->setArticulationType(ArticulationType::Trill);
+                  atr->setSymId(SymId::ornamentTrill);
                   chord->add(atr);
                   }
             else if (an[i] == 'F') {
                   Articulation* atr = new Articulation(score);
                   atr->setUp(true);
-                  atr->setArticulationType(ArticulationType::Fermata);
+                  atr->setSymId(SymId::fermataAbove);
                   chord->add(atr);
                   }
             else if (an[i] == 'E') {
                   Articulation* atr = new Articulation(score);
                   atr->setUp(false);
-                  atr->setArticulationType(ArticulationType::Fermata);
+                  atr->setSymId(SymId::fermataBelow);
                   chord->add(atr);
                   }
             else if (an[i] == 'O') {
@@ -391,7 +392,7 @@ void MuseData::readNote(Part* part, const QString& s)
             Dynamic* dyn = new Dynamic(score);
             dyn->setDynamicType(dynamics);
             dyn->setTrack(gstaff * VOICES);
-            Segment* s = measure->getSegment(Segment::Type::ChordRest, tick);
+            Segment* s = measure->getSegment(SegmentType::ChordRest, tick);
             s->add(dyn);
             }
 
@@ -465,7 +466,7 @@ void MuseData::readRest(Part* part, const QString& s)
       rest->setDuration(d.fraction());
       chordRest  = rest;
       rest->setTrack(gstaff * VOICES);
-      Segment* segment = measure->getSegment(rest, tick);
+      Segment* segment = measure->getSegment(SegmentType::ChordRest, tick);
 
       voice = 0;
       for (; voice < VOICES; ++voice) {
@@ -504,7 +505,7 @@ void MuseData::readBackup(const QString& s)
 Measure* MuseData::createMeasure()
       {
       for (MeasureBase* mb = score->first(); mb; mb = mb->next()) {
-            if (mb->type() != Element::Type::MEASURE)
+            if (mb->type() != ElementType::MEASURE)
                   continue;
             Measure* m = (Measure*)mb;
             int st = m->tick();
@@ -689,7 +690,7 @@ bool MuseData::read(const QString& name)
                         mpart->insertStaff(staff, i);
                         score->staves().push_back(staff);
                         if ((staves == 2) && (i == 0)) {
-                              staff->setBracket(0, BracketType::BRACE);
+                              staff->setBracketType(0, BracketType::BRACE);
                               staff->setBracketSpan(0, 2);
                               }
                         }
@@ -742,7 +743,7 @@ void MuseData::convert()
 //    return true on success
 //---------------------------------------------------------
 
-Score::FileError importMuseData(Score* score, const QString& name)
+Score::FileError importMuseData(MasterScore* score, const QString& name)
       {
       if(!QFileInfo(name).exists())
             return Score::FileError::FILE_NOT_FOUND;

@@ -21,20 +21,22 @@
 namespace Ms {
 
 //---------------------------------------------------------
-//   InspectorHairpin
+//   InspectorTextLine
 //---------------------------------------------------------
 
-class InspectorTextLine : public InspectorBase {
+class InspectorTextLine : public InspectorElementBase {
       Q_OBJECT
 
-      UiInspectorElement e;
       Ui::InspectorLine l;
-      //Ui::InspectorTextLine tl;
+      Ui::InspectorTextLine tl;
 
    public:
       InspectorTextLine(QWidget* parent);
+      virtual void setElement() override;
       };
 
+extern void populateHookType(QComboBox* b);
+extern void populateTextPlace(QComboBox* b);
 
 } // namespace Ms
 #endif

@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <math.h>
+#include "filter.h"
 
 class Channel;
 struct Zone;
@@ -23,8 +24,8 @@ class Zerberus;
 
 enum class LoopMode : char;
 enum class OffMode : char;
+enum class Trigger : char;
 
-static const int INTERP_MAX = 256;
 static const int EG_SIZE    = 256;
 
 //---------------------------------------------------------
@@ -36,20 +37,26 @@ struct Envelope {
       static float egLin[EG_SIZE];
 
       int steps, count;
+      bool constant = false;
+      float offset = 0.0;
+      float max = 1.0;
       float val;
       float* table;
 
-      Envelope(float* f) { table = f; }
+      void setTable(float* f) { table = f; }
       bool step() {
             if (count) {
                   --count;
-                  val = table[EG_SIZE * count/steps];
+                  if (!constant)
+                        val = table[EG_SIZE * count/steps]*(max-offset)+offset;
                   return false;
                   }
             else
                   return true;
             }
       void setTime(float ms, int sampleRate);
+      void setConstant(float v) { constant = true; val = v; }
+      void setVariable()        { constant = false; }
       };
 
 //-----------------------------------------------------------------------------
@@ -73,6 +80,7 @@ struct Phase {
       void operator+=(const Phase& p) { data += p.data;   }
       void set(int b)                 { data = b * 256;   }
       void set(double b)              { data = b * 256.0; }
+      void setIndex(int b)            { data = b * 256 + _fract; }
       int index() const               { return data >> 8; }
       unsigned fract() const          { return _fract;    }
 
@@ -86,6 +94,16 @@ enum class VoiceState : char {
       PLAYING,
       SUSTAINED,
       STOP
+      };
+
+enum V1Envelopes : int {
+      DELAY,
+      ATTACK,
+      HOLD,
+      DECAY,
+      SUSTAIN,
+      RELEASE,
+      COUNT
       };
 
 //---------------------------------------------------------
@@ -103,73 +121,55 @@ class Voice {
       int audioChan;
 
       short* data;
-      int eidx;
+      long long eidx;
       LoopMode _loopMode;
       OffMode _offMode;
       int _offBy;
+      long long _loopStart;
+      long long _loopEnd;
+      bool _looping;
+      int _samplesSinceStart;
 
       float gain;
 
       Phase phase, phaseIncr;
 
-      float fres;              // the resonance frequency, in cents (not absolute cents)
-      float last_fres;         // Current resonance frequency of the IIR filter
+      ZFilter filter;
 
-      // Serves as a flag: A deviation between fres and last_fres
-      // indicates, that the filter has to be recalculated.
-      float q_lin;             // the q-factor on a linear scale
-      float filter_gain;       // Gain correction factor, depends on q
+      int currentEnvelope;
+      Envelope envelopes[V1Envelopes::COUNT];
 
-      float hist1r, hist2r;    // Sample history for the IIR filter
-      float hist1l, hist2l;
+      Trigger trigger;
 
-      bool filter_startup;     // Flag: If set, the filter will be set directly.
-                               // Else it changes smoothly.
-
-      // filter coefficients
-      // b0 and b2 are identical >= b02
-      float b02;             // b0 / a0
-      float b1;              // b1 / a0
-      float a1;              // a0 / a0
-      float a2;              // a1 / a0
-
-      float b02_incr;
-      float b1_incr;
-      float a1_incr;
-      float a2_incr;
-      int filter_coeff_incr_count;
-
-      float modenv_val;
-      float modlfo_val;
-
-      Envelope attackEnv;
-      Envelope stopEnv;
-      static float interpCoeff[INTERP_MAX][4];
-
-      void updateFilter(float fres);
+      const Zone* z;
 
    public:
       Voice(Zerberus*);
       Voice* next() const         { return _next; }
       void setNext(Voice* v)      { _next = v; }
 
-      void start(Channel* channel, int key, int velo, const Zone*);
+      void start(Channel* channel, int key, int velo, const Zone*, double durSinceNoteOn);
+      void updateEnvelopes();
       void process(int frames, float*);
+      void updateLoop();
+      short getData(long long pos);
 
       Channel* channel() const    { return _channel; }
       int key() const             { return _key;     }
       int velocity() const        { return _velocity; }
 
-      bool isPlaying() const      { return _state == VoiceState::PLAYING;   }
+      bool isPlaying() const      { return _state == VoiceState::PLAYING || _state == VoiceState::ATTACK;   }
       bool isSustained() const    { return _state == VoiceState::SUSTAINED; }
       bool isOff() const          { return _state == VoiceState::OFF; }
       bool isStopped() const      { return _state == VoiceState::STOP; }
-      void stop()                 { _state = VoiceState::STOP;      }
+      void stop()                 { envelopes[currentEnvelope].step(); envelopes[V1Envelopes::RELEASE].max = envelopes[currentEnvelope].val; currentEnvelope = V1Envelopes::RELEASE; _state = VoiceState::STOP;      }
       void stop(float time);
       void sustained()            { _state = VoiceState::SUSTAINED; }
       void off()                  { _state = VoiceState::OFF;       }
       const char* state() const;
       LoopMode loopMode() const   { return _loopMode; }
+      int getSamplesSinceStart()  { return _samplesSinceStart;    }
+      float getGain()             { return gain; }
 
       OffMode offMode() const     { return _offMode;  }
       int offBy() const           { return _offBy;    }

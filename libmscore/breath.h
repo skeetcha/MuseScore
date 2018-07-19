@@ -15,51 +15,58 @@
 
 #include "element.h"
 
-class QPainter;
-
 namespace Ms {
 
 enum class SymId;
+
+//---------------------------------------------------------
+//   BreathType
+//---------------------------------------------------------
+
+struct BreathType {
+      SymId id;
+      bool isCaesura;
+      qreal pause;
+      };
 
 //---------------------------------------------------------
 //   @@ Breath
 //!    breathType() is index in symList
 //---------------------------------------------------------
 
-class Breath : public Element {
-      Q_OBJECT
-
-      int _breathType;
+class Breath final : public Element {
       qreal _pause;
-      static const int breathSymbols = 4;
-      static SymId symList[breathSymbols];
+      SymId _symId;
 
    public:
       Breath(Score* s);
-      virtual Element::Type type() const override { return Element::Type::BREATH; }
-      virtual Breath* clone() const override      { return new Breath(*this); }
+      virtual ElementType type() const override { return ElementType::BREATH; }
+      virtual Breath* clone() const override    { return new Breath(*this); }
 
-      int breathType() const           { return _breathType; }
-      void setBreathType(int v)        { _breathType = v; }
+      void setSymId(SymId id)          { _symId = id; }
+      SymId symId() const              { return _symId; }
       qreal pause() const              { return _pause; }
       void setPause(qreal v)           { _pause = v; }
 
       Segment* segment() const         { return (Segment*)parent(); }
-      virtual Space space() const override;
 
       virtual void draw(QPainter*) const override;
       virtual void layout() override;
-      virtual void write(Xml&) const override;
+      virtual void write(XmlWriter&) const override;
       virtual void read(XmlReader&) override;
       virtual QPointF pagePos() const override;      ///< position in page coordinates
 
-      virtual QVariant getProperty(P_ID propertyId) const override;
-      virtual bool setProperty(P_ID propertyId, const QVariant&) override;
-      virtual QVariant propertyDefault(P_ID) const override;
+      virtual QVariant getProperty(Pid propertyId) const override;
+      virtual bool setProperty(Pid propertyId, const QVariant&) override;
+      virtual QVariant propertyDefault(Pid) const override;
 
-      virtual Element* nextElement() override;
-      virtual Element* prevElement() override;
-      virtual QString accessibleInfo() override;
+      virtual Element* nextSegmentElement() override;
+      virtual Element* prevSegmentElement() override;
+      virtual QString accessibleInfo() const override;
+
+      bool isCaesura() const;
+
+      static const std::vector<BreathType> breathList;
       };
 
 

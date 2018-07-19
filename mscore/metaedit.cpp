@@ -21,6 +21,7 @@
 #include "metaedit.h"
 #include "libmscore/score.h"
 #include "libmscore/undo.h"
+#include "musescore.h"
 
 namespace Ms {
 
@@ -31,19 +32,20 @@ namespace Ms {
 MetaEditDialog::MetaEditDialog(Score* s, QWidget* parent)
    : QDialog(parent)
       {
+      setObjectName("MetaEditDialog");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
       score = s;
       dirty = false;
 
       level->setValue(score->mscVersion());
-      level->setDisabled(true);
       version->setText(score->mscoreVersion());
-      version->setDisabled(true);
-      revision->setValue(score->mscoreRevision());
-      revision->setDisabled(true);
+      int rev = score->mscoreRevision();
+      if (rev > 99999)  // MuseScore 1.3 is decimal 5702, 2.0 and later uses a 7-digit hex SHA
+            revision->setText(QString::number(rev, 16));
+      else
+            revision->setText(QString::number(rev, 10));
       filePath->setText(score->importedFilePath());
-      filePath->setDisabled(true);
 
       int idx = 0;
       QMapIterator<QString, QString> i(s->metaTags());
@@ -59,6 +61,7 @@ MetaEditDialog::MetaEditDialog(Score* s, QWidget* parent)
             ++idx;
             }
       connect(newButton, SIGNAL(clicked()), SLOT(newClicked()));
+      MuseScore::restoreGeometry(this);
       }
 
 //---------------------------------------------------------
@@ -68,7 +71,7 @@ MetaEditDialog::MetaEditDialog(Score* s, QWidget* parent)
 void MetaEditDialog::newClicked()
       {
       QString s = QInputDialog::getText(this,
-         tr("MuseScore: Input Tag Name"),
+         tr("Input Tag Name"),
          tr("New tag name:")
          );
       QGridLayout* grid = static_cast<QGridLayout*>(scrollWidget->layout());
@@ -106,5 +109,16 @@ void MetaEditDialog::accept()
             }
       QDialog::accept();
       }
+
+//---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void MetaEditDialog::hideEvent(QHideEvent* event)
+      {
+      MuseScore::saveGeometry(this);
+      QWidget::hideEvent(event);
+      }
+
 }
 

@@ -13,7 +13,6 @@
 #ifndef __XML_H__
 #define __XML_H__
 
-#include "thirdparty/xmlstream/xmlstream.h"
 #include "stafftype.h"
 #include "interval.h"
 #include "element.h"
@@ -27,6 +26,7 @@ class Spanner;
 class Beam;
 class Tuplet;
 class Measure;
+class LinkedElements;
 
 //---------------------------------------------------------
 //   SpannerValues
@@ -39,10 +39,19 @@ struct SpannerValues {
       };
 
 //---------------------------------------------------------
+//   SubStyleMap
+//---------------------------------------------------------
+
+struct SubStyleMap {
+      QString name;
+      SubStyleId ss;
+      };
+
+//---------------------------------------------------------
 //   XmlReader
 //---------------------------------------------------------
 
-class XmlReader : public XmlStreamReader {
+class XmlReader : public QXmlStreamReader {
       QString docName;  // used for error reporting
 
       // Score read context (for read optimizations):
@@ -51,22 +60,28 @@ class XmlReader : public XmlStreamReader {
       int _track            { 0       };
       int _trackOffset      { 0       };
       bool _pasteMode       { false   };        // modifies read behaviour on paste operation
-      Measure* _lastMeasure { nullptr };
+      Measure* _lastMeasure { 0       };
       QHash<int, Beam*>    _beams;
       QHash<int, Tuplet*>  _tuplets;
+
       QList<SpannerValues> _spannerValues;
       QList<std::pair<int,Spanner*>> _spanner;
       QList<StaffType> _staffTypes;
+
       void htmlToString(int level, QString*);
       Interval _transpose;
-      QList<QList<std::pair<int, ClefType>>> _clefs;   // for 1.3 scores
+      QMap<int, LinkedElements*> _elinks;
+      QMultiMap<int, int> _tracks;
+
+      QList<SubStyleMap> userTextStyles;
 
    public:
-      XmlReader(QFile* f) : XmlStreamReader(f), docName(f->fileName()) {}
-      XmlReader(const QByteArray& d, const QString& s = QString()) : XmlStreamReader(d), docName(s)  {}
-      XmlReader(QIODevice* d, const QString& s = QString()) : XmlStreamReader(d), docName(s) {}
-      XmlReader(const QString& d, const QString& s = QString()) : XmlStreamReader(d), docName(s) {}
+      XmlReader(QFile* f) : QXmlStreamReader(f), docName(f->fileName()) {}
+      XmlReader(const QByteArray& d, const QString& st = QString()) : QXmlStreamReader(d), docName(st)  {}
+      XmlReader(QIODevice* d, const QString& st = QString()) : QXmlStreamReader(d), docName(st) {}
+      XmlReader(const QString& d, const QString& st = QString()) : QXmlStreamReader(d), docName(st) {}
 
+      bool hasAccidental;                     // used for userAccidental backward compatibility
       void unknown();
 
       // attribute helper routines:
@@ -79,9 +94,10 @@ class XmlReader : public XmlStreamReader {
       bool hasAttribute(const char* s) const;
 
       // helper routines based on readElementText():
-      int readInt()         { return readElementText().toInt();    }
-      int readInt(bool* ok) { return readElementText().toInt(ok);  }
-      double readDouble()   { return readElementText().toDouble(); }
+      int readInt()         { return readElementText().toInt();      }
+      int readInt(bool* ok) { return readElementText().toInt(ok);    }
+      int readIntHex()      { return readElementText().toInt(0, 16); }
+      double readDouble()   { return readElementText().toDouble();   }
       double readDouble(double min, double max);
       bool readBool();
       QPointF readPoint();
@@ -122,51 +138,80 @@ class XmlReader : public XmlStreamReader {
 
       void addSpannerValues(const SpannerValues& sv) { _spannerValues.append(sv); }
       const SpannerValues* spannerValues(int id) const;
-      QList<StaffType>& staffType() { return _staffTypes; }
-      Interval transpose() const { return _transpose; }
+      QList<StaffType>& staffType()     { return _staffTypes; }
+      Interval transpose() const        { return _transpose; }
       void setTransposeChromatic(int v) { _transpose.chromatic = v; }
-      void setTransposeDiatonic(int v) { _transpose.diatonic = v; }
+      void setTransposeDiatonic(int v)  { _transpose.diatonic = v; }
 
-      QList<std::pair<int, ClefType>>& clefs(int idx);
+      QMap<int, LinkedElements*>& linkIds() { return _elinks;     }
+      QMultiMap<int, int>& tracks()         { return _tracks;     }
+
+      void checkTuplets();
+      SubStyleId addUserTextStyle(const QString& name);
+      SubStyleId lookupUserTextStyle(const QString& name);
       };
 
 //---------------------------------------------------------
-//   Xml
-//    xml writer
+//   XmlWriter
 //---------------------------------------------------------
 
-class Xml : public QTextStream {
+class XmlWriter : public QTextStream {
       static const int BS = 2048;
 
+      Score* _score;
       QList<QString> stack;
-      void putLevel();
       QList<std::pair<int,const Spanner*>> _spanner;
-      int _spannerId = 1;
       SelectionFilter _filter;
 
+      int _spannerId      = { 1 };
+      int _curTick        = { 0 };       // used to optimize output
+      int _curTrack       = { -1 };
+      int _tickDiff       = { 0 };
+      int _trackDiff      = { 0 };       // saved track is curTrack-trackDiff
+
+      bool _clipboardmode = { false };   // used to modify write() behaviour
+      bool _excerptmode   = { false };   // true when writing a part
+      bool _writeOmr      = { true };    // false if writing into *.msc file
+      int _tupletId       = { 1 };
+      int _beamId         = { 1 };
+
+      void putLevel();
+
    public:
-      int curTick   =  0;           // used to optimize output
-      int curTrack  = -1;
-      int tickDiff  =  0;
-      int trackDiff =  0;           // saved track is curTrack-trackDiff
+      XmlWriter(Score*);
+      XmlWriter(Score* s, QIODevice* dev);
 
-      bool clipboardmode = false;   // used to modify write() behaviour
-      bool excerptmode   = false;   // true when writing a part
-      bool writeOmr      = true;    // false if writing into *.msc file
+      int spannerId() const         { return _spannerId; }
+      int curTick() const           { return _curTick; }
+      int curTrack() const          { return _curTrack; }
+      int tickDiff() const          { return _tickDiff; }
+      int trackDiff() const         { return _trackDiff; }
 
-      int tupletId  = 1;
-      int beamId    = 1;
+      bool clipboardmode() const    { return _clipboardmode; }
+      bool excerptmode() const      { return _excerptmode;   }
+      bool writeOmr() const         { return _writeOmr;   }
+      int nextTupletId()            { return _tupletId++;   }
+      int nextBeamId()              { return _beamId++; }
+
+      void setClipboardmode(bool v) { _clipboardmode = v; }
+      void setExcerptmode(bool v)   { _excerptmode = v;   }
+      void setWriteOmr(bool v)      { _writeOmr = v;      }
+      void setTupletId(int v)       { _tupletId = v;      }
+      void setBeamId(int v)         { _beamId = v;        }
+      void setSpannerId(int v)      { _spannerId = v; }
+      void setCurTick(int v)        { _curTick   = v; }
+      void setCurTrack(int v)       { _curTrack  = v; }
+      void setTickDiff(int v)       { _tickDiff  = v; }
+      void setTrackDiff(int v)      { _trackDiff = v; }
+
+      void incCurTick(int v)        { _curTick += v; }
 
       int addSpanner(const Spanner*);     // returns allocated id
       const Spanner* findSpanner(int id);
       int spannerId(const Spanner*);      // returns spanner id, allocates new one if none exists
 
-      Xml(QIODevice* dev);
-      Xml();
-
-      void sTag(const char* name, Spatium sp) { Xml::tag(name, QVariant(sp.val())); }
+      void sTag(const char* name, Spatium sp) { XmlWriter::tag(name, QVariant(sp.val())); }
       void pTag(const char* name, PlaceText);
-      void fTag(const char* name, const Fraction&);
 
       void header();
 
@@ -178,8 +223,8 @@ class Xml : public QTextStream {
       void ntag(const char* name);
       void netag(const char* name);
 
-      void tag(P_ID id, void* data, void* defaultVal);
-      void tag(P_ID id, QVariant data, QVariant defaultData = QVariant());
+      void tag(Pid id, void* data, void* defaultVal);
+      void tag(Pid id, QVariant data, QVariant defaultData = QVariant());
       void tag(const char* name, QVariant data, QVariant defaultData = QVariant());
       void tag(const QString&, QVariant data);
       void tag(const char* name, const char* s)    { tag(name, QVariant(s)); }

@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,12 +22,11 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
           </StaffType>
+        <defaultClef>F</defaultClef>
         </Staff>
       <trackName>Piano</trackName>
       <Instrument>
@@ -91,14 +74,9 @@
       </Part>
     <Staff id="1">
       <Measure number="1">
-        <Clef>
-          <concertClefType>F</concertClefType>
-          <transposingClefType>F</transposingClefType>
-          </Clef>
         <TimeSig>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Tuplet id="1">
           <normalNotes>8</normalNotes>
@@ -109,7 +87,7 @@
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
           <Articulation>
-            <subtype>staccato</subtype>
+            <subtype>articStaccatoAbove</subtype>
             </Articulation>
           <Note>
             <pitch>52</pitch>
@@ -122,7 +100,7 @@
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
           <Articulation>
-            <subtype>staccato</subtype>
+            <subtype>articStaccatoAbove</subtype>
             </Articulation>
           <Note>
             <pitch>47</pitch>
@@ -131,7 +109,7 @@
             <veloType>user</veloType>
             </Note>
           </Chord>
-        <tick>137</tick>
+        <move>137/1920</move>
         <Chord>
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
@@ -146,7 +124,7 @@
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
           <Articulation>
-            <subtype>staccato</subtype>
+            <subtype>articStaccatoAbove</subtype>
             </Articulation>
           <Note>
             <pitch>47</pitch>
@@ -155,12 +133,12 @@
             <veloType>user</veloType>
             </Note>
           </Chord>
-        <tick>274</tick>
+        <move>137/960</move>
         <Chord>
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
           <Articulation>
-            <subtype>staccato</subtype>
+            <subtype>articStaccatoAbove</subtype>
             </Articulation>
           <Note>
             <pitch>50</pitch>
@@ -173,7 +151,7 @@
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
           <Articulation>
-            <subtype>staccato</subtype>
+            <subtype>articStaccatoAbove</subtype>
             </Articulation>
           <Note>
             <pitch>50</pitch>
@@ -182,12 +160,12 @@
             <veloType>user</veloType>
             </Note>
           </Chord>
-        <tick>411</tick>
+        <move>137/640</move>
         <Chord>
           <Tuplet>1</Tuplet>
           <durationType>32nd</durationType>
           <Articulation>
-            <subtype>staccato</subtype>
+            <subtype>articStaccatoAbove</subtype>
             </Articulation>
           <Note>
             <pitch>53</pitch>

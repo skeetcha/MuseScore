@@ -25,7 +25,7 @@
 
 namespace Ms {
 
-class Text;
+class TextBase;
 class Palette;
 
 //---------------------------------------------------------
@@ -35,17 +35,16 @@ class Palette;
 class TextPalette : public QWidget, public Ui::TextPaletteBase {
       Q_OBJECT
 
-      Text* _textElement;
+      TextBase* _textElement;
       QFont _font;
       Palette* pCommon;
       Palette* pSmufl;
       Palette* pUnicode;
 
       QListWidget* lws;
-      QMap<int, QStringList> smuflMap;
-
       QListWidget* lwu;
 
+      virtual void hideEvent(QHideEvent*);
       void closeEvent(QCloseEvent* ev);
       void populateCommon();
 
@@ -55,8 +54,8 @@ class TextPalette : public QWidget, public Ui::TextPaletteBase {
 
    public:
       TextPalette(QWidget* parent);
-      void setText(Text* te);
-      Text* text() { return _textElement; }
+      void setText(TextBase* te);
+      TextBase* text() { return _textElement; }
       void setFont(const QFont& font);
       };
 }

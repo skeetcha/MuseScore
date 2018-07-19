@@ -18,6 +18,7 @@
 #include "libmscore/system.h"
 #include "libmscore/xml.h"
 #include "mscore/globals.h"
+#include "mscore/preferences.h"
 
 namespace Ms {
 
@@ -27,9 +28,9 @@ static QHash<void*, int> segs;
 //   saveMeasureEvents
 //---------------------------------------------------------
 
-static void saveMeasureEvents(Xml& xml, Measure* m, int offset)
+static void saveMeasureEvents(XmlWriter& xml, Measure* m, int offset)
       {
-      for (Segment* s = m->first(Segment::Type::ChordRest); s; s = s->next(Segment::Type::ChordRest)) {
+      for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
             int tick = s->tick() + offset;
             int id = segs[(void*)s];
             int time = lrint(m->score()->repeatList()->utick2utime(tick) * 1000);
@@ -53,16 +54,16 @@ bool savePositions(Score* score, const QString& name, bool segments)
             qDebug("Open <%s> failed", qPrintable(name));
             return false;
             }
-      Xml xml(&fp);
+      XmlWriter xml(score, &fp);
       xml.header();
       xml.stag("score");
       xml.stag("elements");
       int id = 0;
 
-      qreal ndpi = ((qreal)converterDpi / DPI) * 12.0;
+      qreal ndpi = ((qreal) preferences.getDouble(PREF_EXPORT_PNG_RESOLUTION) / DPI) * 12.0;
       if (segments) {
-            for (Segment* s = score->firstMeasure()->first(Segment::Type::ChordRest);
-               s; s = s->next1(Segment::Type::ChordRest)) {
+            for (Segment* s = score->firstMeasureMM()->first(SegmentType::ChordRest);
+               s; s = s->next1MM(SegmentType::ChordRest)) {
                   qreal sx   = 0;
                   int tracks = score->nstaves() * VOICES;
                   for (int track = 0; track < tracks; track++) {
@@ -120,7 +121,7 @@ bool savePositions(Score* score, const QString& name, bool segments)
       score->updateRepeatList(true);
       foreach(const RepeatSegment* rs, *score->repeatList()) {
             int startTick  = rs->tick;
-            int endTick    = startTick + rs->len;
+            int endTick    = startTick + rs->len();
             int tickOffset = rs->utick - rs->tick;
             for (Measure* m = score->tick2measureMM(startTick); m; m = m->nextMeasureMM()) {
                         if (segments)

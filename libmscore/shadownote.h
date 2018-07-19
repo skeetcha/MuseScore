@@ -14,8 +14,7 @@
 #define __SHADOWNOTE_H__
 
 #include "element.h"
-
-class QPainter;
+#include "durationtype.h"
 
 namespace Ms {
 
@@ -28,21 +27,29 @@ namespace Ms {
  which shows the note insert position in note entry mode.
 */
 
-class ShadowNote : public Element {
-      Q_OBJECT
-
+class ShadowNote final : public Element {
       int _line;
-      SymId sym;
+      SymId _notehead;
+      TDuration _duration;
+      int _voice;
+      bool _rest;
 
    public:
       ShadowNote(Score*);
       virtual ShadowNote* clone() const  { return new ShadowNote(*this); }
-      virtual Element::Type type() const { return Element::Type::SHADOW_NOTE; }
+      virtual ElementType type() const   { return ElementType::SHADOW_NOTE; }
       virtual void layout();
       int line() const                   { return _line;   }
       void setLine(int n)                { _line = n;      }
       virtual void draw(QPainter*) const;
-      void setSym(SymId id)              { sym = id;     }
+
+      void setState(SymId noteSymbol, int voice, TDuration duration, bool rest = false);
+
+      SymId getNoteFlag() const;
+      bool computeUp() const;
+
+      SymId notehead() const { return _notehead; }
+      bool isValid() const;
       };
 
 

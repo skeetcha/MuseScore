@@ -26,6 +26,7 @@
 namespace Ms {
 
 class Score;
+class MasterScore;
 
 //---------------------------------------------------------
 //   MediaDialog
@@ -33,7 +34,9 @@ class Score;
 
 class MediaDialog : public QDialog, Ui::MediaDialog {
       Q_OBJECT
-      Score* score;
+      MasterScore* score;
+
+      virtual void hideEvent(QHideEvent*);
 
    private slots:
       void addScanPressed();

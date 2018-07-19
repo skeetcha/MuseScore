@@ -21,23 +21,38 @@
 #include "musescore.h"
 #include "libmscore/mscore.h"
 #include "preferences.h"
+#include "resourceManager.h"
+#include "extension.h"
+#include "libmscore/utils.h"
 
 namespace Ms {
 
-UpdateChecker::UpdateChecker()
+//---------------------------------------------------------
+//   default period
+//---------------------------------------------------------
+
+static int defaultPeriod()
+      {
+      int result = 24;
+      if(qApp->applicationName() == "MuseScore2"){ //avoid nightly cymbals
+            if (MuseScore::unstable())
+                  result = 24;
+            else
+                  result = 24; // yes, it's again the same but let's keep the logic for now
+            }
+      return result;
+      }
+
+UpdateChecker::UpdateChecker(QObject* parent)
+      : UpdateCheckerBase(parent)
       {
       manager = new QNetworkAccessManager(this);
       connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(onRequestFinished(QNetworkReply*)));
       }
 
-UpdateChecker::~UpdateChecker()
-      {
-      delete manager;
-      }
-
 void UpdateChecker::onRequestFinished(QNetworkReply* reply)
       {
-      if(reply->error() != QNetworkReply::NoError){
+      if (reply->error() != QNetworkReply::NoError) {
             qDebug("Error while checking update [%s]", reply->errorString().toLatin1().constData());
             return;
             }
@@ -54,7 +69,6 @@ void UpdateChecker::onRequestFinished(QNetworkReply* reply)
       QString downloadUrl;
       QString infoUrl;
       QString description;
-      QString releaseType;
 
       while (!reader.atEnd() && !reader.hasError()) {
             QXmlStreamReader::TokenType token = reader.readNext();
@@ -66,8 +80,12 @@ void UpdateChecker::onRequestFinished(QNetworkReply* reply)
                         version = parseText(reader);
                   else if (reader.name() == "revision")
                         upgradeRevision = parseText(reader);
-                  else if (reader.name() == "downloadUrl")
+                  else if (reader.name() == "downloadUrl") {
                         downloadUrl = parseText(reader);
+#if defined(FOR_WINSTORE)
+                        downloadUrl = QString("%1?package=appx&version=%2").arg(downloadUrl).arg(_currentVersion);
+#endif
+                        }
                   else if (reader.name() == "infoUrl")
                         infoUrl = parseText(reader);
                   else if (reader.name() == "description")
@@ -78,7 +96,11 @@ void UpdateChecker::onRequestFinished(QNetworkReply* reply)
       if (reader.error() != QXmlStreamReader::NoError)
             qDebug() << reader.error() << reader.errorString();
 
-      QString message = tr("An update for MuseScore is available: <a href=\"%1\">MuseScore %2 r.%3</a>").arg(downloadUrl).arg(version).arg(upgradeRevision);
+      QString message = tr("An update for MuseScore is available: %1MuseScore %2 r.%3%4")
+                  .arg("<a href=\"" + downloadUrl + "\">")
+                  .arg(version)
+                  .arg(upgradeRevision)
+                  .arg("</a>");
 //    qDebug("revision %s", revision.toLatin1().constData());
       if (!version.isEmpty() &&  version > _currentVersion ) {
             QMessageBox msgBox;
@@ -100,9 +122,19 @@ QString UpdateChecker::parseText(QXmlStreamReader& reader)
       {
       QString result;
       reader.readNext();
-      if(reader.tokenType() == QXmlStreamReader::Characters)
+      if (reader.tokenType() == QXmlStreamReader::Characters)
             result = reader.text().toString();
       return result;
+      }
+
+bool UpdateChecker::getUpdatePrefValue()
+      {
+      return preferences.getBool(PREF_UI_APP_STARTUP_CHECKUPDATE);
+      }
+
+QString UpdateChecker::getUpdatePrefString()
+      {
+      return "lastUpdateDate";
       }
 
 void UpdateChecker::check(QString currentVersion, bool m)
@@ -114,58 +146,120 @@ void UpdateChecker::check(QString currentVersion, bool m)
 #if defined(Q_OS_MAC)
       os = "mac";
 #endif
-      if(qApp->applicationName() == "MuseScore2") { //avoid nightly cymbals
-            if(MuseScore::unstable())
-                  release = "pre";
-            else
-                  release = "stable";
+      if (MuseScore::unstable()) {
+            release = "nightly";
+            _currentVersion = QString("%1.%2").arg(currentVersion).arg(BUILD_NUMBER);
             }
       else {
-            release = "nightly";
+            release = "stable";
+             _currentVersion =  currentVersion;
             }
       if (MScore::debugMode)
             qDebug("release type: %s", release.toLatin1().constData());
-      if(!os.isEmpty() && !release.isEmpty() && release != "nightly"){
-            _currentVersion =  currentVersion;
-            manager->get(QNetworkRequest(QUrl("http://update.musescore.org/update_"+os +"_" + release +".xml")));
-            }
+      if (!os.isEmpty() && !release.isEmpty())
+            manager->get(QNetworkRequest(QUrl("http://update.musescore.org/update_" + os +"_" + release +".xml")));
       }
 
-//---------------------------------------------------------
-//   default period
-//---------------------------------------------------------
-
-int UpdateChecker::defaultPeriod()
+UpdateCheckerBase::UpdateCheckerBase(QObject* parent)
+      : QObject(parent)
       {
-      int result = 24;
-      if(qApp->applicationName() == "MuseScore2"){ //avoid nightly cymbals
-            if (MuseScore::unstable())
-                  result = 24;
-            else
-                  result = 24; // yes, it's again the same but let's keep the logic for now
-            }
-      return result;
+
       }
 
 //---------------------------------------------------------
 //   default hasToCheck
 //---------------------------------------------------------
 
-bool UpdateChecker::hasToCheck()
+bool UpdateCheckerBase::hasToCheck()
       {
-      if(!preferences.checkUpdateStartup)
+      if(!getUpdatePrefValue())
             return false;
+
       QSettings s;
       s.beginGroup("Update");
       QDateTime now = QDateTime::currentDateTime();
-      QDateTime lastUpdate = s.value("lastUpdateDate", now).value<QDateTime>();
+      QDateTime lastUpdate = s.value(getUpdatePrefString(), now).value<QDateTime>();
 
       if (MScore::debugMode) {
-            qDebug("preferences.checkUpdateStartup: %d" , preferences.checkUpdateStartup);
-            qDebug("lastupdate: %s", qPrintable(lastUpdate.toString("dd.MM.yyyy hh:mm:ss.zzz")));
+            qDebug(QString("preferences." + getUpdatePrefString() + ": %d").toStdString().c_str() , getUpdatePrefValue());
+            qDebug(QString("last update for " + getUpdatePrefString() + ": %s").toStdString().c_str(), qPrintable(lastUpdate.toString("dd.MM.yyyy hh:mm:ss.zzz")));
             }
       s.endGroup();
       return now == lastUpdate || now > lastUpdate.addSecs(3600 * defaultPeriod()) ;
       }
+
+ExtensionsUpdateChecker::ExtensionsUpdateChecker(QObject* parent)
+      : UpdateCheckerBase(parent)
+      {
+
+      }
+
+void ExtensionsUpdateChecker::check()
+      {
+      DownloadUtils *js = new DownloadUtils();
+      js->setTarget(ResourceManager::baseAddr() + "extensions/details.json");
+      js->download();
+      QByteArray json = js->returnData();
+
+      // parse the json file
+      QJsonParseError err;
+      QJsonDocument result = QJsonDocument::fromJson(json, &err);
+      if (err.error != QJsonParseError::NoError || !result.isObject()) {
+            qDebug("An error occurred during parsing");
+            return;
+            }
+
+      QStringList extensions = result.object().keys();
+      for (QString key : extensions) {
+            if (!result.object().value(key).isObject())
+                  continue;
+            QJsonObject value = result.object().value(key).toObject();
+            QString version = value.value("version").toString();
+
+            // get the installed version of the extension if any
+            if (Extension::isInstalled(key)) {
+                  QString installedVersion = Extension::getLatestVersion(key);
+                  if (compareVersion(installedVersion, version)) {
+                        QMessageBox msgBox;
+                        msgBox.setWindowTitle(tr("Extension Updates Available"));
+                        msgBox.setText(tr("One or more installed extensions have updates available in Help / Resource Manager..."));
+                        msgBox.setTextFormat(Qt::RichText);
+                        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+                        msgBox.setDefaultButton(QMessageBox::Ok);
+                        msgBox.setEscapeButton(QMessageBox::Cancel);
+                        int ret = msgBox.exec();
+                        switch (ret) {
+                              case QMessageBox::Ok: {
+                                    ResourceManager r(static_cast<QWidget*>(this->parent()));
+                                    r.selectExtensionsTab();
+                                    r.exec();
+                                    break;
+                                    }
+                              case QMessageBox::Cancel: {
+                                    break;
+                                    }
+                              default:
+                                    qWarning() << "undefined action in ExtensionsUpdateChecker::check" << ret;
+                              }
+                        QSettings s;
+                        s.beginGroup("Update");
+                        s.setValue(getUpdatePrefString(), QDateTime::currentDateTime());
+                        s.endGroup();
+                        break;
+                        }
+                  }
+            }
+      }
+
+bool ExtensionsUpdateChecker::getUpdatePrefValue()
+      {
+      return preferences.getBool(PREF_UI_APP_STARTUP_CHECK_EXTENSIONS_UPDATE);
+      }
+
+QString ExtensionsUpdateChecker::getUpdatePrefString()
+      {
+      return "lastExtensionsUpdateDate";
+      }
+
 }
 

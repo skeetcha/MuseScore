@@ -3,7 +3,7 @@
 //  Music Composition & Notation
 //  $Id:$
 //
-//  Copyright (C) 2011 Werner Schweer and others
+//  Copyright (C) 2011-2016 Werner Schweer and others
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2
@@ -21,7 +21,7 @@ The Shortcut class describes the basic configurable shortcut element.
 'Real' data are contained in 2 static member variables:
 
 1) sc[], an array of Shortcut: contains the default, built-in data for each shortcut
-      except the key sequences; it is initialized at startup (code at the begining of
+      except the key sequences; it is initialized at startup (code at the beginning of
       mscore/actions.cpp)
 2) _shortcuts, a QMap using the shortcut xml tag name as hash value: is initialized from
       data in sc via a call to Shortcut::init() in program main() (mscore/musescore.cpp).
@@ -67,7 +67,7 @@ Shortcuts marked with the STATE_NEVER state should NEVER used directly as shortc
 
 namespace Ms {
 
-class Xml;
+class XmlWriter;
 class XmlReader;
 
 //---------------------------------------------------------
@@ -117,6 +117,7 @@ class Shortcut {
 
       static Shortcut _sc[];
       static QHash<QByteArray, Shortcut*> _shortcuts;
+      void translateAction(QAction* action) const;
 
    public:
 
@@ -151,19 +152,23 @@ class Shortcut {
       Icons icon() const                       { return _icon;  }
       const QList<QKeySequence>& keys() const  { return _keys;  }
       QKeySequence::StandardKey standardKey() const { return _standardKey; }
-      void setStandardKey(QKeySequence::StandardKey k) {  _standardKey = k; }
+      void setStandardKey(QKeySequence::StandardKey k);
       void setKeys(const QList<QKeySequence>& ks);
 
       bool compareKeys(const Shortcut&) const;
       QString keysToString() const;
       static QString getMenuShortcutString(const QMenu* menu);
 
-      void write(Ms::Xml&) const;
+      void write(Ms::XmlWriter&) const;
       void read(Ms::XmlReader&);
 
       static void init();
+      static void retranslate();
+      static void refreshIcons();
       static void load();
+      static void loadFromNewFile(QString fileLocation);
       static void save();
+      static void saveToNewFile(QString fileLocation);
       static void resetToDefault();
       static bool dirty;
       static Shortcut* getShortcut(const char* key);

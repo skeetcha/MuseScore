@@ -22,21 +22,28 @@ class ResourceManager : public QDialog, public Ui::Resource
    {
     Q_OBJECT
 
-public:
-    explicit ResourceManager(QWidget *parent = 0);
+    virtual void hideEvent(QHideEvent*);
     QByteArray txt;
     void displayLanguages();
-    void displayPlugins();
+    void displayExtensions();
     bool verifyFile(QString path, QString hash);
     bool verifyLanguageFile(QString filename, QString hash);
 
-private:
-    QMap <QPushButton *, QString> buttonMap; 	// QPushButton -> filename
-    QMap <QPushButton *, QString> buttonHashMap;// QPushButton -> hash of the file
-    QString baseAddr;
+public:
+    explicit ResourceManager(QWidget *parent = 0);
+    void selectLanguagesTab();
+    void selectExtensionsTab();
 
-public slots:
-    void download();
+    static inline QString baseAddr() { return "http://extensions.musescore.org/2.3/"; }
+
+private:
+    QMap <QPushButton *, QString> languageButtonMap; 	// QPushButton -> filename
+    QMap <QPushButton *, QString> languageButtonHashMap;// QPushButton -> hash of the file
+
+private slots:
+    void downloadLanguage();
+    void downloadExtension();
+    void uninstallExtension();
    };
 
 }

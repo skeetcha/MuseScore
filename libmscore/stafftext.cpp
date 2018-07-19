@@ -15,21 +15,18 @@
 #include "system.h"
 #include "staff.h"
 #include "xml.h"
+#include "measure.h"
 
 namespace Ms {
 
 //---------------------------------------------------------
-//   StaffText
+//   StaffTextBase
 //---------------------------------------------------------
 
-StaffText::StaffText(Score* s)
-   : Text(s)
+StaffTextBase::StaffTextBase(Score* s, ElementFlags flags)
+   : TextBase(s, flags)
       {
-      setFlags(ElementFlag::MOVABLE | ElementFlag::SELECTABLE | ElementFlag::ON_STAFF);
-      setTextStyleType(TextStyleType::STAFF);
-      _setAeolusStops = false;
-      _swing = false;
-      clearAeolusStops();
+      setPlacement(Placement::ABOVE);     // default
       setSwingParameters(MScore::division / 2, 60);
       }
 
@@ -37,14 +34,15 @@ StaffText::StaffText(Score* s)
 //   write
 //---------------------------------------------------------
 
-void StaffText::write(Xml& xml) const
+void StaffTextBase::write(XmlWriter& xml) const
       {
       if (!xml.canWrite(this))
             return;
       xml.stag("StaffText");
-      foreach(ChannelActions s, _channelActions) {
+
+      for (ChannelActions s : _channelActions) {
             int channel = s.channel;
-            foreach(QString name, s.midiActionNames)
+            for (QString name : s.midiActionNames)
                   xml.tagE(QString("MidiAction channel=\"%1\" name=\"%2\"").arg(channel).arg(name));
             }
       for (int voice = 0; voice < VOICES; ++voice) {
@@ -66,7 +64,8 @@ void StaffText::write(Xml& xml) const
             int swingRatio = swingParameters()->swingRatio;
             xml.tagE(QString("swing unit=\"%1\" ratio= \"%2\"").arg(swingUnit).arg(swingRatio));
             }
-      Text::writeProperties(xml);
+      TextBase::writeProperties(xml);
+
       xml.etag();
       }
 
@@ -74,78 +73,90 @@ void StaffText::write(Xml& xml) const
 //   read
 //---------------------------------------------------------
 
-void StaffText::read(XmlReader& e)
+void StaffTextBase::read(XmlReader& e)
       {
       for (int voice = 0; voice < VOICES; ++voice)
             _channelNames[voice].clear();
       clearAeolusStops();
       while (e.readNextStartElement()) {
-            const QStringRef& tag(e.name());
-            if (tag == "MidiAction") {
-                  int channel = e.intAttribute("channel", 0);
-                  QString name = e.attribute("name");
-                  bool found = false;
-                  int n = _channelActions.size();
-                  for (int i = 0; i < n; ++i) {
-                        ChannelActions* a = &_channelActions[i];
-                        if (a->channel == channel) {
-                              a->midiActionNames.append(name);
-                              found = true;
-                              break;
-                              }
-                        }
-                  if (!found) {
-                        ChannelActions a;
-                        a.channel = channel;
-                        a.midiActionNames.append(name);
-                        _channelActions.append(a);
-                        }
-                  e.readNext();
-                  }
-            else if (tag == "channelSwitch" || tag == "articulationChange") {
-                  int voice = e.intAttribute("voice", -1);
-                  if (voice >= 0 && voice < VOICES)
-                        _channelNames[voice] = e.attribute("name");
-                  else if (voice == -1) {
-                        // no voice applies channel to all voices for
-                        // compatibility
-                        for (int i = 0; i < VOICES; ++i)
-                              _channelNames[i] = e.attribute("name");
-                        }
-                  e.readNext();
-                  }
-            else if (tag == "aeolus") {
-                  int group = e.intAttribute("group", -1);
-                  if (group >= 0 && group < 4)
-                        aeolusStops[group] = e.readInt();
-                  else
-                        e.readNext();
-                  _setAeolusStops = true;
-                  }
-            else if (tag == "swing") {
-                  QString swingUnit = e.attribute("unit","");
-                  int unit = 0;
-                  if (swingUnit == TDuration(TDuration::DurationType::V_EIGHTH).name())
-                        unit = MScore::division / 2;
-                  else if (swingUnit == TDuration(TDuration::DurationType::V_16TH).name())
-                        unit = MScore:: division / 4;
-                  else if (swingUnit == TDuration(TDuration::DurationType::V_ZERO).name())
-                        unit = 0;
-                  int ratio = e.intAttribute("ratio", 60);
-                  setSwing(true);
-                  setSwingParameters(unit, ratio);
-                  e.readNext();
-                  }
-            else if (!Text::readProperties(e))
+            if (!readProperties(e))
                   e.unknown();
             }
+      }
+
+//---------------------------------------------------------
+//   readProperties
+//---------------------------------------------------------
+
+bool StaffTextBase::readProperties(XmlReader& e)
+      {
+      const QStringRef& tag(e.name());
+
+      if (tag == "MidiAction") {
+            int channel = e.intAttribute("channel", 0);
+            QString name = e.attribute("name");
+            bool found = false;
+            int n = _channelActions.size();
+            for (int i = 0; i < n; ++i) {
+                  ChannelActions* a = &_channelActions[i];
+                  if (a->channel == channel) {
+                        a->midiActionNames.append(name);
+                        found = true;
+                        break;
+                        }
+                  }
+            if (!found) {
+                  ChannelActions a;
+                  a.channel = channel;
+                  a.midiActionNames.append(name);
+                  _channelActions.append(a);
+                  }
+            e.readNext();
+            }
+      else if (tag == "channelSwitch" || tag == "articulationChange") {
+            int voice = e.intAttribute("voice", -1);
+            if (voice >= 0 && voice < VOICES)
+                  _channelNames[voice] = e.attribute("name");
+            else if (voice == -1) {
+                  // no voice applies channel to all voices for
+                  // compatibility
+                  for (int i = 0; i < VOICES; ++i)
+                        _channelNames[i] = e.attribute("name");
+                  }
+            e.readNext();
+            }
+      else if (tag == "aeolus") {
+            int group = e.intAttribute("group", -1);
+            if (group >= 0 && group < 4)
+                  aeolusStops[group] = e.readInt();
+            else
+                  e.readNext();
+            _setAeolusStops = true;
+            }
+      else if (tag == "swing") {
+            QString swingUnit = e.attribute("unit","");
+            int unit = 0;
+            if (swingUnit == TDuration(TDuration::DurationType::V_EIGHTH).name())
+                  unit = MScore::division / 2;
+            else if (swingUnit == TDuration(TDuration::DurationType::V_16TH).name())
+                  unit = MScore:: division / 4;
+            else if (swingUnit == TDuration(TDuration::DurationType::V_ZERO).name())
+                  unit = 0;
+            int ratio = e.intAttribute("ratio", 60);
+            setSwing(true);
+            setSwingParameters(unit, ratio);
+            e.readNext();
+            }
+      else if (!TextBase::readProperties(e))
+            return false;
+      return true;
       }
 
 //---------------------------------------------------------
 //   clearAeolusStops
 //---------------------------------------------------------
 
-void StaffText::clearAeolusStops()
+void StaffTextBase::clearAeolusStops()
       {
       for (int i = 0; i < 4; ++i)
             aeolusStops[i] = 0;
@@ -155,7 +166,7 @@ void StaffText::clearAeolusStops()
 //   setAeolusStop
 //---------------------------------------------------------
 
-void StaffText::setAeolusStop(int group, int idx, bool val)
+void StaffTextBase::setAeolusStop(int group, int idx, bool val)
       {
       if (val)
             aeolusStops[group] |= (1 << idx);
@@ -167,10 +178,70 @@ void StaffText::setAeolusStop(int group, int idx, bool val)
 //   getAeolusStop
 //---------------------------------------------------------
 
-bool StaffText::getAeolusStop(int group, int idx) const
+bool StaffTextBase::getAeolusStop(int group, int idx) const
       {
       return aeolusStops[group] & (1 << idx);
       }
 
+//---------------------------------------------------------
+//   layout
+//---------------------------------------------------------
+
+void StaffTextBase::layout()
+      {
+      Staff* s = staff();
+      qreal y = placeAbove() ? styleP(Sid::staffTextPosAbove) : styleP(Sid::staffTextPosBelow) + (s ? s->height() : 0.0);
+      setPos(QPointF(0.0, y));
+      TextBase::layout1();
+      autoplaceSegmentElement(styleP(Sid::staffTextMinDistance));
+      }
+
+//---------------------------------------------------------
+//   segment
+//---------------------------------------------------------
+
+Segment* StaffTextBase::segment() const
+      {
+      if (!parent()->isSegment()) {
+            qDebug("parent %s", parent()->name());
+            return 0;
+            }
+      Segment* s = toSegment(parent());
+      return s;
+      }
+
+//---------------------------------------------------------
+//   propertyDefault
+//---------------------------------------------------------
+
+QVariant StaffTextBase::propertyDefault(Pid id) const
+      {
+      switch(id) {
+            case Pid::SUB_STYLE:
+                  return int(SubStyleId::STAFF);
+            case Pid::PLACEMENT:
+                  return int(Placement::ABOVE);
+            case Pid::FRAME:
+                  return false;
+            default:
+                  return TextBase::propertyDefault(id);
+            }
+      }
+
+//---------------------------------------------------------
+//   StaffText
+//---------------------------------------------------------
+
+StaffText::StaffText(Score* s)
+   : StaffTextBase(s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
+      {
+      initSubStyle(SubStyleId::STAFF);
+      }
+
+StaffText::StaffText(SubStyleId ss, Score* s)
+   : StaffTextBase(s, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
+      {
+      initSubStyle(ss);
+      }
 }
 

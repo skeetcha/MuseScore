@@ -43,7 +43,7 @@ Sample::~Sample()
 Sample* ZInstrument::readSample(const QString& s, MQZipReader* uz)
       {
       if (uz) {
-            QList<MQZipReader::FileInfo> fi = uz->fileInfoList();
+            QVector<MQZipReader::FileInfo> fi = uz->fileInfoList();
 
             buf = uz->fileData(s);
             if (buf.isEmpty()) {
@@ -67,13 +67,16 @@ Sample* ZInstrument::readSample(const QString& s, MQZipReader* uz)
             }
 
       int channel = a.channels();
-      int frames  = a.frames();
+      sf_count_t frames  = a.frames();
       int sr      = a.samplerate();
 
       short* data = new short[(frames + 3) * channel];
       Sample* sa  = new Sample(channel, data, frames, sr);
+      sa->setLoopStart(a.loopStart());
+      sa->setLoopEnd(a.loopEnd());
+      sa->setLoopMode(a.loopMode());
 
-      if (frames != a.read(data + channel, frames)) {
+      if (frames != a.readData(data + channel, frames)) {
             qDebug("Sample read failed: %s\n", a.error());
             delete sa;
             sa = 0;
@@ -93,6 +96,8 @@ Sample* ZInstrument::readSample(const QString& s, MQZipReader* uz)
 ZInstrument::ZInstrument(Zerberus* z)
       {
       zerberus  = z;
+      for (int i =0; i < 128; i++)
+            _setcc[i] = -1;
       _program  = -1;
       _refCount = 0;
       }
@@ -121,6 +126,7 @@ bool ZInstrument::load(const QString& path)
             return loadFromFile(path);
       if (fi.isDir())
             return loadFromDir(path);
+      qDebug("not file nor dir %s", qPrintable(path));
       return false;
       }
 

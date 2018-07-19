@@ -23,7 +23,7 @@ enum AmbitusControl : char {
       HASLINE,
       LINEWIDTH,
       TOPTPC, BOTTOMTPC, TOPOCTAVE, BOTTOMOCTAVE,
-      LEADINGSPACE, TRAILINGSPACE               // Segment controls
+      LEADINGSPACE                              // Segment controls
       };
 
 //---------------------------------------------------------
@@ -31,9 +31,8 @@ enum AmbitusControl : char {
 //---------------------------------------------------------
 
 InspectorAmbitus::InspectorAmbitus(QWidget* parent)
-   : InspectorBase(parent)
+   : InspectorElementBase(parent)
       {
-      b.setupUi(addWidget());
       r.setupUi(addWidget());
       s.setupUi(addWidget());
 
@@ -41,7 +40,7 @@ InspectorAmbitus::InspectorAmbitus(QWidget* parent)
             NoteHead::Group::HEAD_NORMAL,
             NoteHead::Group::HEAD_CROSS,
             NoteHead::Group::HEAD_DIAMOND,
-            NoteHead::Group::HEAD_TRIANGLE,
+            NoteHead::Group::HEAD_TRIANGLE_DOWN,
             NoteHead::Group::HEAD_SLASH,
             NoteHead::Group::HEAD_XCIRCLE,
             NoteHead::Group::HEAD_DO,
@@ -65,15 +64,15 @@ InspectorAmbitus::InspectorAmbitus(QWidget* parent)
       };
 
       //
-      // fix order of note heads and tpc's
+      // fix order of noteheads and tpc's
       //
-      for (int i = 0; i < int(NoteHead::Group::HEAD_GROUPS); ++i)
+      for (int i = 0; i < int(sizeof(heads)/sizeof(*heads)); ++i)
             r.noteHeadGroup->setItemData(i, int(heads[i]));
       // noteHeadType starts at -1
       for (int i = 0; i < 5; ++i)
             r.noteHeadType->setItemData(i, i-1);
       // set proper itemdata for TPC combos
-      for (int i = 0; i < Tpc::TPC_MAX-Tpc::TPC_MIN+2; ++i) {
+      for (int i = 0; i < int(sizeof(tpcs)/sizeof(*tpcs)); ++i) {
             r.topTpc->   setItemData(i, tpcs[i]);
             r.bottomTpc->setItemData(i, tpcs[i]);
             }
@@ -85,29 +84,24 @@ InspectorAmbitus::InspectorAmbitus(QWidget* parent)
       item = model->item(0);
       item->setFlags(item->flags() & ~(Qt::ItemIsSelectable|Qt::ItemIsEnabled));
 
-      iList = {
-            { P_ID::COLOR,          0, 0, b.color,         b.resetColor         },
-            { P_ID::VISIBLE,        0, 0, b.visible,       b.resetVisible       },
-            { P_ID::USER_OFF,       0, 0, b.offsetX,       b.resetX             },
-            { P_ID::USER_OFF,       1, 0, b.offsetY,       b.resetY             },
+      const std::vector<InspectorItem> iiList = {
+            { Pid::HEAD_GROUP,     0, r.noteHeadGroup, r.resetNoteHeadGroup },
+            { Pid::HEAD_TYPE,      0, r.noteHeadType,  r.resetNoteHeadType  },
+            { Pid::MIRROR_HEAD,    0, r.direction,     r.resetDirection     },
+            { Pid::GHOST,          0, r.hasLine,       r.resetHasLine       },      // recycled property
+            { Pid::LINE_WIDTH,     0, r.lineWidth,     r.resetLineWidth     },
+            { Pid::TPC1,           0, r.topTpc,        nullptr              },
+            { Pid::FBPARENTHESIS1, 0, r.bottomTpc,     nullptr              },      // recycled property
+            { Pid::FBPARENTHESIS3, 0, r.topOctave,     nullptr              },      // recycled property
+            { Pid::FBPARENTHESIS4, 0, r.bottomOctave,  nullptr              },      // recycled property
 
-            { P_ID::HEAD_GROUP,     0, 0, r.noteHeadGroup, r.resetNoteHeadGroup },
-            { P_ID::HEAD_TYPE,      0, 0, r.noteHeadType,  r.resetNoteHeadType  },
-            { P_ID::MIRROR_HEAD,    0, 0, r.direction,     r.resetDirection     },
-            { P_ID::GHOST,          0, 0, r.hasLine,       r.resetHasLine       },      // recycled property
-            { P_ID::LINE_WIDTH,     0, 0, r.lineWidth,     r.resetLineWidth     },
-            { P_ID::TPC1,           0, 0, r.topTpc,        nullptr              },
-            { P_ID::FBPARENTHESIS1, 0, 0, r.bottomTpc,     nullptr              },      // recycled property
-            { P_ID::FBPARENTHESIS3, 0, 0, r.topOctave,     nullptr              },      // recycled property
-            { P_ID::FBPARENTHESIS4, 0, 0, r.bottomOctave,  nullptr              },      // recycled property
-
-            { P_ID::LEADING_SPACE,  0, 1, s.leadingSpace,  s.resetLeadingSpace  },
-            { P_ID::TRAILING_SPACE, 0, 1, s.trailingSpace, s.resetTrailingSpace }
+            { Pid::LEADING_SPACE,  1, s.leadingSpace,  s.resetLeadingSpace  },
             };
 
-      mapSignals();
-      connect(r.updateRange, SIGNAL(clicked()), this, SLOT(updateRange()) );
+      const std::vector<InspectorPanel> ppList = { { r.title, r.panel }, { s.title, s.panel } };
 
+      mapSignals(iiList, ppList);
+      connect(r.updateRange, SIGNAL(clicked()), this, SLOT(updateRange()) );
       }
 
 //---------------------------------------------------------
@@ -116,7 +110,7 @@ InspectorAmbitus::InspectorAmbitus(QWidget* parent)
 /*
 void InspectorAmbitus::setElement()
       {
-      Ambitus* range = static_cast<Range*>(inspector->element());
+      Ambitus* range = toRange(inspector->element());
 
 //      int octave = range->topPitch() / 12;
 //      static_cast<QSpinBox*>(iList[AmbitusControl::TOPOCTAVE].w)->setValue(octave);
@@ -147,7 +141,7 @@ void InspectorAmbitus::valueChanged(int idx)
 
 void Ms::InspectorAmbitus::updateRange()
 {
-      Ambitus* range = static_cast<Ambitus*>(inspector->element());
+      Ambitus* range = toAmbitus(inspector->element());
       range->updateRange();
       range->layout();              // redo layout
       setElement();                 // set Inspector values to range properties

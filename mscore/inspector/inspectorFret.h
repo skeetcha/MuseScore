@@ -23,14 +23,14 @@ namespace Ms {
 //   InspectorFretDiagram
 //---------------------------------------------------------
 
-class InspectorFretDiagram : public InspectorBase {
+class InspectorFretDiagram : public InspectorElementBase {
       Q_OBJECT
 
-      UiInspectorElement  e;
       Ui::InspectorFretDiagram   f;
+      virtual void setElement() override;
 
    private slots:
-      void propertiesClicked();
+      virtual void valueChanged(int idx) override;
 
    public:
       InspectorFretDiagram(QWidget* parent);

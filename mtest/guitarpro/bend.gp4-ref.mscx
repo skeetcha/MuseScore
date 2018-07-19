@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<museScore version="2.00">
+<museScore version="3.00">
   <Score>
     <LayerTag id="0" tag="default"></LayerTag>
     <currentLayer>0</currentLayer>
     <Division>480</Division>
     <Style>
-      <page-layout>
-        <page-height>1683.78</page-height>
-        <page-width>1190.55</page-width>
-        <page-margins type="even">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        <page-margins type="odd">
-          <left-margin>56.6929</left-margin>
-          <right-margin>56.6929</right-margin>
-          <top-margin>56.6929</top-margin>
-          <bottom-margin>113.386</bottom-margin>
-          </page-margins>
-        </page-layout>
       <Spatium>1.76389</Spatium>
       </Style>
     <showInvisible>1</showInvisible>
@@ -38,14 +22,6 @@
     <metaTag name="translator"></metaTag>
     <metaTag name="workNumber"></metaTag>
     <metaTag name="workTitle"></metaTag>
-    <PageList>
-      <Page>
-        <System>
-          </System>
-        <System>
-          </System>
-        </Page>
-      </PageList>
     <Part>
       <Staff id="1">
         <StaffType group="pitched">
@@ -90,38 +66,17 @@
           <lid>3</lid>
           <sigN>4</sigN>
           <sigD>4</sigD>
-          <showCourtesySig>1</showCourtesySig>
           </TimeSig>
         <Tempo>
           <tempo>2</tempo>
           <lid>4</lid>
           <text><sym>metNoteQuarterUp</sym> = 120</text>
           </Tempo>
-        <Tempo>
-          <tempo>2</tempo>
-          <lid>5</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
-          </Tempo>
-        <Tempo>
-          <tempo>2</tempo>
-          <lid>6</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
-          </Tempo>
-        <Tempo>
-          <tempo>2</tempo>
-          <lid>7</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
-          </Tempo>
-        <Tempo>
-          <tempo>2</tempo>
-          <lid>8</lid>
-          <text><sym>metNoteQuarterUp</sym> = 120</text>
-          </Tempo>
         <Chord>
-          <lid>9</lid>
+          <lid>5</lid>
           <durationType>quarter</durationType>
           <Note>
-            <lid>10</lid>
+            <lid>6</lid>
             <pitch>55</pitch>
             <tpc>15</tpc>
             <fret>5</fret>
@@ -133,11 +88,11 @@
           <l2>12</l2>
           </Beam>
         <Chord>
-          <lid>11</lid>
+          <lid>7</lid>
           <durationType>eighth</durationType>
           <Beam>1</Beam>
           <Note>
-            <lid>12</lid>
+            <lid>8</lid>
             <Bend>
               <point time="0" pitch="0" vibrato="0"/>
               <point time="10" pitch="100" vibrato="0"/>
@@ -146,10 +101,10 @@
               <point time="40" pitch="0" vibrato="0"/>
               <point time="50" pitch="100" vibrato="0"/>
               <point time="60" pitch="100" vibrato="0"/>
-              <lid>13</lid>
+              <lid>9</lid>
               </Bend>
             <Tie id="2">
-              <lid>14</lid>
+              <lid>10</lid>
               </Tie>
             <pitch>65</pitch>
             <tpc>13</tpc>
@@ -158,13 +113,13 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>15</lid>
+          <lid>11</lid>
           <durationType>eighth</durationType>
           <Beam>1</Beam>
           <Note>
-            <lid>16</lid>
+            <lid>12</lid>
             <Tie id="3">
-              <lid>17</lid>
+              <lid>13</lid>
               </Tie>
             <endSpanner id="2"/>
             <pitch>65</pitch>
@@ -174,10 +129,10 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>18</lid>
+          <lid>14</lid>
           <durationType>half</durationType>
           <Note>
-            <lid>19</lid>
+            <lid>15</lid>
             <endSpanner id="3"/>
             <pitch>65</pitch>
             <tpc>13</tpc>
@@ -188,17 +143,17 @@
         </Measure>
       <Measure number="2">
         <Chord>
-          <lid>21</lid>
+          <lid>17</lid>
           <durationType>half</durationType>
           <Note>
-            <lid>22</lid>
+            <lid>18</lid>
             <Bend>
               <point time="0" pitch="0" vibrato="0"/>
               <point time="15" pitch="100" vibrato="0"/>
               <point time="30" pitch="100" vibrato="0"/>
               <point time="45" pitch="0" vibrato="0"/>
               <point time="60" pitch="0" vibrato="0"/>
-              <lid>23</lid>
+              <lid>19</lid>
               </Bend>
             <pitch>57</pitch>
             <tpc>17</tpc>
@@ -207,15 +162,15 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>24</lid>
+          <lid>20</lid>
           <durationType>half</durationType>
           <Note>
-            <lid>25</lid>
+            <lid>21</lid>
             <Bend>
               <point time="0" pitch="0" vibrato="0"/>
               <point time="30" pitch="100" vibrato="0"/>
               <point time="60" pitch="100" vibrato="0"/>
-              <lid>26</lid>
+              <lid>22</lid>
               </Bend>
             <pitch>60</pitch>
             <tpc>14</tpc>
@@ -226,14 +181,14 @@
         </Measure>
       <Measure number="3">
         <Chord>
-          <lid>28</lid>
+          <lid>24</lid>
           <durationType>half</durationType>
           <Note>
-            <lid>29</lid>
+            <lid>25</lid>
             <Bend>
               <point time="0" pitch="100" vibrato="0"/>
               <point time="60" pitch="100" vibrato="0"/>
-              <lid>30</lid>
+              <lid>26</lid>
               </Bend>
             <pitch>57</pitch>
             <tpc>17</tpc>
@@ -242,16 +197,16 @@
             </Note>
           </Chord>
         <Chord>
-          <lid>31</lid>
+          <lid>27</lid>
           <durationType>half</durationType>
           <Note>
-            <lid>32</lid>
+            <lid>28</lid>
             <Bend>
               <point time="0" pitch="100" vibrato="0"/>
               <point time="20" pitch="100" vibrato="0"/>
               <point time="40" pitch="0" vibrato="0"/>
               <point time="60" pitch="0" vibrato="0"/>
-              <lid>33</lid>
+              <lid>29</lid>
               </Bend>
             <pitch>53</pitch>
             <tpc>13</tpc>
@@ -259,10 +214,6 @@
             <string>3</string>
             </Note>
           </Chord>
-        <BarLine>
-          <subtype>end</subtype>
-          <span>1</span>
-          </BarLine>
         </Measure>
       </Staff>
     <Score>
@@ -271,42 +222,18 @@
       <Division>480</Division>
       <Style>
         <createMultiMeasureRests>1</createMultiMeasureRests>
-        <page-layout>
-          <page-height>1683.78</page-height>
-          <page-width>1190.55</page-width>
-          <page-margins type="even">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          <page-margins type="odd">
-            <left-margin>56.6929</left-margin>
-            <right-margin>56.6929</right-margin>
-            <top-margin>56.6929</top-margin>
-            <bottom-margin>113.386</bottom-margin>
-            </page-margins>
-          </page-layout>
         <Spatium>1.76389</Spatium>
         </Style>
       <showInvisible>1</showInvisible>
       <showUnprintable>1</showUnprintable>
       <showFrames>1</showFrames>
       <showMargins>0</showMargins>
-      <PageList>
-        <Page>
-          <System>
-            </System>
-          <System>
-            </System>
-          </Page>
-        </PageList>
       <Part>
         <Staff id="1">
           <linkedTo>1</linkedTo>
           <StaffType group="pitched">
             </StaffType>
-          <bracket type="0" span="2"/>
+          <bracket type="0" span="2" col="0"/>
           </Staff>
         <Staff id="2">
           <linkedTo>1</linkedTo>
@@ -331,7 +258,6 @@
             <upsideDown>0</upsideDown>
             <useNumbers>1</useNumbers>
             </StaffType>
-          <bracket type="-1" span="0"/>
           </Staff>
         <trackName></trackName>
         <Instrument>
@@ -376,38 +302,17 @@
             <lid>3</lid>
             <sigN>4</sigN>
             <sigD>4</sigD>
-            <showCourtesySig>1</showCourtesySig>
             </TimeSig>
           <Tempo>
             <tempo>2</tempo>
             <lid>4</lid>
             <text><sym>metNoteQuarterUp</sym> = 120</text>
             </Tempo>
-          <Tempo>
-            <tempo>2</tempo>
-            <lid>5</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
-            </Tempo>
-          <Tempo>
-            <tempo>2</tempo>
-            <lid>6</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
-            </Tempo>
-          <Tempo>
-            <tempo>2</tempo>
-            <lid>7</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
-            </Tempo>
-          <Tempo>
-            <tempo>2</tempo>
-            <lid>8</lid>
-            <text><sym>metNoteQuarterUp</sym> = 120</text>
-            </Tempo>
           <Chord>
-            <lid>9</lid>
+            <lid>5</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>10</lid>
+              <lid>6</lid>
               <pitch>55</pitch>
               <tpc>15</tpc>
               <fret>5</fret>
@@ -419,11 +324,11 @@
             <l2>12</l2>
             </Beam>
           <Chord>
-            <lid>11</lid>
+            <lid>7</lid>
             <durationType>eighth</durationType>
             <Beam>2</Beam>
             <Note>
-              <lid>12</lid>
+              <lid>8</lid>
               <Bend>
                 <point time="0" pitch="0" vibrato="0"/>
                 <point time="10" pitch="100" vibrato="0"/>
@@ -432,10 +337,10 @@
                 <point time="40" pitch="0" vibrato="0"/>
                 <point time="50" pitch="100" vibrato="0"/>
                 <point time="60" pitch="100" vibrato="0"/>
-                <lid>13</lid>
+                <lid>9</lid>
                 </Bend>
               <Tie id="4">
-                <lid>14</lid>
+                <lid>10</lid>
                 </Tie>
               <pitch>65</pitch>
               <tpc>13</tpc>
@@ -444,13 +349,13 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>15</lid>
+            <lid>11</lid>
             <durationType>eighth</durationType>
             <Beam>2</Beam>
             <Note>
-              <lid>16</lid>
+              <lid>12</lid>
               <Tie id="5">
-                <lid>17</lid>
+                <lid>13</lid>
                 </Tie>
               <endSpanner id="4"/>
               <pitch>65</pitch>
@@ -460,10 +365,10 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>18</lid>
+            <lid>14</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>19</lid>
+              <lid>15</lid>
               <endSpanner id="5"/>
               <pitch>65</pitch>
               <tpc>13</tpc>
@@ -474,17 +379,17 @@
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>21</lid>
+            <lid>17</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>22</lid>
+              <lid>18</lid>
               <Bend>
                 <point time="0" pitch="0" vibrato="0"/>
                 <point time="15" pitch="100" vibrato="0"/>
                 <point time="30" pitch="100" vibrato="0"/>
                 <point time="45" pitch="0" vibrato="0"/>
                 <point time="60" pitch="0" vibrato="0"/>
-                <lid>23</lid>
+                <lid>19</lid>
                 </Bend>
               <pitch>57</pitch>
               <tpc>17</tpc>
@@ -493,15 +398,15 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>24</lid>
+            <lid>20</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>25</lid>
+              <lid>21</lid>
               <Bend>
                 <point time="0" pitch="0" vibrato="0"/>
                 <point time="30" pitch="100" vibrato="0"/>
                 <point time="60" pitch="100" vibrato="0"/>
-                <lid>26</lid>
+                <lid>22</lid>
                 </Bend>
               <pitch>60</pitch>
               <tpc>14</tpc>
@@ -512,14 +417,14 @@
           </Measure>
         <Measure number="3">
           <Chord>
-            <lid>28</lid>
+            <lid>24</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>29</lid>
+              <lid>25</lid>
               <Bend>
                 <point time="0" pitch="100" vibrato="0"/>
                 <point time="60" pitch="100" vibrato="0"/>
-                <lid>30</lid>
+                <lid>26</lid>
                 </Bend>
               <pitch>57</pitch>
               <tpc>17</tpc>
@@ -528,16 +433,16 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>31</lid>
+            <lid>27</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>32</lid>
+              <lid>28</lid>
               <Bend>
                 <point time="0" pitch="100" vibrato="0"/>
                 <point time="20" pitch="100" vibrato="0"/>
                 <point time="40" pitch="0" vibrato="0"/>
                 <point time="60" pitch="0" vibrato="0"/>
-                <lid>33</lid>
+                <lid>29</lid>
                 </Bend>
               <pitch>53</pitch>
               <tpc>13</tpc>
@@ -545,10 +450,6 @@
               <string>3</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <Staff id="2">
@@ -558,10 +459,10 @@
             <accidental>0</accidental>
             </KeySig>
           <Chord>
-            <lid>9</lid>
+            <lid>5</lid>
             <durationType>quarter</durationType>
             <Note>
-              <lid>10</lid>
+              <lid>6</lid>
               <pitch>55</pitch>
               <tpc>15</tpc>
               <fret>5</fret>
@@ -573,11 +474,11 @@
             <l2>46</l2>
             </Beam>
           <Chord>
-            <lid>11</lid>
+            <lid>7</lid>
             <durationType>eighth</durationType>
             <Beam>3</Beam>
             <Note>
-              <lid>12</lid>
+              <lid>8</lid>
               <Bend>
                 <point time="0" pitch="0" vibrato="0"/>
                 <point time="10" pitch="100" vibrato="0"/>
@@ -586,10 +487,10 @@
                 <point time="40" pitch="0" vibrato="0"/>
                 <point time="50" pitch="100" vibrato="0"/>
                 <point time="60" pitch="100" vibrato="0"/>
-                <lid>13</lid>
+                <lid>9</lid>
                 </Bend>
               <Tie id="6">
-                <lid>14</lid>
+                <lid>10</lid>
                 </Tie>
               <pitch>65</pitch>
               <tpc>13</tpc>
@@ -598,13 +499,13 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>15</lid>
+            <lid>11</lid>
             <durationType>eighth</durationType>
             <Beam>3</Beam>
             <Note>
-              <lid>16</lid>
+              <lid>12</lid>
               <Tie id="7">
-                <lid>17</lid>
+                <lid>13</lid>
                 </Tie>
               <endSpanner id="6"/>
               <pitch>65</pitch>
@@ -614,10 +515,10 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>18</lid>
+            <lid>14</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>19</lid>
+              <lid>15</lid>
               <endSpanner id="7"/>
               <pitch>65</pitch>
               <tpc>13</tpc>
@@ -628,17 +529,17 @@
           </Measure>
         <Measure number="2">
           <Chord>
-            <lid>21</lid>
+            <lid>17</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>22</lid>
+              <lid>18</lid>
               <Bend>
                 <point time="0" pitch="0" vibrato="0"/>
                 <point time="15" pitch="100" vibrato="0"/>
                 <point time="30" pitch="100" vibrato="0"/>
                 <point time="45" pitch="0" vibrato="0"/>
                 <point time="60" pitch="0" vibrato="0"/>
-                <lid>23</lid>
+                <lid>19</lid>
                 </Bend>
               <pitch>57</pitch>
               <tpc>17</tpc>
@@ -647,15 +548,15 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>24</lid>
+            <lid>20</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>25</lid>
+              <lid>21</lid>
               <Bend>
                 <point time="0" pitch="0" vibrato="0"/>
                 <point time="30" pitch="100" vibrato="0"/>
                 <point time="60" pitch="100" vibrato="0"/>
-                <lid>26</lid>
+                <lid>22</lid>
                 </Bend>
               <pitch>60</pitch>
               <tpc>14</tpc>
@@ -666,14 +567,14 @@
           </Measure>
         <Measure number="3">
           <Chord>
-            <lid>28</lid>
+            <lid>24</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>29</lid>
+              <lid>25</lid>
               <Bend>
                 <point time="0" pitch="100" vibrato="0"/>
                 <point time="60" pitch="100" vibrato="0"/>
-                <lid>30</lid>
+                <lid>26</lid>
                 </Bend>
               <pitch>57</pitch>
               <tpc>17</tpc>
@@ -682,16 +583,16 @@
               </Note>
             </Chord>
           <Chord>
-            <lid>31</lid>
+            <lid>27</lid>
             <durationType>half</durationType>
             <Note>
-              <lid>32</lid>
+              <lid>28</lid>
               <Bend>
                 <point time="0" pitch="100" vibrato="0"/>
                 <point time="20" pitch="100" vibrato="0"/>
                 <point time="40" pitch="0" vibrato="0"/>
                 <point time="60" pitch="0" vibrato="0"/>
-                <lid>33</lid>
+                <lid>29</lid>
                 </Bend>
               <pitch>53</pitch>
               <tpc>13</tpc>
@@ -699,10 +600,6 @@
               <string>3</string>
               </Note>
             </Chord>
-          <BarLine>
-            <subtype>end</subtype>
-            <span>1</span>
-            </BarLine>
           </Measure>
         </Staff>
       <name>Guitar I</name>

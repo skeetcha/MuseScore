@@ -66,7 +66,7 @@ void TestKeySig::keysig()
       QString reference6(DIR  + "keysig.mscx");        // orig
 
       // read file
-      Score* score = readScore(DIR + "keysig.mscx");
+      MasterScore* score = readScore(DIR + "keysig.mscx");
       Measure* m2 = score->firstMeasure()->nextMeasure();
 
       // add a key signature (D major) in measure 2
@@ -87,24 +87,24 @@ void TestKeySig::keysig()
 
       // remove key signature in measure 2
       Segment* s = m2->first();
-      while (!(s->segmentType() & (Segment::Type::KeySig)))
+      while (!(s->isKeySigType()))
             s = s->next();
-      Element* e=s->element(0);
+      Element* e = s->element(0);
       score->startCmd();
       score->undoRemoveElement(e);
       score->endCmd();
       QVERIFY(saveCompareScore(score, writeFile3, reference3));
 
       // undo remove
-      score->undo()->undo();
+      score->undoStack()->undo(&ed);
       QVERIFY(saveCompareScore(score, writeFile4, reference4));
 
       // undo change
-      score->undo()->undo();
+      score->undoStack()->undo(&ed);
       QVERIFY(saveCompareScore(score, writeFile5, reference5));
 
       // undo add
-      score->undo()->undo();
+      score->undoStack()->undo(&ed);
       QVERIFY(saveCompareScore(score, writeFile6, reference6));
 
       delete score;
@@ -118,23 +118,21 @@ void TestKeySig::keysig()
 
 void TestKeySig::keysig_78216()
       {
-      Score* score = readScore(DIR + "keysig_78216.mscx");
-      score->doLayout();
+      MasterScore* score = readScore(DIR + "keysig_78216.mscx");
 
       Measure* m1 = score->firstMeasure();
       Measure* m2 = m1->nextMeasure();
       Measure* m3 = m2->nextMeasure();
 
       // verify no keysig exists in segment of final tick of m1, m2, m3
-      QVERIFY2(m1->findSegment(Segment::Type::KeySig, m1->endTick()) == nullptr, "Should be no keysig at end of measure 1.");
-      QVERIFY2(m2->findSegment(Segment::Type::KeySig, m2->endTick()) == nullptr, "Should be no keysig at end of measure 2.");
-      QVERIFY2(m3->findSegment(Segment::Type::KeySig, m3->endTick()) == nullptr, "Should be no keysig at end of measure 3.");
+      QVERIFY2(m1->findSegment(SegmentType::KeySig, m1->endTick()) == nullptr, "Should be no keysig at end of measure 1.");
+      QVERIFY2(m2->findSegment(SegmentType::KeySig, m2->endTick()) == nullptr, "Should be no keysig at end of measure 2.");
+      QVERIFY2(m3->findSegment(SegmentType::KeySig, m3->endTick()) == nullptr, "Should be no keysig at end of measure 3.");
       }
 
 void TestKeySig::concertPitch()
       {
-      Score* score = readScore(DIR + "concert-pitch.mscx");
-      score->doLayout();
+      MasterScore* score = readScore(DIR + "concert-pitch.mscx");
       score->cmdConcertPitchChanged(true, true);
       QVERIFY(saveCompareScore(score, "concert-pitch-01-test.mscx", DIR + "concert-pitch-01-ref.mscx"));
       score->cmdConcertPitchChanged(false, true);

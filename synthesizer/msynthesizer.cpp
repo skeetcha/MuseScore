@@ -23,29 +23,6 @@ namespace Ms {
 extern QString dataPath;
 
 //---------------------------------------------------------
-//   default buildin SynthesizerState
-//    used if synthesizer.xml does not exist or is not
-//    readable
-//---------------------------------------------------------
-
-static SynthesizerState defaultState = {
-      { "master", {
-            { 0, "Zita1" },
-            { 2, "0.1"   },
-            { 3, "440"   }
-            },
-            },
-      { "Fluid", {
-            { 0, "FluidR3Mono_GM.sf3" },
-            },
-            },
-//      { "Zerberus", {
-//            { 0, "SalamanderGrandPiano.sfz" },
-//            },
-//            },
-      };
-
-//---------------------------------------------------------
 //   MasterSynthesizer
 //---------------------------------------------------------
 
@@ -75,7 +52,10 @@ void MasterSynthesizer::init()
             else
                   e.unknown();
             }
-      setState(state);
+      if (!setState(state)) {
+            f.remove();
+            setState(defaultState);
+            }
       }
 
 //---------------------------------------------------------
@@ -86,8 +66,11 @@ MasterSynthesizer::~MasterSynthesizer()
       {
       for (Synthesizer* s : _synthesizer)
             delete s;
-      for (int i = 0; i < MAX_EFFECTS; ++i)
-            delete _effect[i];
+      for (int i = 0; i < MAX_EFFECTS; ++i) {
+            for (Effect* e : _effectList[i])
+                  delete e;
+            // delete _effect[i];   // _effect takes from _effectList
+            }
       }
 
 //---------------------------------------------------------
@@ -382,6 +365,24 @@ SynthesizerState MasterSynthesizer::state() const
       if (_effect[1])
             ss.push_back(_effect[1]->state());
       return ss;
+      }
+
+//---------------------------------------------------------
+//   storeState
+//---------------------------------------------------------
+
+bool MasterSynthesizer::storeState()
+      {
+      QString s(dataPath + "/synthesizer.xml");
+      QFile f(s);
+      if (!f.open(QIODevice::WriteOnly)) {
+            qDebug("cannot write synthesizer settings <%s>", qPrintable(s));
+            return false;
+            }
+      XmlWriter xml(0, &f);
+      xml.header();
+      state().write(xml);
+      return true;
       }
 
 //---------------------------------------------------------

@@ -44,8 +44,10 @@ namespace Ms {
 TupletDialog::TupletDialog(QWidget* parent)
    : QDialog(parent)
       {
+      setObjectName("TupletDialog");
       setupUi(this);
       setWindowFlags(this->windowFlags() & ~Qt::WindowContextHelpButtonHint);
+      MuseScore::restoreGeometry(this);
       }
 
 //---------------------------------------------------------
@@ -56,17 +58,17 @@ void TupletDialog::setupTuplet(Tuplet* tuplet)
       {
       tuplet->setRatio(Fraction(actualNotes->value(), normalNotes->value()));
       if (number->isChecked())
-            tuplet->setNumberType(Tuplet::NumberType::SHOW_NUMBER);
+            tuplet->setNumberType(TupletNumberType::SHOW_NUMBER);
       else if (relation->isChecked())
-            tuplet->setNumberType(Tuplet::NumberType::SHOW_RELATION);
+            tuplet->setNumberType(TupletNumberType::SHOW_RELATION);
       else if (noNumber->isChecked())
-            tuplet->setNumberType(Tuplet::NumberType::NO_TEXT);
+            tuplet->setNumberType(TupletNumberType::NO_TEXT);
       if (autoBracket->isChecked())
-            tuplet->setBracketType(Tuplet::BracketType::AUTO_BRACKET);
+            tuplet->setBracketType(TupletBracketType::AUTO_BRACKET);
       else if (bracket->isChecked())
-            tuplet->setBracketType(Tuplet::BracketType::SHOW_BRACKET);
+            tuplet->setBracketType(TupletBracketType::SHOW_BRACKET);
       else if (noBracket->isChecked())
-            tuplet->setBracketType(Tuplet::BracketType::SHOW_NO_BRACKET);
+            tuplet->setBracketType(TupletBracketType::SHOW_NO_BRACKET);
       }
 
 //---------------------------------------------------------
@@ -92,6 +94,10 @@ Tuplet* MuseScore::tupletDialog()
             noteTooShortForTupletDialog();
             return 0;
             }
+      Measure* measure = cr->measure();
+      if (measure && measure->isMMRest())
+            return 0;
+
       TupletDialog td;
       if (!td.exec())
             return 0;
@@ -100,10 +106,9 @@ Tuplet* MuseScore::tupletDialog()
       tuplet->setTrack(cr->track());
       tuplet->setTick(cr->tick());
       td.setupTuplet(tuplet);
-      //      tuplet->setRatio(tuplet->ratio().reduced());
       Fraction f1(cr->duration());
       tuplet->setDuration(f1);
-      Fraction f = f1 * tuplet->ratio();
+      Fraction f = f1 * Fraction(1, tuplet->ratio().denominator());
       f.reduce();
 
       qDebug("len %s  ratio %s  base %s",
@@ -111,21 +116,33 @@ Tuplet* MuseScore::tupletDialog()
          qPrintable(tuplet->ratio().print()),
          qPrintable(f.print()));
 
-      tuplet->setBaseLen(Fraction(1, f.denominator()));
+      Fraction fbl(1, f.denominator());
+      if (TDuration::isValid(fbl))
+            tuplet->setBaseLen(fbl);
+      else
+            tuplet->setBaseLen(TDuration::DurationType::V_INVALID);
 
       if (tuplet->baseLen() == TDuration::DurationType::V_INVALID) {
             QMessageBox::warning(0,
-               tr("MuseScore: Tuplet Error"),
+               tr("Tuplet Error"),
                tr("Cannot create tuplet with ratio %1 for duration %2").arg(tuplet->ratio().print()).arg(f1.print()));
             delete tuplet;
             return 0;
             }
 
-      Measure* measure = cr->measure();
       tuplet->setParent(measure);
 
       return tuplet;
       }
 
+//---------------------------------------------------------
+//   hideEvent
+//---------------------------------------------------------
+
+void TupletDialog::hideEvent(QHideEvent* event)
+      {
+      MuseScore::saveGeometry(this);
+      QWidget::hideEvent(event);
+      }
 }
 

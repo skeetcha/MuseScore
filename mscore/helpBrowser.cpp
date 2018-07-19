@@ -151,8 +151,8 @@ HelpBrowser::HelpBrowser(QWidget* parent)
       bl->addStretch(10);
 
       view->document()->setDefaultStyleSheet(
-            preferences.globalStyle == MuseScoreStyleType::DARK ? cssDark : css);
-
+            preferences.isThemeDark() ? cssDark : css);
+      view->setOpenExternalLinks(true);
       toolbar->setLayout(bl);
       }
 
@@ -190,7 +190,7 @@ QVariant HelpView::loadResource(int type, const QUrl& name)
       if (name.scheme() == "qthelp")
             return QVariant(helpEngine->fileData(name));
 #if 0
-      if (preferences.globalStyle == MuseScoreStyleType::DARK) {
+      if (preferences.globalStyle() == MuseScoreStyleType::DARK_FUSION) {
             QFileInfo fi(name.path());
             if (fi.fileName() == "manual.css") {
                   QUrl url(QString("file://%1/manual-dark.css").arg(fi.absolutePath()));

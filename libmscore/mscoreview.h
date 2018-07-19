@@ -19,7 +19,10 @@ class Element;
 class Score;
 class Note;
 class Page;
-enum class Grip : signed char;
+class ChordRest;
+
+enum class Grip : int;
+enum class HairpinType : char;
 
 //---------------------------------------------------------
 //   MuseScoreView
@@ -44,7 +47,7 @@ class MuseScoreView {
       virtual void moveCursor()          {}
       virtual void showLoopCursors(bool) {}
 
-      virtual void adjustCanvasPosition(const Element*, bool /*playBack*/) {};
+      virtual void adjustCanvasPosition(const Element*, bool /*playBack*/, int /*staffIdx*/ = 0) {};
       virtual void setScore(Score* s) { _score = s; }
       Score* score() const            { return _score; }
       virtual void removeScore() {};
@@ -53,12 +56,13 @@ class MuseScoreView {
       virtual QCursor cursor() const { return QCursor(); }
       virtual void setCursor(const QCursor&) {};
       virtual int gripCount() const { return 0; }
-      virtual const QRectF& getGrip(Grip) const = 0;
       virtual void setDropRectangle(const QRectF&) {};
-      virtual void cmdAddSlur(Note* /*firstNote*/, Note* /*lastNote*/) {};
-      virtual void cmdAddHairpin(bool) {};
+      virtual void cmdAddSlur(ChordRest*, ChordRest*) {};
+      virtual void cmdAddHairpin(HairpinType) {};
       virtual void startEdit() {};
+      virtual void startEditMode(Element*) {};
       virtual void startEdit(Element*, Grip /*startGrip*/) {};
+      virtual void startNoteEntryMode() {};
       virtual void drawBackground(QPainter*, const QRectF&) const = 0;
       virtual void setDropTarget(const Element*) {}
 
@@ -68,6 +72,8 @@ class MuseScoreView {
       virtual void lyricsUpDown(bool /*up*/, bool /*end*/)  {}
       virtual void lyricsMinus()  {}
       virtual void lyricsUnderscore()  {}
+
+      virtual const QRect geometry() const = 0;
       };
 
 
